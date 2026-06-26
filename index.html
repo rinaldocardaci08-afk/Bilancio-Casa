@@ -348,7 +348,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 2;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 3;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -641,7 +641,8 @@ function chiudi(ovId){document.getElementById(ovId).classList.remove("on");editi
   if(pendingRemote&&!document.querySelector(".overlay.on")){const d=pendingRemote;pendingRemote=null;applicaRemoto(d);}}
 ["ovVoce","ovGoal","ovCat"].forEach(ovId=>document.getElementById(ovId).addEventListener("click",e=>{if(e.target.id===ovId)chiudi(ovId);}));
 function cambiaMese(d){meseSel=spostaMese(meseSel,d);render();}
-function resetTutto(){if(confirm("Vuoi cancellare tutti i dati e ricominciare da zero?")){meseSel=meseCorrente();state=datiEsempio();render();}}
+function statoVuoto(){return{entrate:[],spese:[],categorie:DEFAULT_CATS.map(c=>({...c})),obiettivi:[],note:[]};}
+function resetTutto(){if(confirm("Vuoi cancellare TUTTI i dati (anche quelli di esempio) e partire da zero? Resteranno solo le categorie.")){meseSel=meseCorrente();state=statoVuoto();render();}}
 function esportaBackup(){const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="bilancio-casa-"+meseCorrente()+".json";a.click();}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 
