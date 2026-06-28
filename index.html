@@ -268,6 +268,30 @@
   .ass-add input{border:1.5px solid var(--line);border-radius:9px;padding:9px 8px;font-size:.9rem;font-family:inherit;}
   .ass-add .btn{padding:9px 13px;}
 
+  .gantt-nav{display:flex;align-items:center;justify-content:center;gap:8px;margin:6px 0 14px;}
+  .gantt-nav button{width:30px;height:30px;border:none;border-radius:999px;background:var(--green-tint);color:var(--primary);font-size:1rem;cursor:pointer;}
+  .gantt-nav .lbl{font-weight:700;font-size:.86rem;min-width:150px;text-align:center;}
+  .gkpis{display:flex;gap:9px;margin-bottom:16px;}
+  .gkpi{flex:1;background:var(--green-tint);border-radius:12px;padding:10px 6px;text-align:center;}
+  .gkpi .v{font-size:1.05rem;font-weight:800;color:var(--primary);} .gkpi .l{font-size:.6rem;color:var(--ink-soft);font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-top:2px;}
+  .gmonths{display:grid;grid-template-columns:74px repeat(12,1fr);gap:2px;font-size:.54rem;color:var(--ink-soft);font-weight:700;margin-bottom:5px;}
+  .gmonths span{text-align:center;} .gmonths .gc{text-align:left;}
+  .grow{display:grid;grid-template-columns:74px 1fr;gap:6px;align-items:center;margin-bottom:8px;}
+  .gname{font-size:.74rem;font-weight:700;line-height:1.1;} .gname small{display:block;font-weight:400;color:var(--ink-soft);font-size:.6rem;}
+  .gcells{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;height:22px;}
+  .gcell{border-radius:3px;background:transparent;}
+  .gcell.paid{background:repeating-linear-gradient(45deg,#16808f,#16808f 4px,#1a93a3 4px,#1a93a3 8px);}
+  .gcell.fut{background:#bfe3e6;}
+  .glegend{display:flex;gap:14px;font-size:.68rem;color:var(--ink-soft);margin:10px 0 16px;justify-content:center;}
+  .glegend span{display:flex;align-items:center;gap:5px;} .gsw{width:13px;height:9px;border-radius:2px;}
+  .gsw.paid{background:repeating-linear-gradient(45deg,#16808f,#16808f 3px,#1a93a3 3px,#1a93a3 6px);} .gsw.fut{background:#bfe3e6;}
+  .gload-t{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--primary-dark);margin-bottom:10px;}
+  .glrow{display:grid;grid-template-columns:78px 1fr 100px;gap:8px;align-items:center;margin-bottom:8px;}
+  .glm{font-size:.7rem;color:var(--ink-soft);font-weight:700;}
+  .gltrack{height:18px;background:var(--green-tint);border-radius:6px;overflow:hidden;}
+  .glfill{height:100%;border-radius:6px;background:linear-gradient(90deg,#1FB6A6,#16808F);}
+  .glval{font-size:.72rem;font-weight:700;text-align:right;} .glval .pct{color:var(--ink-soft);font-weight:600;font-size:.66rem;} .glval .down{color:#a9701f;font-weight:700;font-size:.62rem;display:block;}
+
   @media(max-width:560px){
     .chart-wrap{grid-template-columns:1fr;justify-items:center;} .legend{width:100%;} .trend{gap:5px;} .tb{width:9px;}
   }
@@ -360,6 +384,15 @@
         <button class="btn btn-ghost btn-sm" onclick="apriRata()">+ Aggiungi</button>
       </div>
       <div id="listaRate"></div>
+    </div>
+    <div class="card" id="cardGantt" style="display:none">
+      <div class="card-head"><h2><span class="ic">📆</span> Carico finanziamenti</h2></div>
+      <div id="ganttKpi"></div>
+      <div class="gantt-nav"><button onclick="ganttNav(-12)" aria-label="Anno precedente">‹</button><span class="lbl" id="ganttLbl">—</span><button onclick="ganttNav(12)" aria-label="Anno successivo">›</button></div>
+      <div id="ganttBody"></div>
+      <div class="glegend"><span><span class="gsw paid"></span> già pagato</span><span><span class="gsw fut"></span> da pagare</span></div>
+      <div class="gload-t">Carico mese per mese</div>
+      <div id="ganttCarico"></div>
     </div>
     <div class="card">
       <div class="card-head">
@@ -584,7 +617,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 12;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 13;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -609,7 +642,7 @@ function nuovaLotteria(){return{
 function datiLotteriaEsempio(){const l=nuovaLotteria(),o=oggiISO();
   l.movimenti=[{id:id(),persona:"giulia",compito:"Compiti svolti",monete:3,data:o},{id:id(),persona:"giulia",compito:"Apparecchiare la tavola",monete:2,data:o},{id:id(),persona:"leo",compito:"Sistemare la stanza",monete:1,data:o}];
   return l;}
-let state, meseSel, sezione="bacheca", periodoPersona="mese", persExpand=null, noteOrigine=null, lotPeriodo="mese", lotEroeSel=null, lotExpand=null, rataExpand=null;
+let state, meseSel, sezione="bacheca", periodoPersona="mese", persExpand=null, noteOrigine=null, lotPeriodo="mese", lotEroeSel=null, lotExpand=null, rataExpand=null, ganttStart=null;
 let editing=null, modKind=null, ricSel="fissa", editGoal=null, editCat=null, editRata=null, editVersGoal=null, pendingConfirm=null, catColorSel=PALETTE[0];
 let sb=null, cloudOn=false, applicandoRemoto=false, pendingRemote=null, saveTimer=null;
 
@@ -736,7 +769,7 @@ function render(){
   document.getElementById("hRis").textContent=euro(ris);
   renderGauge(ent,sp,ris);
   renderNote();renderScadenze();renderBachecaObiettivi();
-  renderGrafico();renderPersone();renderRate();renderListe();renderObiettivi();renderTrend();renderCategorie();renderReport();renderLotteria();
+  renderGrafico();renderPersone();renderRate();renderGantt();renderListe();renderObiettivi();renderTrend();renderCategorie();renderReport();renderLotteria();
   save();
 }
 
@@ -1044,6 +1077,43 @@ function aggiungiPremio(){
 }
 function chiediEliminaPremio(pid){const p=state.lotteria.premi.find(x=>x.id===pid);if(!p)return;
   chiediConferma('Eliminare il premio "'+p.nome+'"?',()=>{state.lotteria.premi=state.lotteria.premi.filter(x=>x.id!==pid);render();renderGestione();});}
+function ganttNav(d){ganttStart=spostaMese(ganttStart||meseCorrente(),d);renderGantt();}
+function renderGantt(){
+  const card=document.getElementById("cardGantt");
+  if(!state.rate.length){card.style.display="none";return;}
+  card.style.display="";
+  if(!ganttStart)ganttStart=meseCorrente();
+  const mesiF=[];let m=ganttStart;for(let i=0;i<12;i++){mesiF.push(m);m=spostaMese(m,1);}
+  document.getElementById("ganttLbl").textContent=meseAbbr(mesiF[0])+" "+mesiF[0].split("-")[0]+" – "+meseAbbr(mesiF[11])+" "+mesiF[11].split("-")[0];
+  const residuoTot=state.rate.reduce((a,r)=>a+Math.max(0,(+r.nRate||0)-nRatePagate(r))*(+r.rata||0),0);
+  const pagateTot=state.rate.reduce((a,r)=>a+nRatePagate(r),0);
+  const caricoOra=totRateDi(meseCorrente());
+  document.getElementById("ganttKpi").innerHTML=`<div class="gkpis">
+    <div class="gkpi"><div class="v num">${euro(residuoTot)}</div><div class="l">residuo totale</div></div>
+    <div class="gkpi"><div class="v num">${pagateTot}</div><div class="l">rate pagate</div></div>
+    <div class="gkpi"><div class="v num">${euro(caricoOra)}</div><div class="l">carico ora</div></div></div>`;
+  let head='<div class="gmonths"><span class="gc">finanz.</span>'+mesiF.map(mm=>'<span>'+meseAbbr(mm)[0].toUpperCase()+'</span>').join("")+'</div>';
+  const body=state.rate.map(r=>{
+    const cells=mesiF.map(mm=>{
+      if(!rataAttivaIn(r,mm))return '<div class="gcell"></div>';
+      const idx=meseDiff(r.inizio,mm),ok=rataPagata(r,idx);
+      return '<div class="gcell '+(ok?'paid':'fut')+'"></div>';
+    }).join("");
+    return `<div class="grow"><div class="gname">${esc(r.nome)}<small>fino a ${meseAbbr(rataFine(r))} ${rataFine(r).split("-")[0]}</small></div><div class="gcells">${cells}</div></div>`;
+  }).join("");
+  document.getElementById("ganttBody").innerHTML=head+body;
+  const carichi=mesiF.map(mm=>({mm,val:totRateDi(mm)}));
+  const maxC=Math.max(1,...carichi.map(c=>c.val));
+  const scal=[];carichi.forEach((c,i)=>{if(i===0||c.val!==carichi[i-1].val)scal.push(c);});
+  const ent=totEntrate();
+  document.getElementById("ganttCarico").innerHTML=scal.map((c,i)=>{
+    const pct=ent>0?Math.round(c.val/ent*100):0,w=c.val/maxC*100;
+    const prev=i>0?scal[i-1].val:null,calo=(prev!==null&&c.val<prev&&prev>0)?Math.round((prev-c.val)/prev*100):0;
+    const lbl=(i===0?"":"da ")+meseAbbr(c.mm)+" "+c.mm.split("-")[0];
+    return `<div class="glrow"><span class="glm">${lbl}</span><div class="gltrack"><div class="glfill" style="width:${w}%"></div></div>
+      <span class="glval num">${euro(c.val)} <span class="pct">${pct}%</span>${calo>0?'<span class="down">−'+calo+'%</span>':''}</span></div>`;
+  }).join("");
+}
 function renderCategorie(){document.getElementById("listaCat").innerHTML=state.categorie.map(c=>`<div class="chip" onclick="modificaCategoria('${esc(c.nome)}')"><span class="dot" style="background:${c.colore}"></span>${esc(c.nome)}</div>`).join("");}
 
 function popolaCat(){document.getElementById("mCat").innerHTML=state.categorie.map(c=>`<option value="${esc(c.nome)}">${esc(c.nome)}</option>`).join("");}
