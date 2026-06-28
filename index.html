@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Bilancio di Casa</title>
-<meta name="theme-color" content="#134E40">
+<meta name="theme-color" content="#16808F">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-180.png">
 <link rel="manifest" href="manifest.json">
@@ -25,7 +25,7 @@
   .num{font-variant-numeric:tabular-nums;letter-spacing:-0.02em;}
   .wrap{max-width:760px;margin:0 auto;padding:0 16px;}
 
-  header{background:linear-gradient(160deg,#23806A,#134E40);color:#fff;padding:calc(16px + env(safe-area-inset-top)) 0 18px;}
+  header{background:linear-gradient(135deg,#1FB6A6,#16808F 55%,#155E8C);color:#fff;padding:calc(16px + env(safe-area-inset-top)) 0 18px;}
   .head-top{display:flex;align-items:center;justify-content:space-between;gap:12px;}
   .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.15rem;letter-spacing:-.01em;}
   .brand .mark{width:30px;height:30px;border-radius:9px;background:var(--amber);display:grid;place-items:center;font-size:1rem;}
@@ -45,7 +45,7 @@
   .card-head h2{font-size:1.05rem;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:8px;}
   .card-head h2 .ic{font-size:1.1rem;}
 
-  .saldo{background:linear-gradient(160deg,#23806A,#15604F);color:#fff;}
+  .saldo{background:linear-gradient(135deg,#1FB6A6,#16808F 60%,#155E8C);color:#fff;border-radius:24px;box-shadow:0 10px 30px rgba(20,90,100,.22);}
   .saldo .k{font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;opacity:.85;font-weight:600;}
   .saldo .big{font-size:2.4rem;font-weight:800;margin-top:2px;} .saldo .big.neg{color:#FFD7CC;}
   .saldo .hint{font-size:.82rem;opacity:.85;margin-top:4px;}
@@ -53,6 +53,10 @@
   .saldo .row2 .k2{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;opacity:.85;}
   .saldo .row2 .v2{font-size:1.15rem;font-weight:700;}
   .hbar{height:8px;border-radius:999px;background:rgba(255,255,255,.22);margin-top:14px;overflow:hidden;display:flex;}
+  .saldo-top{display:flex;align-items:center;gap:12px;}
+  .saldo-left{flex:1;min-width:0;}
+  .saldo-gauge{flex:none;width:128px;}
+  .saldo-gauge .glabel{text-align:center;font-size:.7rem;font-weight:700;margin-top:-4px;opacity:.95;}
   .hbar i{display:block;height:100%;} .hbar .spent{background:var(--amber);} .hbar .saved{background:#7FD3B8;}
 
   .btn{border:none;border-radius:999px;padding:9px 16px;font-size:.9rem;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;transition:transform .1s,filter .15s;}
@@ -283,15 +287,19 @@
   <!-- BACHECA -->
   <section id="sec-bacheca" class="screen active">
     <div class="card saldo">
-      <div class="k">Ci resta questo mese</div>
-      <div class="big num" id="hDisp">€0</div>
-      <div class="hint" id="hHint"></div>
+      <div class="saldo-top">
+        <div class="saldo-left">
+          <div class="k">Ci resta questo mese</div>
+          <div class="big num" id="hDisp">€0</div>
+          <div class="hint" id="hHint"></div>
+        </div>
+        <div class="saldo-gauge" id="hGauge"></div>
+      </div>
       <div class="row2">
         <div><div class="k2">Entrate</div><div class="v2 num" id="hEntrate">€0</div></div>
         <div><div class="k2">Spese</div><div class="v2 num" id="hSpese">€0</div></div>
         <div><div class="k2">Risparmio</div><div class="v2 num" id="hRis">€0</div></div>
       </div>
-      <div class="hbar"><i class="spent" id="barSpent"></i><i class="saved" id="barSaved"></i></div>
     </div>
     <div class="card">
       <div class="card-head"><h2><span class="ic">📌</span> Bacheca di famiglia</h2></div>
@@ -555,7 +563,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 8;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 9;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -676,6 +684,20 @@ function vai(sec){sezione=sec;
   window.scrollTo(0,0);}
 function setPeriodoPersona(p){periodoPersona=p;document.getElementById("segMese").classList.toggle("on",p==="mese");document.getElementById("segAnno").classList.toggle("on",p==="anno");renderPersone();}
 
+function renderGauge(ent,sp,ris){
+  const el=document.getElementById("hGauge");if(!el)return;
+  const perc=ent>0?Math.round((sp+ris)/ent*100):0;
+  const cx=64,cy=60,R=46,MAXP=130,v=Math.min(perc,MAXP);
+  const P=(val,r)=>{const t=(180-(val/MAXP)*180)*Math.PI/180;return [cx+r*Math.cos(t),cy-r*Math.sin(t)];};
+  const arc=(v1,v2,col)=>{const a=P(v1,R),b=P(v2,R);return `<path d="M${a[0].toFixed(1)} ${a[1].toFixed(1)} A ${R} ${R} 0 0 1 ${b[0].toFixed(1)} ${b[1].toFixed(1)}" fill="none" stroke="${col}" stroke-width="9" stroke-linecap="round"/>`;};
+  const tip=P(v,R*0.82),b1=P(v-95,5),b2=P(v+95,5);
+  el.innerHTML=`<svg width="100%" viewBox="0 0 128 84" aria-label="Indicatore spese più risparmio sul reddito: ${ent>0?perc+'%':'nessun dato'}">
+    ${arc(2,70,"rgba(120,235,180,.92)")}${arc(72,100,"rgba(255,212,80,.92)")}${arc(102,128,"rgba(255,140,124,.96)")}
+    <polygon points="${tip[0].toFixed(1)},${tip[1].toFixed(1)} ${b1[0].toFixed(1)},${b1[1].toFixed(1)} ${b2[0].toFixed(1)},${b2[1].toFixed(1)}" fill="#fff"/>
+    <circle cx="${cx}" cy="${cy}" r="4.5" fill="#fff"/>
+    <text x="64" y="80" text-anchor="middle" font-size="19" font-weight="800" fill="#fff" font-family="system-ui">${ent>0?perc+'%':'—'}</text>
+  </svg><div class="glabel">spese + risparmio</div>`;
+}
 function render(){
   document.getElementById("meseLabel").textContent=meseLabel(meseSel);
   const ent=totEntrate(),sp=totSpeseDi(meseSel),ris=risparmioMensile(),disp=ent-sp-ris;
@@ -684,9 +706,7 @@ function render(){
   document.getElementById("hEntrate").textContent=euro(ent);
   document.getElementById("hSpese").textContent=euro(sp);
   document.getElementById("hRis").textContent=euro(ris);
-  const base=Math.max(ent,1);
-  document.getElementById("barSpent").style.width=Math.min(100,sp/base*100)+"%";
-  document.getElementById("barSaved").style.width=Math.max(0,Math.min(100-sp/base*100,ris/base*100))+"%";
+  renderGauge(ent,sp,ris);
   renderNote();renderScadenze();renderBachecaObiettivi();
   renderGrafico();renderPersone();renderRate();renderListe();renderObiettivi();renderTrend();renderCategorie();renderReport();renderLotteria();
   save();
