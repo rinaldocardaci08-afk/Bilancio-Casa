@@ -215,7 +215,11 @@
   .hcard .av{width:58px;height:58px;border-radius:50%;margin:0 auto 7px;background-size:cover;background-position:center;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.12);}
   .hcard .nm{font-weight:800;font-size:.95rem;} .hcard .co{font-size:1.4rem;font-weight:800;color:var(--primary);} .hcard .co small{font-size:.66rem;color:var(--ink-soft);font-weight:600;}
   .hcard .crown{position:absolute;top:7px;right:9px;font-size:1.15rem;} .hcard .rk{position:absolute;top:7px;left:9px;font-size:.75rem;font-weight:800;color:#b9a24a;}
-  .lotbar{margin-bottom:20px;}
+  .lotbar{margin-bottom:20px;cursor:pointer;}
+  .lotdet{margin:2px 0 8px 41px;border-left:2px solid var(--line);padding-left:11px;}
+  .ldrow{display:flex;align-items:center;gap:8px;font-size:.84rem;padding:6px 0;border-bottom:1px solid var(--line);}
+  .ldrow:last-child{border-bottom:none;}
+  .ldi{font-size:1rem;flex:none;} .ldn{flex:1;color:var(--ink);min-width:0;} .ldd{font-size:.74rem;color:var(--ink-soft);flex:none;} .ldv{font-weight:700;color:var(--primary);flex:none;} .ldx{background:none;border:none;color:var(--ink-soft);cursor:pointer;padding:2px;flex:none;}
   .lotbar-head{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
   .lotbar-head .mini{width:32px;height:32px;border-radius:50%;background-size:cover;background-position:center;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.12);}
   .lotbar-head .nm{font-weight:700;flex:1;} .lotbar-head .co{font-weight:800;color:var(--primary);}
@@ -563,7 +567,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 9;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 10;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -588,7 +592,7 @@ function nuovaLotteria(){return{
 function datiLotteriaEsempio(){const l=nuovaLotteria(),o=oggiISO();
   l.movimenti=[{id:id(),persona:"giulia",compito:"Compiti svolti",monete:3,data:o},{id:id(),persona:"giulia",compito:"Apparecchiare la tavola",monete:2,data:o},{id:id(),persona:"leo",compito:"Sistemare la stanza",monete:1,data:o}];
   return l;}
-let state, meseSel, sezione="bacheca", periodoPersona="mese", persExpand=null, noteOrigine=null, lotPeriodo="mese", lotEroeSel=null;
+let state, meseSel, sezione="bacheca", periodoPersona="mese", persExpand=null, noteOrigine=null, lotPeriodo="mese", lotEroeSel=null, lotExpand=null;
 let editing=null, modKind=null, ricSel="fissa", editGoal=null, editCat=null, editRata=null, editVersGoal=null, pendingConfirm=null, catColorSel=PALETTE[0];
 let sb=null, cloudOn=false, applicandoRemoto=false, pendingRemote=null, saveTimer=null;
 
@@ -934,6 +938,9 @@ function setLotPeriodo(p){lotPeriodo=p;renderLotteria();}
 function dataNelPeriodoLot(data){return lotPeriodo==="mese"?(data||"").startsWith(meseSel):(data||"").startsWith(meseSel.split("-")[0]+"-");}
 function moneteEroe(pid){return state.lotteria.movimenti.filter(m=>m.persona===pid&&dataNelPeriodoLot(m.data)).reduce((a,m)=>a+(+m.monete||0),0);}
 function classificaLot(){return state.lotteria.eroi.map(pid=>({pid,p:persona(pid),monete:moneteEroe(pid)})).sort((a,b)=>b.monete-a.monete);}
+function toggleLotBar(pid){lotExpand=lotExpand===pid?null:pid;renderLotteria();}
+function dettaglioEroe(pid){return state.lotteria.movimenti.filter(m=>m.persona===pid&&dataNelPeriodoLot(m.data)).slice().sort((a,b)=>(b.data||"").localeCompare(a.data||""));}
+function iconaCompito(nome){const c=state.lotteria.compiti.find(x=>x.nome===nome);return c?c.icona:"⭐";}
 function maxScalaLot(){const L=state.lotteria;const s=Math.max(0,...L.premi.map(p=>+p.soglia||0));const m=Math.max(0,...L.eroi.map(moneteEroe));return Math.max(s,m,1);}
 function renderLotteria(){
   const L=state.lotteria;
@@ -952,8 +959,12 @@ function renderLotteria(){
     const w=Math.min(100,d.monete/maxS*100);
     const ms=premi.map(pr=>{const left=Math.min(100,(pr.soglia||0)/maxS*100),reached=d.monete>=(pr.soglia||0);
       return `<div class="ms ${reached?'reached':''}" style="left:${left}%"><div class="ic">${esc(pr.icona||'🎁')}</div><div class="cap">${esc(pr.nome)}</div></div>`;}).join("");
-    return `<div class="lotbar"><div class="lotbar-head"><div class="mini" style="${avBg(d.p)}"></div><span class="nm">${esc(d.p?d.p.nome:'?')}</span><span class="co num">${d.monete} 🪙</span></div>
-      <div class="lottrack"><div class="lotfill" style="width:${w}%"></div>${ms}</div></div>`;}).join("");
+    const exp=lotExpand===d.pid;
+    let det="";
+    if(exp){const mov=dettaglioEroe(d.pid);
+      det='<div class="lotdet">'+(mov.length?mov.map(m=>`<div class="ldrow"><span class="ldi">${esc(iconaCompito(m.compito))}</span><span class="ldn">${esc(m.compito)}</span><span class="ldd">${formatData(m.data)}</span><span class="ldv num">+${m.monete} 🪙</span><button class="ldx" onclick="event.stopPropagation();chiediEliminaMov('${m.id}')">🗑</button></div>`).join(""):'<div class="empty" style="padding:8px 0">Nessuna moneta in questo periodo.</div>')+'</div>';}
+    return `<div><div class="lotbar" onclick="toggleLotBar('${d.pid}')"><div class="lotbar-head"><div class="mini" style="${avBg(d.p)}"></div><span class="nm">${esc(d.p?d.p.nome:'?')} <span style="color:var(--ink-soft);font-weight:400">${exp?'▾':'▸'}</span></span><span class="co num">${d.monete} 🪙</span></div>
+      <div class="lottrack"><div class="lotfill" style="width:${w}%"></div>${ms}</div></div>${det}</div>`;}).join("");
   document.getElementById("lotPremi").innerHTML=premi.length?'<div class="lot-premi"><div class="lt">🎁 Premi-traguardo</div>'+premi.map(pr=>`<div class="pz"><span class="pi">${esc(pr.icona||'🎁')}</span><span class="pn">${esc(pr.nome)}</span><span class="pv num">${pr.soglia} 🪙</span></div>`).join("")+'</div>':"";
 }
 function apriAssegna(){if(!lotEroeSel||!state.lotteria.eroi.includes(lotEroeSel))lotEroeSel=state.lotteria.eroi[0];renderAssegna();apri("ovAssegna");}
