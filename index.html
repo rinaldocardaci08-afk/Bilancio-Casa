@@ -116,6 +116,22 @@
   .rata .progress{height:10px;border-radius:999px;background:#efe9f5;overflow:hidden;margin:10px 0 7px;}
   .rata .progress i{display:block;height:100%;background:linear-gradient(90deg,#9b8fc7,#7A6FB0);border-radius:999px;}
   .rata-meta{display:flex;justify-content:space-between;font-size:.78rem;color:var(--ink-soft);} .rata-meta b{color:var(--ink);}
+  .rata-clk{cursor:pointer;}
+  .rata-detail{margin-top:14px;border-top:1px solid var(--line);padding-top:14px;}
+  .sumrow{display:flex;gap:10px;margin-bottom:14px;}
+  .sum{flex:1;border-radius:11px;padding:10px;text-align:center;}
+  .sum.paid{background:#e3f3ec;} .sum.left{background:#fdecea;}
+  .sum .v{font-size:1.1rem;font-weight:800;} .sum.paid .v{color:#1d7a5f;} .sum.left .v{color:#c0432e;}
+  .sum .l{font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);margin-top:2px;}
+  .rlist{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+  .rate{display:flex;align-items:center;gap:9px;border-radius:10px;padding:8px 10px;font-size:.82rem;cursor:pointer;}
+  .rate.ok{background:#e3f3ec;} .rate.no{background:#fdecea;}
+  .rate .chk{width:20px;height:20px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:.8rem;color:#fff;}
+  .rate.ok .chk{background:#2aa06e;} .rate.no .chk{background:#fff;border:2px solid #eeb4a8;}
+  .rate .info{line-height:1.15;min-width:0;} .rate .rn{font-weight:700;} .rate.ok .rn{color:#1d7a5f;} .rate.no .rn{color:#c0432e;} .rate .rd{font-size:.68rem;color:var(--ink-soft);}
+  .rate-group{grid-column:1/-1;}
+  .rata-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;}
+  .auto-tag{font-size:.72rem;color:var(--ink-soft);} .auto-tag.manual{font-style:italic;}
 
   .trend{display:flex;align-items:flex-end;gap:10px;height:130px;padding-top:6px;}
   .tcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
@@ -477,6 +493,7 @@
   <div class="field"><label>Rata mensile (€)</label><input type="number" id="rRata" inputmode="decimal" placeholder="0"></div>
   <div class="field"><label>Numero di rate totali</label><input type="number" id="rNum" inputmode="numeric" placeholder="Es. 24"></div>
   <div class="field"><label>Mese di partenza</label><input type="month" id="rInizio"></div>
+  <div class="field"><label>Giorno di addebito (facoltativo)</label><input type="number" id="rGiorno" inputmode="numeric" min="1" max="31" placeholder="Es. 15 — se lo metti, le rate si segnano pagate da sole"></div>
   <div class="modal-actions">
     <button class="btn btn-danger" id="rDelete" onclick="eliminaRata()" style="display:none">Elimina</button>
     <button class="btn btn-cancel" onclick="chiudi('ovRata')">Annulla</button>
@@ -567,7 +584,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 11;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 12;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -592,7 +609,7 @@ function nuovaLotteria(){return{
 function datiLotteriaEsempio(){const l=nuovaLotteria(),o=oggiISO();
   l.movimenti=[{id:id(),persona:"giulia",compito:"Compiti svolti",monete:3,data:o},{id:id(),persona:"giulia",compito:"Apparecchiare la tavola",monete:2,data:o},{id:id(),persona:"leo",compito:"Sistemare la stanza",monete:1,data:o}];
   return l;}
-let state, meseSel, sezione="bacheca", periodoPersona="mese", persExpand=null, noteOrigine=null, lotPeriodo="mese", lotEroeSel=null, lotExpand=null;
+let state, meseSel, sezione="bacheca", periodoPersona="mese", persExpand=null, noteOrigine=null, lotPeriodo="mese", lotEroeSel=null, lotExpand=null, rataExpand=null;
 let editing=null, modKind=null, ricSel="fissa", editGoal=null, editCat=null, editRata=null, editVersGoal=null, pendingConfirm=null, catColorSel=PALETTE[0];
 let sb=null, cloudOn=false, applicandoRemoto=false, pendingRemote=null, saveTimer=null;
 
@@ -679,6 +696,13 @@ function rataAttivaIn(r,m){return m>=r.inizio && m<=rataFine(r);}
 function rateAttiveDi(m){return state.rate.filter(r=>rataAttivaIn(r,m));}
 function totRateDi(m){return rateAttiveDi(m).reduce((a,r)=>a+(+r.rata||0),0);}
 function ratePagateA(r,m){if(m<r.inizio)return 0;return Math.min(+r.nRate||0, meseDiff(r.inizio,m)+1);}
+function ultimoGiornoMese(mm){const[y,m]=mm.split("-").map(Number);return new Date(y,m,0).getDate();}
+function dataScadenzaRata(r,i){const mm=spostaMese(r.inizio,i),ult=ultimoGiornoMese(mm),g=Math.min(+r.giorno||ult,ult);return mm+"-"+String(g).padStart(2,"0");}
+function rataPagataAuto(r,i){if(!r.giorno)return false;return oggiISO()>=dataScadenzaRata(r,i);}
+function rataPagata(r,i){if(r.flags&&r.flags[i]!==undefined)return !!r.flags[i];return rataPagataAuto(r,i);}
+function nRatePagate(r){let c=0;const n=+r.nRate||0;for(let i=0;i<n;i++)if(rataPagata(r,i))c++;return c;}
+function toggleRataPagata(rid,i){const r=state.rate.find(x=>x.id===rid);if(!r)return;const cur=rataPagata(r,i);if(!r.flags)r.flags={};r.flags[i]=!cur;render();}
+function toggleRataExpand(rid){rataExpand=rataExpand===rid?null:rid;renderRate();}
 function totSpeseDi(m){return speseDi(m).reduce((a,s)=>a+(+s.importo||0),0)+totRateDi(m);}
 function risparmioMensile(){return state.obiettivi.reduce((a,o)=>a+(+o.mensile||0),0);}
 
@@ -811,17 +835,34 @@ function renderRate(){
   const el=document.getElementById("listaRate");
   if(!state.rate.length){el.innerHTML='<div class="empty">Nessuna rata. Aggiungi un prestito o un acquisto a rate.</div>';return;}
   el.innerHTML=state.rate.map(r=>{
-    const pag=ratePagateA(r,meseSel),n=+r.nRate||0;
-    const residuoMesi=Math.max(0,n-pag),residuo=residuoMesi*(+r.rata||0);
-    const pct=n>0?Math.min(100,pag/n*100):0;
-    const attiva=rataAttivaIn(r,meseSel);
-    const fine=rataFine(r);
-    let stato = pag>=n ? "✓ Estinto" : (attiva?("rata "+Math.max(1,pag)+" di "+n):(meseSel<r.inizio?"inizia "+meseLabel(r.inizio):"terminato "+meseLabel(fine)));
-    return `<div class="rata" onclick="modificaRata('${r.id}')">
-      <div class="rata-top"><span class="rata-name">${esc(r.nome)}</span><span class="rata-rata">rata <b class="num">${euro(r.rata)}</b>/mese</span></div>
-      <div class="progress"><i style="width:${pct}%"></i></div>
-      <div class="rata-meta"><span>${stato}</span><span>residuo <b class="num">${euro(residuo)}</b></span></div></div>`;
+    const n=+r.nRate||0,pag=nRatePagate(r);
+    const residuo=Math.max(0,n-pag)*(+r.rata||0),pct=n>0?Math.min(100,pag/n*100):0;
+    const estinto=pag>=n,exp=rataExpand===r.id;
+    const det=exp?dettaglioRateHTML(r,pag,n,residuo):"";
+    return `<div class="rata">
+      <div class="rata-clk" onclick="toggleRataExpand('${r.id}')">
+        <div class="rata-top"><span class="rata-name">${esc(r.nome)} <span style="color:var(--ink-soft);font-weight:400;font-size:.8rem">${exp?'▾':'▸'}</span></span><span class="rata-rata">rata <b class="num">${euro(r.rata)}</b>/mese</span></div>
+        <div class="progress"><i style="width:${pct}%"></i></div>
+        <div class="rata-meta"><span>${estinto?'✓ Estinto':('rata '+Math.min(pag+1,n)+' di '+n)}</span><span>residuo <b class="num">${euro(residuo)}</b></span></div>
+      </div>${det}</div>`;
   }).join("");
+}
+function dettaglioRateHTML(r,pag,n,residuo){
+  const rata=+r.rata||0,pagato=pag*rata;
+  let runPaid=0;while(runPaid<n&&rataPagata(r,runPaid))runPaid++;
+  let startIdx=0,header="";
+  if(n>14&&runPaid>3){startIdx=runPaid-1;header=`<div class="rate ok rate-group"><span class="chk">✓</span><div class="info"><div class="rn">rate 1–${runPaid-1} pagate</div><div class="rd">${euro((runPaid-1)*rata)}</div></div></div>`;}
+  let righe="";
+  for(let i=startIdx;i<n;i++){
+    const ok=rataPagata(r,i),mm=spostaMese(r.inizio,i);
+    const g=r.giorno?(" · "+Math.min(+r.giorno,ultimoGiornoMese(mm))):"";
+    righe+=`<div class="rate ${ok?'ok':'no'}" onclick="toggleRataPagata('${r.id}',${i})"><span class="chk">${ok?'✓':''}</span><div class="info"><div class="rn num">${i+1} · ${euro(rata)}</div><div class="rd">${meseAbbr(mm)} ${mm.split("-")[0]}${g}</div></div></div>`;
+  }
+  return `<div class="rata-detail">
+    <div class="sumrow"><div class="sum paid"><div class="v num">${euro(pagato)}</div><div class="l">pagato · ${pag} rate</div></div><div class="sum left"><div class="v num">${euro(residuo)}</div><div class="l">restante · ${n-pag} rate</div></div></div>
+    <div class="rlist">${header}${righe}</div>
+    <div class="rata-actions"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();modificaRata('${r.id}')">✎ Modifica piano</button><span class="auto-tag${r.giorno?'':' manual'}">${r.giorno?('addebito il '+r.giorno+' · automatico'):'spunta a mano'}</span></div>
+  </div>`;
 }
 
 function renderListe(){
@@ -1049,7 +1090,7 @@ function eliminaVoce(){
 function apriRata(){
   editRata=null;document.getElementById("rataTitle").textContent="Nuova rata / prestito";
   document.getElementById("rNome").value="";document.getElementById("rRata").value="";document.getElementById("rNum").value="";
-  document.getElementById("rInizio").value=meseCorrente();document.getElementById("rDelete").style.display="none";
+  document.getElementById("rInizio").value=meseCorrente();document.getElementById("rGiorno").value="";document.getElementById("rDelete").style.display="none";
   apri("ovRata");setTimeout(()=>document.getElementById("rNome").focus(),100);
 }
 function modificaRata(rid){
@@ -1057,15 +1098,17 @@ function modificaRata(rid){
   document.getElementById("rataTitle").textContent="Modifica rata";
   document.getElementById("rNome").value=editRata.nome;document.getElementById("rRata").value=editRata.rata;
   document.getElementById("rNum").value=editRata.nRate;document.getElementById("rInizio").value=editRata.inizio;
+  document.getElementById("rGiorno").value=editRata.giorno||"";
   document.getElementById("rDelete").style.display="block";apri("ovRata");
 }
 function salvaRata(){
   const nome=document.getElementById("rNome").value.trim();
   const rata=+document.getElementById("rRata").value||0,nRate=+document.getElementById("rNum").value||0,inizio=document.getElementById("rInizio").value||meseCorrente();
+  let giorno=parseInt(document.getElementById("rGiorno").value,10);if(isNaN(giorno)||giorno<1)giorno=null;else if(giorno>31)giorno=31;
   if(!nome){document.getElementById("rNome").focus();return;}
   if(nRate<1){alert("Indica almeno 1 rata.");return;}
-  const obj={nome,rata,nRate,inizio};
-  if(editRata)Object.assign(editRata,obj);else state.rate.push({id:id(),...obj});
+  if(editRata){editRata.nome=nome;editRata.rata=rata;editRata.nRate=nRate;editRata.inizio=inizio;if(giorno)editRata.giorno=giorno;else delete editRata.giorno;}
+  else state.rate.push({id:id(),nome,rata,nRate,inizio,...(giorno?{giorno}:{})});
   chiudi("ovRata");render();
 }
 function eliminaRata(){if(!editRata)return;const r=editRata;chiudi("ovRata");chiediConferma('Vuoi eliminare il piano "'+r.nome+'"?',()=>{state.rate=state.rate.filter(x=>x.id!==r.id);render();});}
