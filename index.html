@@ -13,9 +13,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
   :root{
-    --bg:#EEF2EF; --surface:#FFFFFF; --primary:#1F6F5C; --primary-dark:#134E40;
+    --bg:#EEF2EF; --surface:#FFFFFF; --primary:#16808F; --primary-dark:#0E5E6B;
     --amber:#E0A03A; --amber-soft:#F6E7C9; --coral:#D9644A; --ink:#16241F;
-    --ink-soft:#5E726B; --line:#DCE5E0; --green-tint:#E5F0EB; --viola:#7A6FB0;
+    --ink-soft:#5E726B; --line:#DCE5E0; --green-tint:#E1F2F2; --viola:#7A6FB0;
     --shadow:0 1px 3px rgba(19,78,64,.06), 0 8px 24px rgba(19,78,64,.05); --radius:18px;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -171,7 +171,7 @@
   .modal-actions{display:flex;gap:10px;margin-top:22px;} .modal-actions .btn{flex:1;justify-content:center;}
   .btn-danger{background:#fbeae6;color:var(--coral);} .btn-cancel{background:#eef0ef;color:var(--ink-soft);}
 
-  .lockscreen{position:fixed;inset:0;z-index:60;background:linear-gradient(160deg,#23806A,#134E40);display:flex;align-items:center;justify-content:center;padding:24px;}
+  .lockscreen{position:fixed;inset:0;z-index:60;background:linear-gradient(160deg,#1FB6A6,#155E8C);display:flex;align-items:center;justify-content:center;padding:24px;}
   .lockbox{background:#fff;border-radius:22px;padding:30px 26px;width:100%;max-width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
   .lockbox .li{width:64px;height:64px;border-radius:18px;background:var(--amber);display:grid;place-items:center;font-size:2rem;margin:0 auto 16px;}
   .lockbox h2{font-size:1.3rem;margin-bottom:4px;} .lockbox p{color:var(--ink-soft);font-size:.9rem;margin-bottom:18px;}
@@ -203,7 +203,7 @@
   .prow:last-child{border-bottom:none;} .prow.big{font-weight:700;font-size:1.02rem;} .prow .redt{color:var(--coral);}
 
   .lot-wrap{border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);margin-top:16px;}
-  .lot-head{background:linear-gradient(135deg,#23806A,#15604F);color:#fff;padding:18px 18px 16px;}
+  .lot-head{background:linear-gradient(135deg,#1FB6A6,#16808F 60%,#155E8C);color:#fff;padding:18px 18px 16px;}
   .lot-title{font-weight:800;font-size:1.15rem;}
   .lot-sub{font-size:.82rem;opacity:.9;margin-top:2px;}
   .lot-seg{margin-top:13px;background:rgba(255,255,255,.18);}
@@ -224,7 +224,7 @@
   .lotbar-head .mini{width:32px;height:32px;border-radius:50%;background-size:cover;background-position:center;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.12);}
   .lotbar-head .nm{font-weight:700;flex:1;} .lotbar-head .co{font-weight:800;color:var(--primary);}
   .lottrack{position:relative;height:24px;background:var(--green-tint);border-radius:999px;margin-bottom:24px;}
-  .lotfill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,#23806A,#15804F);transition:width .4s;}
+  .lotfill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,#1FB6A6,#16808F);transition:width .4s;}
   .ms{position:absolute;top:50%;transform:translate(-50%,-50%);text-align:center;z-index:1;}
   .ms .ic{width:28px;height:28px;border-radius:50%;background:#fff;border:2px solid var(--line);display:grid;place-items:center;font-size:.9rem;box-shadow:0 1px 4px rgba(0,0,0,.1);}
   .ms.reached .ic{background:#ffe9b8;border-color:var(--amber);}
@@ -234,7 +234,7 @@
   .lot-premi .lt{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--primary-dark);margin-bottom:8px;}
   .pz{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:.88rem;} .pz .pi{font-size:1.05rem;width:24px;text-align:center;} .pz .pn{flex:1;} .pz .pv{font-weight:800;color:var(--primary);}
   .lot-cta{display:flex;gap:10px;} .lot-cta .btn{flex:1;justify-content:center;}
-  .lot-btn-main{background:linear-gradient(135deg,#23806A,#15804F);color:#fff;} .lot-btn-ghost{background:var(--green-tint);color:var(--primary-dark);}
+  .lot-btn-main{background:linear-gradient(135deg,#1FB6A6,#16808F);color:#fff;} .lot-btn-ghost{background:var(--green-tint);color:var(--primary-dark);}
   .lot-note{font-size:.78rem;color:var(--ink-soft);text-align:center;margin-top:14px;line-height:1.5;}
   .ass-eroi{display:flex;gap:10px;} .ass-eroi .ae{flex:1;border:2px solid var(--line);border-radius:14px;padding:10px;text-align:center;cursor:pointer;background:#fff;}
   .ass-eroi .ae.sel{border-color:var(--primary);background:var(--green-tint);}
@@ -567,7 +567,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 10;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 11;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
