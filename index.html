@@ -83,6 +83,11 @@
   .note.done .check{background:var(--primary);border-color:var(--primary);}
   .note .txt{flex:1;font-size:.95rem;} .note.done .txt{text-decoration:line-through;color:var(--ink-soft);}
   .note .del{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:1rem;padding:4px;}
+  .note .eur{background:none;border:none;color:var(--primary);cursor:pointer;font-size:1.05rem;font-weight:800;padding:4px 7px;}
+  .pdetail{margin:6px 0 4px 54px;border-left:2px solid var(--line);padding-left:12px;}
+  .pdrow{display:flex;align-items:center;gap:9px;font-size:.85rem;padding:4px 0;}
+  .pdrow .pdn{flex:1;color:var(--ink-soft);} .pdrow .dot{width:9px;height:9px;}
+  .pbar{cursor:pointer;}
 
   .scad{display:flex;align-items:center;gap:11px;padding:10px 6px;border-bottom:1px solid var(--line);}
   .scad:last-child{border-bottom:none;} .scad .name{flex:1;font-weight:600;} .scad .amt{font-weight:700;}
@@ -416,7 +421,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 5;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 6;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -432,7 +437,7 @@ const DEFAULT_PERSONE=[
   {id:"leo",nome:"Leo",avatar:"leo.png",colore:"#3DA9A1"},
   {id:"giulia",nome:"Giulia",avatar:"giulia.png",colore:"#E0A03A"}
 ];
-let state, meseSel, sezione="bacheca", periodoPersona="mese";
+let state, meseSel, sezione="bacheca", periodoPersona="mese", persExpand=null, noteOrigine=null;
 let editing=null, modKind=null, ricSel="fissa", editGoal=null, editCat=null, editRata=null, editVersGoal=null, pendingConfirm=null, catColorSel=PALETTE[0];
 let sb=null, cloudOn=false, applicandoRemoto=false, pendingRemote=null, saveTimer=null;
 
@@ -546,11 +551,20 @@ function renderNote(){
   if(!state.note.length){el.innerHTML='<div class="empty">Nessun promemoria. Scrivine uno qui sopra.</div>';return;}
   el.innerHTML=state.note.map(n=>`<div class="note ${n.fatto?'done':''}">
     <div class="check" onclick="toggleNota('${n.id}')">${n.fatto?'✓':''}</div>
-    <div class="txt">${esc(n.testo)}</div><button class="del" onclick="eliminaNota('${n.id}')">🗑</button></div>`).join("");
+    <div class="txt">${esc(n.testo)}</div>
+    <button class="eur" title="Registra come spesa" onclick="promemoriaInSpesa('${n.id}')">€</button>
+    <button class="del" onclick="eliminaNota('${n.id}')">🗑</button></div>`).join("");
 }
 function aggiungiNota(){const inp=document.getElementById("noteInput"),t=inp.value.trim();if(!t)return;state.note.unshift({id:id(),testo:t,fatto:false});inp.value="";render();}
 function toggleNota(nid){const n=state.note.find(x=>x.id===nid);if(n){n.fatto=!n.fatto;render();}}
 function eliminaNota(nid){state.note=state.note.filter(x=>x.id!==nid);render();}
+function promemoriaInSpesa(nid){
+  const n=state.note.find(x=>x.id===nid);if(!n)return;
+  apriModale('spesa');
+  document.getElementById("mNome").value=n.testo.replace(/^(compra(re)?|prendi|paga(re)?)\s+/i,"");
+  noteOrigine=nid;
+  setTimeout(()=>document.getElementById("mImporto").focus(),120);
+}
 
 function renderScadenze(){
   const varie=state.spese.filter(s=>s.tipo==="variabile"&&s.mese===meseSel);
@@ -596,6 +610,14 @@ function spesaPersonaPeriodo(pid){
   const varie=state.spese.filter(s=>s.tipo==="variabile"&&s.persona===pid&&(s.mese||"").startsWith(anno+"-")).reduce((a,s)=>a+(+s.importo||0),0);
   return fisse+varie;
 }
+function dettaglioPersona(pid){
+  if(periodoPersona==="mese"){return speseDi(meseSel).filter(s=>s.persona===pid).map(s=>({nome:s.nome,cat:s.cat,importo:+s.importo||0})).sort((a,b)=>b.importo-a.importo);}
+  const anno=meseSel.split("-")[0],out=[];
+  state.spese.filter(s=>s.tipo==="fissa"&&s.persona===pid).forEach(s=>out.push({nome:s.nome+" (×12)",cat:s.cat,importo:(+s.importo||0)*12}));
+  state.spese.filter(s=>s.tipo==="variabile"&&s.persona===pid&&(s.mese||"").startsWith(anno+"-")).forEach(s=>out.push({nome:s.nome,cat:s.cat,importo:+s.importo||0}));
+  return out.sort((a,b)=>b.importo-a.importo);
+}
+function togglePersona(pid){persExpand=persExpand===pid?null:pid;renderPersone();}
 function renderPersone(){
   const el=document.getElementById("listaPersone");
   document.getElementById("persSub").textContent = periodoPersona==="mese" ? meseLabel(meseSel) : "anno "+meseSel.split("-")[0];
@@ -605,9 +627,13 @@ function renderPersone(){
   el.innerHTML=dati.map(d=>{
     const w=Math.max(2,d.tot/max*100);
     const bg=d.p.avatar?`background-image:url('${d.p.avatar}');background-color:${d.p.colore};`:`background-color:${d.p.colore};`;
-    return `<div class="pbar"><div class="av" style="${bg}">${d.p.avatar?'':esc(d.p.nome[0])}</div>
-      <div class="bwrap"><div class="bhead"><span>${esc(d.p.nome)}</span><span class="num">${euro(d.tot)}</span></div>
-      <div class="track"><div class="fill" style="width:${w}%;background:${d.p.colore}"></div></div></div></div>`;
+    const exp=persExpand===d.p.id;
+    let det="";
+    if(exp){const dd=dettaglioPersona(d.p.id);
+      det='<div class="pdetail">'+(dd.length?dd.map(x=>`<div class="pdrow"><span class="dot" style="background:${catColor(x.cat)}"></span><span class="pdn">${esc(x.nome)}</span><span class="num">${euro(x.importo)}</span></div>`).join(""):'<div class="empty" style="padding:8px 0">Nessuna spesa nel periodo.</div>')+'</div>';}
+    return `<div><div class="pbar" onclick="togglePersona('${d.p.id}')"><div class="av" style="${bg}">${d.p.avatar?'':esc(d.p.nome[0])}</div>
+      <div class="bwrap"><div class="bhead"><span>${esc(d.p.nome)} <span style="color:var(--ink-soft);font-weight:400">${exp?'▾':'▸'}</span></span><span class="num">${euro(d.tot)}</span></div>
+      <div class="track"><div class="fill" style="width:${w}%;background:${d.p.colore}"></div></div></div></div>${det}</div>`;
   }).join("");
 }
 
@@ -679,7 +705,7 @@ function renderCategorie(){document.getElementById("listaCat").innerHTML=state.c
 function popolaCat(){document.getElementById("mCat").innerHTML=state.categorie.map(c=>`<option value="${esc(c.nome)}">${esc(c.nome)}</option>`).join("");}
 function popolaPers(){document.getElementById("mPers").innerHTML='<option value="">Spesa di casa</option>'+state.persone.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join("");}
 function apriModale(kind){
-  modKind=kind;editing=null;
+  modKind=kind;editing=null;noteOrigine=null;
   document.getElementById("modTitle").textContent=kind==="entrata"?"Nuova entrata":"Nuova spesa";
   document.getElementById("mNome").value="";document.getElementById("mImporto").value="";
   document.getElementById("mDelete").style.display="none";
@@ -707,6 +733,7 @@ function salvaVoce(){
   else{const cat=document.getElementById("mCat").value,pers=document.getElementById("mPers").value;
     if(editing){editing.nome=nome;editing.importo=imp;editing.cat=cat;editing.tipo=ricSel;if(pers)editing.persona=pers;else delete editing.persona;if(ricSel==="variabile"&&!editing.mese)editing.mese=meseSel;if(ricSel==="fissa")delete editing.mese;}
     else{const obj={id:id(),nome,importo:imp,cat,tipo:ricSel};if(pers)obj.persona=pers;if(ricSel==="variabile")obj.mese=meseSel;state.spese.push(obj);}}
+  if(modKind==="spesa"&&noteOrigine){const nn=state.note.find(x=>x.id===noteOrigine);if(nn)nn.fatto=true;noteOrigine=null;}
   chiudi("ovVoce");render();
 }
 function eliminaVoce(){
@@ -775,7 +802,7 @@ function eliminaCategoria(){
 }
 
 function apri(ovId){document.getElementById(ovId).classList.add("on");}
-function chiudi(ovId){document.getElementById(ovId).classList.remove("on");editing=null;editGoal=null;editCat=null;editRata=null;
+function chiudi(ovId){document.getElementById(ovId).classList.remove("on");editing=null;editGoal=null;editCat=null;editRata=null;noteOrigine=null;
   if(pendingRemote&&!document.querySelector(".overlay.on")){const d=pendingRemote;pendingRemote=null;applicaRemoto(d);}}
 ["ovVoce","ovRata","ovGoal","ovCat","ovVers","ovConfirm"].forEach(ovId=>document.getElementById(ovId).addEventListener("click",e=>{if(e.target.id===ovId)chiudi(ovId);}));
 function cambiaMese(d){meseSel=spostaMese(meseSel,d);render();}
