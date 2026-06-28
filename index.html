@@ -162,12 +162,38 @@
   .modal-actions{display:flex;gap:10px;margin-top:22px;} .modal-actions .btn{flex:1;justify-content:center;}
   .btn-danger{background:#fbeae6;color:var(--coral);} .btn-cancel{background:#eef0ef;color:var(--ink-soft);}
 
+  .lockscreen{position:fixed;inset:0;z-index:60;background:linear-gradient(160deg,#23806A,#134E40);display:flex;align-items:center;justify-content:center;padding:24px;}
+  .lockbox{background:#fff;border-radius:22px;padding:30px 26px;width:100%;max-width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+  .lockbox .li{width:64px;height:64px;border-radius:18px;background:var(--amber);display:grid;place-items:center;font-size:2rem;margin:0 auto 16px;}
+  .lockbox h2{font-size:1.3rem;margin-bottom:4px;} .lockbox p{color:var(--ink-soft);font-size:.9rem;margin-bottom:18px;}
+  .lockbox input{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:13px 14px;font-size:1rem;font-family:inherit;text-align:center;margin-bottom:12px;}
+  .lockbox input:focus{outline:none;border-color:var(--primary);}
+  .lockbox .btn{width:100%;justify-content:center;padding:13px;}
+  .pwerr{color:var(--coral);font-size:.85rem;font-weight:600;margin-top:10px;min-height:18px;}
+
+  .goal-act{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;}
+  .goal-act .eta{font-size:.8rem;color:var(--ink-soft);}
+  .vers-list{margin-top:10px;border-top:1px solid var(--line);padding-top:8px;}
+  .vers{display:flex;align-items:center;gap:10px;font-size:.84rem;padding:4px 0;color:var(--ink-soft);}
+  .vers .vd{flex:1;} .vers .va{font-weight:700;color:var(--primary);} .vers .vx{background:none;border:none;color:var(--ink-soft);cursor:pointer;padding:2px;}
+
   @media(max-width:560px){
     .chart-wrap{grid-template-columns:1fr;justify-items:center;} .legend{width:100%;} .trend{gap:5px;} .tb{width:9px;}
   }
 </style>
 </head>
 <body>
+
+<div class="lockscreen" id="lock">
+  <div class="lockbox">
+    <div class="li">🏡</div>
+    <h2>Bilancio di Casa</h2>
+    <p>Inserisci la password per entrare</p>
+    <input type="password" id="pwInput" placeholder="Password" onkeydown="if(event.key==='Enter')sblocca()">
+    <button class="btn btn-primary" onclick="sblocca()">Entra</button>
+    <div class="pwerr" id="pwErr"></div>
+  </div>
+</div>
 
 <header>
   <div class="wrap">
@@ -364,12 +390,34 @@
   </div>
 </div></div>
 
+<!-- MODALE VERSAMENTO -->
+<div class="overlay" id="ovVers"><div class="modal">
+  <h3>Aggiungi versamento</h3>
+  <p style="color:var(--ink-soft);font-size:.9rem;margin:-8px 0 16px;">Una somma messa da parte oggi per questo obiettivo, oltre al risparmio mensile.</p>
+  <div class="field"><label>Importo (€)</label><input type="number" id="vImporto" inputmode="decimal" placeholder="0" onkeydown="if(event.key==='Enter')salvaVersamento()"></div>
+  <div class="modal-actions">
+    <button class="btn btn-cancel" onclick="chiudi('ovVers')">Annulla</button>
+    <button class="btn btn-primary" onclick="salvaVersamento()">Aggiungi</button>
+  </div>
+</div></div>
+
+<!-- MODALE CONFERMA -->
+<div class="overlay" id="ovConfirm"><div class="modal">
+  <h3>Confermi l'eliminazione?</h3>
+  <p id="confMsg" style="color:var(--ink-soft);font-size:.95rem;margin:-8px 0 4px;"></p>
+  <div class="modal-actions">
+    <button class="btn btn-cancel" onclick="chiudi('ovConfirm')">Annulla</button>
+    <button class="btn btn-danger" onclick="confermaSi()">Elimina</button>
+  </div>
+</div></div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 4;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 5;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -385,7 +433,7 @@ const DEFAULT_PERSONE=[
   {id:"giulia",nome:"Giulia",avatar:"giulia.png",colore:"#E0A03A"}
 ];
 let state, meseSel, sezione="bacheca", periodoPersona="mese";
-let editing=null, modKind=null, ricSel="fissa", editGoal=null, editCat=null, editRata=null, catColorSel=PALETTE[0];
+let editing=null, modKind=null, ricSel="fissa", editGoal=null, editCat=null, editRata=null, editVersGoal=null, pendingConfirm=null, catColorSel=PALETTE[0];
 let sb=null, cloudOn=false, applicandoRemoto=false, pendingRemote=null, saveTimer=null;
 
 function id(){return Math.random().toString(36).slice(2,9);}
@@ -416,6 +464,7 @@ function migrate(){
   if(!state.rate) state.rate=[];
   if(state.risparmio && !state.obiettivi){const r=state.risparmio;state.obiettivi=[{id:id(),nome:r.nome||"Obiettivo",target:r.target||0,saved:r.saved||0,mensile:r.mensile||0}];delete state.risparmio;}
   if(!state.obiettivi) state.obiettivi=[];
+  state.obiettivi.forEach(o=>{if(!o.versamenti)o.versamenti=[];});
   if(!state.note) state.note=[];
 }
 function loadLocal(){
@@ -604,12 +653,17 @@ function rigaSpesa(s){
 function renderObiettivi(){
   const el=document.getElementById("listaObiettivi");
   if(!state.obiettivi.length){el.innerHTML='<div class="empty">Nessun obiettivo. Aggiungi il primo (es. vacanza, scuola, emergenze).</div>';return;}
-  el.innerHTML=state.obiettivi.map(o=>{const pct=o.target>0?Math.min(100,o.saved/o.target*100):0;const rim=(o.target||0)-(o.saved||0);
-    let eta=rim<=0?"🎉 Raggiunto!":(o.mensile>0?("~"+Math.ceil(rim/o.mensile)+(Math.ceil(rim/o.mensile)===1?" mese":" mesi")):"imposta mensile");
+  el.innerHTML=state.obiettivi.map(o=>{
+    const pct=o.target>0?Math.min(100,o.saved/o.target*100):0;const rim=Math.max(0,(o.target||0)-(o.saved||0));
+    let eta=rim<=0?"🎉 Raggiunto!":(o.mensile>0?("mancano ~"+Math.ceil(rim/o.mensile)+(Math.ceil(rim/o.mensile)===1?" mese":" mesi")):"imposta un mensile");
+    const vers=(o.versamenti||[]).slice().reverse().map(v=>`<div class="vers"><span class="vd">${formatData(v.data)}</span><span class="va">+${euro(v.importo)}</span><button class="vx" onclick="event.stopPropagation();chiediEliminaVersamento('${o.id}','${v.id}')">🗑</button></div>`).join("");
     return `<div class="goal" onclick="modificaObiettivo('${o.id}')">
       <div class="goal-top"><span class="goal-name">${esc(o.nome)}</span><span class="goal-monthly">da parte <b class="num">${euro(o.mensile)}</b>/mese</span></div>
       <div class="progress"><i style="width:${pct}%"></i></div>
-      <div class="goal-meta"><span><b class="num">${euro(o.saved)}</b> di ${euro(o.target)} · ${Math.round(pct)}%</span><span>${eta}</span></div></div>`;}).join("");
+      <div class="goal-meta"><span>Obiettivo <b class="num">${euro(o.target)}</b></span><span>Messo da parte <b class="num">${euro(o.saved)}</b></span><span>Manca <b class="num">${euro(rim)}</b></span></div>
+      <div class="goal-act"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();apriVersamento('${o.id}')">+ Versamento</button><span class="eta">${eta} · ${Math.round(pct)}%</span></div>
+      ${vers?'<div class="vers-list">'+vers+'</div>':''}
+    </div>`;}).join("");
 }
 function renderTrend(){
   let mesi=[],m=meseSel;for(let i=0;i<6;i++){mesi.unshift(m);m=spostaMese(m,-1);}
@@ -655,7 +709,12 @@ function salvaVoce(){
     else{const obj={id:id(),nome,importo:imp,cat,tipo:ricSel};if(pers)obj.persona=pers;if(ricSel==="variabile")obj.mese=meseSel;state.spese.push(obj);}}
   chiudi("ovVoce");render();
 }
-function eliminaVoce(){if(!editing)return;if(modKind==="entrata")state.entrate=state.entrate.filter(x=>x.id!==editing.id);else state.spese=state.spese.filter(x=>x.id!==editing.id);chiudi("ovVoce");render();}
+function eliminaVoce(){
+  if(!editing)return;const e=editing,kind=modKind;chiudi("ovVoce");
+  chiediConferma('Vuoi eliminare "'+e.nome+'"?',()=>{
+    if(kind==="entrata")state.entrate=state.entrate.filter(x=>x.id!==e.id);else state.spese=state.spese.filter(x=>x.id!==e.id);render();
+  });
+}
 
 function apriRata(){
   editRata=null;document.getElementById("rataTitle").textContent="Nuova rata / prestito";
@@ -679,7 +738,7 @@ function salvaRata(){
   if(editRata)Object.assign(editRata,obj);else state.rate.push({id:id(),...obj});
   chiudi("ovRata");render();
 }
-function eliminaRata(){if(!editRata)return;state.rate=state.rate.filter(r=>r.id!==editRata.id);chiudi("ovRata");render();}
+function eliminaRata(){if(!editRata)return;const r=editRata;chiudi("ovRata");chiediConferma('Vuoi eliminare il piano "'+r.nome+'"?',()=>{state.rate=state.rate.filter(x=>x.id!==r.id);render();});}
 
 function apriObiettivo(){editGoal=null;document.getElementById("goalTitle").textContent="Nuovo obiettivo";
   document.getElementById("gNome").value="";document.getElementById("gTarget").value="";document.getElementById("gSaved").value="";document.getElementById("gMensile").value="";
@@ -692,7 +751,7 @@ function modificaObiettivo(gid){editGoal=state.obiettivi.find(o=>o.id===gid);if(
 function salvaObiettivo(){const nome=document.getElementById("gNome").value.trim();if(!nome){document.getElementById("gNome").focus();return;}
   const obj={nome,target:+document.getElementById("gTarget").value||0,saved:+document.getElementById("gSaved").value||0,mensile:+document.getElementById("gMensile").value||0};
   if(editGoal)Object.assign(editGoal,obj);else state.obiettivi.push({id:id(),...obj});chiudi("ovGoal");render();}
-function eliminaObiettivo(){if(!editGoal)return;state.obiettivi=state.obiettivi.filter(o=>o.id!==editGoal.id);chiudi("ovGoal");render();}
+function eliminaObiettivo(){if(!editGoal)return;const o=editGoal;chiudi("ovGoal");chiediConferma('Vuoi eliminare l\'obiettivo "'+o.nome+'"?',()=>{state.obiettivi=state.obiettivi.filter(x=>x.id!==o.id);render();});}
 
 function renderSwatches(){document.getElementById("cSwatches").innerHTML=PALETTE.map(c=>`<div class="swatch ${c===catColorSel?'sel':''}" style="background:${c}" onclick="pickColor('${c}')"></div>`).join("");}
 function pickColor(c){catColorSel=c;renderSwatches();}
@@ -706,19 +765,51 @@ function salvaCategoria(){const nome=document.getElementById("cNome").value.trim
     editCat.nome=nome;editCat.colore=catColorSel;if(vecchio!==nome)state.spese.forEach(s=>{if(s.cat===vecchio)s.cat=nome;});}
   else{if(state.categorie.some(c=>c.nome===nome)){alert("Esiste già una categoria con questo nome.");return;}state.categorie.push({nome,colore:catColorSel});}
   chiudi("ovCat");render();}
-function eliminaCategoria(){if(!editCat)return;if(state.categorie.length<=1){alert("Devi tenere almeno una categoria.");return;}
-  const usate=state.spese.filter(s=>s.cat===editCat.nome).length;
-  const dest=state.categorie.find(c=>c.nome==="Altro"&&c!==editCat)||state.categorie.find(c=>c!==editCat);
-  if(usate>0&&!confirm(usate+" spese passeranno a \""+dest.nome+"\". Eliminare la categoria?"))return;
-  state.spese.forEach(s=>{if(s.cat===editCat.nome)s.cat=dest.nome;});state.categorie=state.categorie.filter(c=>c!==editCat);chiudi("ovCat");render();}
+function eliminaCategoria(){
+  if(!editCat)return;if(state.categorie.length<=1){alert("Devi tenere almeno una categoria.");return;}
+  const cat=editCat;const usate=state.spese.filter(s=>s.cat===cat.nome).length;
+  const dest=state.categorie.find(c=>c.nome==="Altro"&&c!==cat)||state.categorie.find(c=>c!==cat);
+  chiudi("ovCat");
+  const msg=usate>0?(usate+' spese passeranno a "'+dest.nome+'". Eliminare la categoria "'+cat.nome+'"?'):('Eliminare la categoria "'+cat.nome+'"?');
+  chiediConferma(msg,()=>{state.spese.forEach(s=>{if(s.cat===cat.nome)s.cat=dest.nome;});state.categorie=state.categorie.filter(c=>c!==cat);render();});
+}
 
 function apri(ovId){document.getElementById(ovId).classList.add("on");}
 function chiudi(ovId){document.getElementById(ovId).classList.remove("on");editing=null;editGoal=null;editCat=null;editRata=null;
   if(pendingRemote&&!document.querySelector(".overlay.on")){const d=pendingRemote;pendingRemote=null;applicaRemoto(d);}}
-["ovVoce","ovRata","ovGoal","ovCat"].forEach(ovId=>document.getElementById(ovId).addEventListener("click",e=>{if(e.target.id===ovId)chiudi(ovId);}));
+["ovVoce","ovRata","ovGoal","ovCat","ovVers","ovConfirm"].forEach(ovId=>document.getElementById(ovId).addEventListener("click",e=>{if(e.target.id===ovId)chiudi(ovId);}));
 function cambiaMese(d){meseSel=spostaMese(meseSel,d);render();}
-function resetTutto(){if(confirm("Vuoi cancellare TUTTI i dati (anche quelli di esempio) e partire da zero? Resteranno le categorie e i componenti della famiglia.")){meseSel=meseCorrente();state=statoVuoto();render();}}
+function resetTutto(){chiediConferma("Vuoi cancellare TUTTI i dati (anche quelli di esempio) e partire da zero? Resteranno le categorie e i componenti della famiglia.",()=>{meseSel=meseCorrente();state=statoVuoto();render();});}
 function esportaBackup(){const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="bilancio-casa-"+meseCorrente()+".json";a.click();}
+function appSbloccata(){try{return localStorage.getItem("bc-unlocked")==="1";}catch(e){return false;}}
+function sblocca(){
+  const v=document.getElementById("pwInput").value;
+  if(v===APP_PASSWORD){try{localStorage.setItem("bc-unlocked","1");}catch(e){}document.getElementById("lock").style.display="none";}
+  else{document.getElementById("pwErr").textContent="Password errata, riprova.";document.getElementById("pwInput").value="";}
+}
+
+function chiediConferma(msg,onOk){pendingConfirm=onOk;document.getElementById("confMsg").textContent=msg;apri("ovConfirm");}
+function confermaSi(){const f=pendingConfirm;pendingConfirm=null;chiudi("ovConfirm");if(f)f();}
+
+function formatData(iso){if(!iso)return"";const[y,m,d]=iso.split("-");return d+"/"+m+"/"+y;}
+function oggiISO(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function apriVersamento(gid){editVersGoal=state.obiettivi.find(o=>o.id===gid);if(!editVersGoal)return;document.getElementById("vImporto").value="";apri("ovVers");setTimeout(()=>document.getElementById("vImporto").focus(),100);}
+function salvaVersamento(){
+  if(!editVersGoal)return;const imp=+document.getElementById("vImporto").value||0;
+  if(imp<=0){document.getElementById("vImporto").focus();return;}
+  if(!editVersGoal.versamenti)editVersGoal.versamenti=[];
+  editVersGoal.versamenti.push({id:id(),data:oggiISO(),importo:imp});
+  editVersGoal.saved=(+editVersGoal.saved||0)+imp;
+  chiudi("ovVers");render();
+}
+function chiediEliminaVersamento(gid,vid){
+  const o=state.obiettivi.find(x=>x.id===gid);if(!o)return;const v=(o.versamenti||[]).find(x=>x.id===vid);if(!v)return;
+  chiediConferma("Eliminare il versamento di "+euro(v.importo)+" del "+formatData(v.data)+"?",()=>{
+    o.saved=Math.max(0,(+o.saved||0)-(+v.importo||0));
+    o.versamenti=o.versamenti.filter(x=>x.id!==vid);render();
+  });
+}
+
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 
 async function checkUpdate(){
@@ -727,6 +818,8 @@ async function checkUpdate(){
 }
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkUpdate();});
 
+if(appSbloccata())document.getElementById("lock").style.display="none";
+else setTimeout(()=>document.getElementById("pwInput").focus(),200);
 meseSel=meseCorrente();loadLocal();render();initCloud();checkUpdate();
 </script>
 </body>
