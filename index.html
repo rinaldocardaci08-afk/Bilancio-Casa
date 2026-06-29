@@ -132,6 +132,7 @@
   .rate-group{grid-column:1/-1;}
   .rata-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;}
   .auto-tag{font-size:.72rem;color:var(--ink-soft);} .auto-tag.manual{font-style:italic;}
+  .btn-azz-mese{background:var(--green-tint);color:var(--primary-dark);border:none;border-radius:11px;font-weight:700;cursor:pointer;line-height:1.3;}
 
   .trend{display:flex;align-items:flex-end;gap:10px;height:130px;padding-top:6px;}
   .tcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
@@ -484,7 +485,7 @@
       <div class="card-head"><h2><span class="ic">⚙️</span> Dati e backup</h2></div>
       <div class="footer-actions" style="justify-content:flex-start;margin-top:0;">
         <button class="link" onclick="esportaBackup()">Scarica backup</button>
-        <button class="link" onclick="resetTutto()">Ricomincia da zero</button>
+        <button class="link" onclick="apriAzzera()">Azzera / Ricomincia</button>
       </div>
     </div>
   </section>
@@ -612,12 +613,22 @@
   </div>
 </div></div>
 
+<!-- MODALE AZZERA / RICOMINCIA -->
+<div class="overlay" id="ovAzzera"><div class="modal">
+  <h3>Cosa vuoi azzerare?</h3>
+  <p style="color:var(--ink-soft);font-size:.92rem;margin:-8px 0 8px;">Scegli con attenzione. L'azione non si può annullare.</p>
+  <button class="btn btn-azz-mese" onclick="azzeraMeseCorrente()" style="width:100%;margin-bottom:9px;text-align:left;padding:13px 14px;">🗓️ Solo il mese in corso<br><span style="font-weight:400;font-size:.78rem;opacity:.85;">Cancella spese variabili e monete Lotteria di <b id="azzMeseLbl"></b>. Restano fisse, entrate, rate, obiettivi e famiglia.</span></button>
+  <button class="btn btn-danger" onclick="azzeraTutto()" style="width:100%;margin-bottom:9px;text-align:left;padding:13px 14px;">🧨 Tutto l'applicativo<br><span style="font-weight:400;font-size:.78rem;opacity:.9;">Cancella tutti i dati e riparte da zero. Restano categorie e componenti della famiglia.</span></button>
+  <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovAzzera')" style="width:100%;">Annulla</button></div>
+</div></div>
+
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 14;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 15;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -1224,6 +1235,17 @@ function chiudi(ovId){document.getElementById(ovId).classList.remove("on");editi
 ["ovVoce","ovRata","ovGoal","ovCat","ovVers","ovConfirm","ovAssegna","ovGestione"].forEach(ovId=>document.getElementById(ovId).addEventListener("click",e=>{if(e.target.id===ovId)chiudi(ovId);}));
 function cambiaMese(d){meseSel=spostaMese(meseSel,d);render();}
 function resetTutto(){chiediConferma("Vuoi cancellare TUTTI i dati (anche quelli di esempio) e partire da zero? Resteranno le categorie e i componenti della famiglia.",()=>{meseSel=meseCorrente();state=statoVuoto();render();});}
+function apriAzzera(){document.getElementById("azzMeseLbl").textContent=meseLabel(meseSel);apri("ovAzzera");}
+function azzeraMeseCorrente(){
+  const m=meseSel;
+  chiudi("ovAzzera");
+  chiediConferma('Azzerare il mese di '+meseLabel(m)+'? Verranno cancellate le spese variabili e le monete della Lotteria di quel mese. Il resto resta intatto.',()=>{
+    state.spese=state.spese.filter(s=>!(s.tipo==="variabile"&&s.mese===m));
+    if(state.lotteria&&state.lotteria.movimenti)state.lotteria.movimenti=state.lotteria.movimenti.filter(mv=>!(mv.data||"").startsWith(m));
+    render();
+  });
+}
+function azzeraTutto(){chiudi("ovAzzera");resetTutto();}
 function esportaBackup(){const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="bilancio-casa-"+meseCorrente()+".json";a.click();}
 function appSbloccata(){try{return localStorage.getItem("bc-unlocked")==="1";}catch(e){return false;}}
 function sblocca(){
