@@ -617,7 +617,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 13;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 14;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -1077,14 +1077,15 @@ function aggiungiPremio(){
 }
 function chiediEliminaPremio(pid){const p=state.lotteria.premi.find(x=>x.id===pid);if(!p)return;
   chiediConferma('Eliminare il premio "'+p.nome+'"?',()=>{state.lotteria.premi=state.lotteria.premi.filter(x=>x.id!==pid);render();renderGestione();});}
-function ganttNav(d){ganttStart=spostaMese(ganttStart||meseCorrente(),d);renderGantt();}
+function annoGanttCorrente(){return meseCorrente().split("-")[0]+"-01";}
+function ganttNav(d){ganttStart=spostaMese(ganttStart||annoGanttCorrente(),d);renderGantt();}
 function renderGantt(){
   const card=document.getElementById("cardGantt");
   if(!state.rate.length){card.style.display="none";return;}
   card.style.display="";
-  if(!ganttStart)ganttStart=meseCorrente();
+  if(!ganttStart)ganttStart=annoGanttCorrente();
   const mesiF=[];let m=ganttStart;for(let i=0;i<12;i++){mesiF.push(m);m=spostaMese(m,1);}
-  document.getElementById("ganttLbl").textContent=meseAbbr(mesiF[0])+" "+mesiF[0].split("-")[0]+" – "+meseAbbr(mesiF[11])+" "+mesiF[11].split("-")[0];
+  document.getElementById("ganttLbl").textContent="Anno "+mesiF[0].split("-")[0];
   const residuoTot=state.rate.reduce((a,r)=>a+Math.max(0,(+r.nRate||0)-nRatePagate(r))*(+r.rata||0),0);
   const pagateTot=state.rate.reduce((a,r)=>a+nRatePagate(r),0);
   const caricoOra=totRateDi(meseCorrente());
