@@ -173,6 +173,19 @@
   .trend-legend span{display:flex;align-items:center;gap:6px;}
 
   .goal{border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px;cursor:pointer;}
+  .sfida-card{border-left:4px solid var(--amber,#E0A03A);}
+  .sf-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}
+  .sf-per{font-size:.74rem;color:var(--ink-soft);}
+  .sf-cat{font-size:.78rem;color:var(--primary);font-weight:700;margin-bottom:10px;}
+  .sf-bar{height:22px;background:#f1f5f5;border-radius:8px;overflow:hidden;}
+  .sf-fill{height:100%;border-radius:8px;display:flex;align-items:center;padding-left:9px;color:#fff;font-size:.74rem;font-weight:700;white-space:nowrap;min-width:34px;}
+  .sf-fill.ok{background:linear-gradient(90deg,#1FB6A6,#16808F);}
+  .sf-fill.over{background:linear-gradient(90deg,#FF9F7E,#F46D52);}
+  .sf-foot{display:flex;justify-content:space-between;font-size:.75rem;margin-top:7px;color:var(--ink-soft);}
+  .sf-foot b{color:var(--primary-dark);}
+  .sf-win{background:linear-gradient(160deg,#FFD76A,#F4C04A);border-radius:11px;padding:11px;text-align:center;color:#7a4e10;font-weight:800;font-size:.88rem;margin-top:10px;}
+  .sf-lose{background:#fbeae4;border-radius:11px;padding:10px;text-align:center;color:#b5654a;font-weight:600;font-size:.82rem;margin-top:10px;}
+  .inp-sel{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:.95rem;background:#fff;font-family:inherit;}
   .goal:last-child{margin-bottom:0;} .goal:hover{border-color:var(--amber);}
   .goal-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
   .goal-name{font-weight:700;font-size:1rem;} .goal-monthly{font-size:.8rem;color:var(--ink-soft);} .goal-monthly b{color:var(--amber);font-size:.95rem;}
@@ -312,6 +325,17 @@
   .mc{aspect-ratio:1;border:none;border-radius:12px;background:linear-gradient(135deg,#1FB6A6,#16808F);font-size:1.9rem;cursor:pointer;display:grid;place-items:center;transition:background .15s;}
   .mc.su{background:#fff;box-shadow:inset 0 0 0 2px var(--green-tint);} .mc.ok{background:#FBE7BF;box-shadow:inset 0 0 0 2px #E0A03A;}
   .mem-win{text-align:center;font-size:1rem;font-weight:800;color:var(--primary-dark);margin-top:16px;line-height:1.4;}
+  .celebra{position:relative;text-align:center;padding-top:8px;}
+  .conf-layer{position:absolute;left:0;right:0;top:-10px;height:340px;overflow:hidden;pointer-events:none;}
+  .conf{position:absolute;top:-20px;width:9px;height:14px;border-radius:2px;animation-name:fallc;animation-iteration-count:infinite;animation-timing-function:linear;}
+  @keyframes fallc{0%{transform:translateY(-20px) rotate(0);opacity:1}100%{transform:translateY(330px) rotate(560deg);opacity:0}}
+  .cel-av-wrap{position:relative;display:inline-block;animation:popc .7s cubic-bezier(.2,1.4,.4,1) both;}
+  @keyframes popc{0%{transform:scale(0) rotate(-30deg)}70%{transform:scale(1.15) rotate(8deg)}100%{transform:scale(1) rotate(0)}}
+  .cel-av{width:108px;height:108px;border-radius:50%;background:center/cover no-repeat var(--green-tint);border:5px solid #fff;box-shadow:0 6px 18px rgba(0,0,0,.16);}
+  .cel-badge{position:absolute;bottom:-6px;right:-6px;font-size:2.3rem;animation:swingc 1.2s ease-in-out .6s infinite;}
+  @keyframes swingc{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+  .cel-msg{font-size:1.3rem;font-weight:800;color:var(--primary-dark);margin-top:14px;}
+  .cel-sub{font-size:.9rem;color:var(--ink-soft);margin-top:4px;}
   .sud-grid{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;width:min(86vw,380px);aspect-ratio:1;margin:0 auto;background:var(--primary-dark);padding:4px;border-radius:14px;}
   .sud-grid::before{content:"";position:absolute;left:50%;top:4px;bottom:4px;width:3px;transform:translateX(-50%);background:#fff;opacity:.55;border-radius:2px;pointer-events:none;}
   .sud-grid::after{content:"";position:absolute;top:50%;left:4px;right:4px;height:3px;transform:translateY(-50%);background:#fff;opacity:.55;border-radius:2px;pointer-events:none;}
@@ -651,10 +675,26 @@
 <!-- MODALE OBIETTIVO -->
 <div class="overlay" id="ovGoal"><div class="modal">
   <h3 id="goalTitle">Nuovo obiettivo</h3>
-  <div class="field"><label>Nome</label><input type="text" id="gNome" placeholder="Es. Vacanza in famiglia"></div>
-  <div class="field"><label>Obiettivo da raggiungere (€)</label><input type="number" id="gTarget" inputmode="decimal" placeholder="0"></div>
-  <div class="field"><label>Già messo da parte (€)</label><input type="number" id="gSaved" inputmode="decimal" placeholder="0"></div>
-  <div class="field"><label>Risparmio mensile (€)</label><input type="number" id="gMensile" inputmode="decimal" placeholder="0"></div>
+  <div class="field"><label>Nome</label><input type="text" id="gNome" placeholder="Es. Vacanza / Cene fuori"></div>
+  <div class="field"><label>Tipo</label>
+    <div class="seg" id="gTipoSeg">
+      <button type="button" class="on" id="gTipoRacc" onclick="setGoalTipo('raccolta')">Raccolta fondi</button>
+      <button type="button" id="gTipoSfida" onclick="setGoalTipo('sfida')">Sfida risparmio</button>
+    </div>
+  </div>
+  <div id="gRaccFields">
+    <div class="field"><label>Obiettivo da raggiungere (€)</label><input type="number" id="gTarget" inputmode="decimal" placeholder="0"></div>
+    <div class="field"><label>Già messo da parte (€)</label><input type="number" id="gSaved" inputmode="decimal" placeholder="0"></div>
+    <div class="field"><label>Risparmio mensile (€)</label><input type="number" id="gMensile" inputmode="decimal" placeholder="0"></div>
+  </div>
+  <div id="gSfidaFields" style="display:none">
+    <div class="field"><label>Su cosa</label>
+      <div class="seg"><button type="button" class="on" id="gAmbCat" onclick="setGoalAmbito('categoria')">Una categoria</button><button type="button" id="gAmbTot" onclick="setGoalAmbito('totale')">Totale mese</button></div>
+    </div>
+    <div class="field" id="gCatField"><label>Categoria</label><select id="gCat" class="inp-sel"></select></div>
+    <div class="field"><label>Non spendere più di (€)</label><input type="number" id="gTetto" inputmode="decimal" placeholder="0"></div>
+    <p style="font-size:.78rem;color:var(--ink-soft);margin:-4px 0 4px;">La sfida vale per il mese che stai guardando. Vinci se a fine mese resti sotto il tetto. 🏆</p>
+  </div>
   <div class="modal-actions">
     <button class="btn btn-danger" id="gDelete" onclick="eliminaObiettivo()" style="display:none">Elimina</button>
     <button class="btn btn-cancel" onclick="chiudi('ovGoal')">Annulla</button>
@@ -750,7 +790,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 25;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 27;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -761,10 +801,10 @@ const DEFAULT_CATS=[
   {nome:"Svago",colore:"#E07A9E"},{nome:"Altro",colore:"#9AA8A2"}
 ];
 const DEFAULT_PERSONE=[
-  {id:"papa",nome:"Papà",avatar:"papa.png",colore:"#5B8DEF"},
-  {id:"mamma",nome:"Mamma",avatar:"mamma.png",colore:"#E07A9E"},
-  {id:"leo",nome:"Leo",avatar:"leo.png",colore:"#3DA9A1"},
-  {id:"giulia",nome:"Giulia",avatar:"giulia.png",colore:"#E0A03A"}
+  {id:"papa",nome:"Papà",avatar:"papa.png",colore:"#5B8DEF",genere:"M"},
+  {id:"mamma",nome:"Mamma",avatar:"mamma.png",colore:"#E07A9E",genere:"F"},
+  {id:"leo",nome:"Leo",avatar:"leo.png",colore:"#3DA9A1",genere:"M"},
+  {id:"giulia",nome:"Giulia",avatar:"giulia.png",colore:"#E0A03A",genere:"F"}
 ];
 function nuovaLotteria(){return{
   eroi:["leo","giulia"],
@@ -807,6 +847,7 @@ function statoVuoto(){return{entrate:[],spese:[],categorie:DEFAULT_CATS.map(c=>(
 function migrate(){
   if(!state.categorie||!state.categorie.length) state.categorie=DEFAULT_CATS.map(c=>({...c}));
   if(!state.persone||!state.persone.length) state.persone=DEFAULT_PERSONE.map(p=>({...p}));
+  state.persone.forEach(p=>{if(!p.genere&&GENERE_NOTO[p.id])p.genere=GENERE_NOTO[p.id];});
   if(!state.rate) state.rate=[];
   if(state.risparmio && !state.obiettivi){const r=state.risparmio;state.obiettivi=[{id:id(),nome:r.nome||"Obiettivo",target:r.target||0,saved:r.saved||0,mensile:r.mensile||0}];delete state.risparmio;}
   if(!state.obiettivi) state.obiettivi=[];
@@ -856,6 +897,11 @@ function meseDiff(a,b){const[ya,ma]=a.split("-").map(Number),[yb,mb]=b.split("-"
 
 function catColor(nome){const c=state.categorie.find(x=>x.nome===nome);return c?c.colore:"#9AA8A2";}
 function persona(pid){return state.persone.find(p=>p.id===pid);}
+const GENERE_NOTO={papa:"M",mamma:"F",leo:"M",giulia:"F"};
+function genereDi(pid){const p=persona(pid);if(p&&p.genere)return p.genere;return GENERE_NOTO[pid]||null;}
+function complimento(pid){return genereDi(pid)==="F"?"Brava":"Bravo";}
+function coriandoliHTML(){const cols=["#FFD76A","#1FB6A6","#FF8C7C","#5BB8E8","#9B8CFF","#7BD88F"];let h="";for(let i=0;i<24;i++){h+=`<span class="conf" style="left:${(Math.random()*100).toFixed(1)}%;background:${cols[i%cols.length]};animation-duration:${(1.8+Math.random()*1.6).toFixed(2)}s;animation-delay:${(Math.random()).toFixed(2)}s;"></span>`;}return h;}
+function celebraVittoria(pid,sottotesto){const p=persona(pid);return `<div class="celebra"><div class="conf-layer">${coriandoliHTML()}</div><div class="cel-av-wrap"><div class="cel-av" style="${avBg(p)}"></div><div class="cel-badge">🏅</div></div><div class="cel-msg">${complimento(pid)} ${esc(p?p.nome:'')}!</div><div class="cel-sub">${sottotesto}</div><button class="btn pod-ok" style="margin-top:16px" onclick="tornaGiochi()">Evviva! 🎉</button></div>`;}
 function speseDi(m){return state.spese.filter(s=>s.tipo==="fissa"||s.mese===m);}
 function totEntrate(){return state.entrate.reduce((a,e)=>a+(+e.importo||0),0);}
 // rate
@@ -1063,6 +1109,7 @@ function renderObiettivi(){
   const el=document.getElementById("listaObiettivi");
   if(!state.obiettivi.length){el.innerHTML='<div class="empty">Nessun obiettivo. Aggiungi il primo (es. vacanza, scuola, emergenze).</div>';return;}
   el.innerHTML=state.obiettivi.map(o=>{
+    if(o.tipo==="sfida")return renderCardSfida(o);
     const pct=o.target>0?Math.min(100,o.saved/o.target*100):0;const rim=Math.max(0,(o.target||0)-(o.saved||0));
     let eta=rim<=0?"🎉 Raggiunto!":(o.mensile>0?("mancano ~"+Math.ceil(rim/o.mensile)+(Math.ceil(rim/o.mensile)===1?" mese":" mesi")):"imposta un mensile");
     const vers=(o.versamenti||[]).slice().reverse().map(v=>`<div class="vers"><span class="vd">${formatData(v.data)}</span><span class="va">+${euro(v.importo)}</span><button class="vx" onclick="event.stopPropagation();chiediEliminaVersamento('${o.id}','${v.id}')">🗑</button></div>`).join("");
@@ -1073,6 +1120,23 @@ function renderObiettivi(){
       <div class="goal-act"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();apriVersamento('${o.id}')">+ Versamento</button><span class="eta">${eta} · ${Math.round(pct)}%</span></div>
       ${vers?'<div class="vers-list">'+vers+'</div>':''}
     </div>`;}).join("");
+}
+function renderCardSfida(o){
+  const s=statoSfida(o),pct=s.tetto>0?Math.min(100,s.speso/s.tetto*100):0;
+  const cat=o.ambito==="categoria"?("🏷️ "+esc(o.cat||"")):"🎯 Totale del mese";
+  const mlbl=meseLabel(o.mese||meseCorrente());
+  let foot,fillCls;
+  if(s.sotto){fillCls="ok";foot=`<span>Speso <b>${euro(s.speso)}</b> di ${euro(s.tetto)}</span><span>restano <b>${euro(s.risparmio)}</b></span>`;}
+  else{fillCls="over";foot=`<span>Speso <b>${euro(s.speso)}</b> di ${euro(s.tetto)}</span><span style="color:#e0603a;font-weight:700">sforato di ${euro(s.sforo)}</span>`;}
+  let esito="";
+  if(s.conclusa){esito=s.sotto?`<div class="sf-win">🏆 Sfida vinta! Risparmiati ${euro(s.risparmio)}</div>`:`<div class="sf-lose">Sforata di ${euro(s.sforo)} — sarà per la prossima 💪</div>`;}
+  return `<div class="goal sfida-card" onclick="modificaObiettivo('${o.id}')">
+    <div class="sf-top"><span class="goal-name">${esc(o.nome)}</span><span class="sf-per">${mlbl}${s.conclusa?' · conclusa':''}</span></div>
+    <div class="sf-cat">${cat} · tetto ${euro(s.tetto)}</div>
+    <div class="sf-bar"><div class="sf-fill ${fillCls}" style="width:${Math.max(pct,12)}%">${euro(s.speso)}</div></div>
+    <div class="sf-foot">${foot}</div>
+    ${esito}
+  </div>`;
 }
 function renderTrend(){
   let mesi=[],m=meseSel;for(let i=0;i<6;i++){mesi.unshift(m);m=spostaMese(m,-1);}
@@ -1224,8 +1288,8 @@ function registraRecord(pid,gioco,valore){
   if(!state.lotteria.record)state.lotteria.record={};
   if(!state.lotteria.record[pid])state.lotteria.record[pid]={};
   const att=state.lotteria.record[pid][gioco],meglio=GIOCHI_META[gioco].bassoMeglio;
-  if(att==null||(meglio?valore<att:valore>att))state.lotteria.record[pid][gioco]=valore;
-  save();
+  if(att==null||(meglio?valore<att:valore>att)){state.lotteria.record[pid][gioco]=valore;save();return true;}
+  return false;
 }
 function recordDi(pid,gioco){return (state.lotteria.record&&state.lotteria.record[pid]&&state.lotteria.record[pid][gioco]!=null)?state.lotteria.record[pid][gioco]:null;}
 function fmtTempo(sec){sec=Math.round(sec);const m=Math.floor(sec/60),s=sec%60;return m>0?(m+"m "+(s<10?"0":"")+s+"s"):(s+"s");}
@@ -1275,7 +1339,7 @@ function renderMemory(){
     <div class="gioco-area">
       <div class="mem-info">Mosse: <b>${m.mosse}</b> · Coppie: <b>${trovate/2}/${m.carte.length/2}</b></div>
       <div class="mem-grid">${celle}</div>
-      ${vinto?`<div class="mem-win">🎉 Bravo ${esc(persona(giocoEroe)?persona(giocoEroe).nome:'')}! Hai trovato tutte le coppie!</div><button class="btn pod-ok" style="margin-top:12px" onclick="tornaGiochi()">Torna ai giochi</button>`:``}
+      ${vinto?celebraVittoria(giocoEroe,`${m.mosse} mosse${m.nuovoRecord?' · nuovo record! 🌟':''}`):''}
     </div>`;
 }
 function memClick(i){
@@ -1283,7 +1347,7 @@ function memClick(i){
   c.girata=true;m.sel.push(i);
   if(m.sel.length===2){
     m.mosse++;const a=m.sel[0],b=m.sel[1];
-    if(m.carte[a].e===m.carte[b].e){m.carte[a].trovata=true;m.carte[b].trovata=true;m.sel=[];if(m.carte.every(c=>c.trovata)&&!m.registrato){m.registrato=true;registraRecord(giocoEroe,'memory',m.mosse);}renderMemory();}
+    if(m.carte[a].e===m.carte[b].e){m.carte[a].trovata=true;m.carte[b].trovata=true;m.sel=[];if(m.carte.every(c=>c.trovata)&&!m.registrato){m.registrato=true;m.nuovoRecord=registraRecord(giocoEroe,'memory',m.mosse);}renderMemory();}
     else{m.blocco=true;renderMemory();setTimeout(()=>{m.carte[a].girata=false;m.carte[b].girata=false;m.sel=[];m.blocco=false;renderMemory();},850);}
   }else renderMemory();
 }
@@ -1315,14 +1379,14 @@ function renderSudoku(){
   box.className="modal modal-giochi full";
   const g=s.celle.map(c=>c.v);
   const completa=g.every(v=>v>0),vinto=completa&&sudValida(g);
-  if(vinto&&!s.registrato){s.registrato=true;registraRecord(giocoEroe,'sudoku',(Date.now()-s.t0)/1000);}
+  if(vinto&&!s.registrato){s.registrato=true;s.tempoFinale=(Date.now()-s.t0)/1000;s.nuovoRecord=registraRecord(giocoEroe,'sudoku',s.tempoFinale);}
   const celle=s.celle.map((c,i)=>{const cls=(c.fissa?'fix ':'')+(s.sel===i?'sel ':'');return `<button class="sc ${cls}" ${c.fissa?'disabled':''} onclick="sudClick(${i})">${c.v||''}</button>`;}).join("");
   const tendina=(s.sel!=null&&!vinto)?`<div class="sud-pad"><div class="sud-pad-lbl">Scegli il numero</div><div class="sud-pad-row">${[1,2,3,4].map(n=>`<button class="sud-num" onclick="sudSetNum(${n})">${n}</button>`).join("")}<button class="sud-num clear" onclick="sudSetNum(0)">✕</button></div></div>`:'';
   box.innerHTML=`<div class="gk-head"><div class="gk-tit">🔢 Sudoku 4×4</div><button class="gk-close" onclick="tornaGiochi()">✕</button></div>
     <div class="gioco-area">
       <div class="mem-info">${s.sel!=null?'Scegli il numero dalla barra in basso':'Tocca una casella vuota'}</div>
       <div class="sud-grid">${celle}</div>
-      ${vinto?`<div class="mem-win">🎉 Bravo ${esc(persona(giocoEroe)?persona(giocoEroe).nome:'')}! Sudoku risolto!</div><button class="btn pod-ok" style="margin-top:12px" onclick="tornaGiochi()">Torna ai giochi</button>`:`${completa?'<div style="text-align:center;color:#d9744f;font-size:.84rem;margin-top:12px;">Quasi! Controlla righe, colonne e quadrati 🤔</div>':''}`}
+      ${vinto?celebraVittoria(giocoEroe,`Risolto in ${fmtTempo(s.tempoFinale)}${s.nuovoRecord?' · record! 🌟':''}`):`${completa?'<div style="text-align:center;color:#d9744f;font-size:.84rem;margin-top:12px;">Quasi! Controlla righe, colonne e quadrati 🤔</div>':''}`}
     </div>
     ${tendina}`;
 }
@@ -1352,7 +1416,7 @@ function simProssimoRound(){
 }
 function simClick(c){
   const s=simState;if(!s||s.fase!=="ripeti"||s.finita)return;
-  if(c!==s.seq[s.pos]){s.finita=true;s.fase="fine";registraRecord(giocoEroe,'simon',s.round-1);renderSimon();return;}
+  if(c!==s.seq[s.pos]){s.finita=true;s.fase="fine";s.nuovoRecord=registraRecord(giocoEroe,'simon',s.round-1);renderSimon();return;}
   s.attivo=c;renderSimon();setTimeout(()=>{if(!simState||simState!==s)return;s.attivo=null;renderSimon();},200);
   s.pos++;
   if(s.pos>=s.seq.length){setTimeout(()=>{if(!simState||simState!==s)return;simProssimoRound();},550);}
@@ -1367,7 +1431,7 @@ function renderSimon(){
       <div class="sim-round">Sequenza di <b>${s.round}</b></div>
       <div class="mem-info">${msg}</div>
       <div class="sim-grid">${bottoni}</div>
-      ${s.finita?`<div class="mem-win">🎉 Bravo ${esc(persona(giocoEroe)?persona(giocoEroe).nome:'')}!<br>Hai ripetuto ${s.round-1} ${s.round-1===1?'sequenza':'sequenze'}!</div><button class="btn pod-ok" style="margin-top:14px" onclick="tornaGiochi()">Torna ai giochi</button>`:''}
+      ${s.finita?(s.round-1>=1?celebraVittoria(giocoEroe,`${s.round-1} ${s.round-1===1?'sequenza':'sequenze'}${s.nuovoRecord?' · nuovo record! 🌟':''}`):`<div class="mem-win" style="font-size:.95rem">Ops, riprova! 🙂</div><button class="btn pod-ok" style="margin-top:14px" onclick="tornaGiochi()">Torna ai giochi</button>`):''}
     </div>`;
 }
 function toggleLotBar(pid){lotExpand=lotExpand===pid?null:pid;renderLotteria();}
@@ -1543,17 +1607,30 @@ function salvaRata(){
 }
 function eliminaRata(){if(!editRata)return;const r=editRata;chiudi("ovRata");chiediConferma('Vuoi eliminare il piano "'+r.nome+'"?',()=>{state.rate=state.rate.filter(x=>x.id!==r.id);render();});}
 
+let goalTipo="raccolta", goalAmbito="categoria";
+function popolaGoalCat(){document.getElementById("gCat").innerHTML=state.categorie.map(c=>`<option value="${esc(c.nome)}">${esc(c.nome)}</option>`).join("");}
+function setGoalTipo(t){goalTipo=t;document.getElementById("gTipoRacc").classList.toggle("on",t==="raccolta");document.getElementById("gTipoSfida").classList.toggle("on",t==="sfida");document.getElementById("gRaccFields").style.display=t==="raccolta"?"":"none";document.getElementById("gSfidaFields").style.display=t==="sfida"?"":"none";}
+function setGoalAmbito(a){goalAmbito=a;document.getElementById("gAmbCat").classList.toggle("on",a==="categoria");document.getElementById("gAmbTot").classList.toggle("on",a==="totale");document.getElementById("gCatField").style.display=a==="categoria"?"":"none";}
 function apriObiettivo(){editGoal=null;document.getElementById("goalTitle").textContent="Nuovo obiettivo";
-  document.getElementById("gNome").value="";document.getElementById("gTarget").value="";document.getElementById("gSaved").value="";document.getElementById("gMensile").value="";
+  document.getElementById("gNome").value="";document.getElementById("gTarget").value="";document.getElementById("gSaved").value="";document.getElementById("gMensile").value="";document.getElementById("gTetto").value="";
+  popolaGoalCat();setGoalTipo("raccolta");setGoalAmbito("categoria");
   document.getElementById("gDelete").style.display="none";apri("ovGoal");setTimeout(()=>document.getElementById("gNome").focus(),100);}
 function modificaObiettivo(gid){editGoal=state.obiettivi.find(o=>o.id===gid);if(!editGoal)return;
   document.getElementById("goalTitle").textContent="Modifica obiettivo";
-  document.getElementById("gNome").value=editGoal.nome;document.getElementById("gTarget").value=editGoal.target||"";
-  document.getElementById("gSaved").value=editGoal.saved||"";document.getElementById("gMensile").value=editGoal.mensile||"";
+  document.getElementById("gNome").value=editGoal.nome;
+  popolaGoalCat();
+  if(editGoal.tipo==="sfida"){setGoalTipo("sfida");setGoalAmbito(editGoal.ambito||"categoria");if(editGoal.cat)document.getElementById("gCat").value=editGoal.cat;document.getElementById("gTetto").value=editGoal.tetto||"";}
+  else{setGoalTipo("raccolta");document.getElementById("gTarget").value=editGoal.target||"";document.getElementById("gSaved").value=editGoal.saved||"";document.getElementById("gMensile").value=editGoal.mensile||"";}
   document.getElementById("gDelete").style.display="block";apri("ovGoal");}
 function salvaObiettivo(){const nome=document.getElementById("gNome").value.trim();if(!nome){document.getElementById("gNome").focus();return;}
-  const obj={nome,target:+document.getElementById("gTarget").value||0,saved:+document.getElementById("gSaved").value||0,mensile:+document.getElementById("gMensile").value||0};
-  if(editGoal)Object.assign(editGoal,obj);else state.obiettivi.push({id:id(),...obj});chiudi("ovGoal");render();}
+  let obj;
+  if(goalTipo==="sfida"){const tetto=+document.getElementById("gTetto").value||0;const ambito=goalAmbito;obj={nome,tipo:"sfida",ambito,cat:ambito==="categoria"?document.getElementById("gCat").value:null,tetto,mese:(editGoal&&editGoal.mese)?editGoal.mese:meseSel};}
+  else{obj={nome,target:+document.getElementById("gTarget").value||0,saved:+document.getElementById("gSaved").value||0,mensile:+document.getElementById("gMensile").value||0};}
+  if(editGoal){if(goalTipo!=="sfida"&&!editGoal.versamenti)editGoal.versamenti=[];Object.keys(editGoal).forEach(k=>{if(!['id','versamenti'].includes(k))delete editGoal[k];});Object.assign(editGoal,obj);}
+  else state.obiettivi.push({id:id(),...obj});
+  chiudi("ovGoal");render();}
+function spesaSfida(o){const lista=speseDi(o.mese);if(o.ambito==="categoria")return lista.filter(s=>s.cat===o.cat).reduce((a,s)=>a+(+s.importo||0),0);return lista.reduce((a,s)=>a+(+s.importo||0),0);}
+function statoSfida(o){const speso=spesaSfida(o),tetto=+o.tetto||0,conclusa=(o.mese||"")<meseCorrente(),sotto=speso<=tetto;return {speso,tetto,conclusa,sotto,risparmio:Math.max(0,tetto-speso),sforo:Math.max(0,speso-tetto)};}
 function eliminaObiettivo(){if(!editGoal)return;const o=editGoal;chiudi("ovGoal");chiediConferma('Vuoi eliminare l\'obiettivo "'+o.nome+'"?',()=>{state.obiettivi=state.obiettivi.filter(x=>x.id!==o.id);render();});}
 
 function renderSwatches(){document.getElementById("cSwatches").innerHTML=PALETTE.map(c=>`<div class="swatch ${c===catColorSel?'sel':''}" style="background:${c}" onclick="pickColor('${c}')"></div>`).join("");}
