@@ -336,10 +336,17 @@
   @keyframes swingc{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
   .cel-msg{font-size:1.3rem;font-weight:800;color:var(--primary-dark);margin-top:14px;}
   .cel-sub{font-size:.9rem;color:var(--ink-soft);margin-top:4px;}
-  .sud-grid{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;width:min(86vw,380px);aspect-ratio:1;margin:0 auto;background:var(--primary-dark);padding:4px;border-radius:14px;}
-  .sud-grid::before{content:"";position:absolute;left:50%;top:4px;bottom:4px;width:3px;transform:translateX(-50%);background:#fff;opacity:.55;border-radius:2px;pointer-events:none;}
-  .sud-grid::after{content:"";position:absolute;top:50%;left:4px;right:4px;height:3px;transform:translateY(-50%);background:#fff;opacity:.55;border-radius:2px;pointer-events:none;}
-  .sc{border:none;background:#fff;font-size:2.2rem;font-weight:800;color:var(--primary-dark);cursor:pointer;display:grid;place-items:center;border-radius:5px;font-family:inherit;}
+  .sud-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;width:min(86vw,380px);margin:0 auto;}
+  .sud-box{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;padding:6px;border-radius:11px;}
+  .add-spesa{background:linear-gradient(135deg,#1FB6A6,#16808F);color:#fff;border-radius:16px;padding:15px;margin-bottom:14px;box-shadow:0 8px 22px rgba(20,90,100,.18);}
+  .add-spesa h3{font-size:.98rem;margin-bottom:11px;display:flex;align-items:center;gap:7px;}
+  .add-row{display:flex;gap:8px;margin-bottom:8px;}
+  .add-imp{flex:0 0 40%;border:none;border-radius:10px;padding:11px;font-size:1rem;font-weight:700;font-family:inherit;}
+  .add-cat{flex:1;min-width:0;border:none;border-radius:10px;padding:11px;font-size:.9rem;color:#46565b;background:#fff;font-family:inherit;}
+  .add-desc{width:100%;border:none;border-radius:10px;padding:11px;font-size:.9rem;font-family:inherit;margin-bottom:9px;}
+  .add-btn{width:100%;background:#fff;color:var(--primary);border:none;border-radius:10px;padding:12px;font-weight:800;font-size:.95rem;cursor:pointer;font-family:inherit;}
+  .sud-box.dark{background:#d0e4e4;} .sud-box.light{background:#eef5f5;}
+  .sc{aspect-ratio:1;border:none;background:#fff;font-size:2rem;font-weight:800;color:var(--primary-dark);cursor:pointer;display:grid;place-items:center;border-radius:7px;font-family:inherit;}
   .sc.fix{background:var(--green-tint);color:var(--primary);} .sc:disabled{cursor:default;}
   .sc.sel{background:#FFD76A;color:var(--primary-dark);box-shadow:inset 0 0 0 3px #E0A03A;}
   .gioco-esci-mini{align-self:flex-start;background:none;border:none;color:var(--ink-soft);font-size:.82rem;font-weight:700;cursor:pointer;padding:8px 4px;font-family:inherit;margin-top:6px;}
@@ -493,6 +500,15 @@
   <!-- SPESE -->
   <section id="sec-spese" class="screen">
     <div class="sectitle">Spese</div>
+    <div class="add-spesa">
+      <h3>➕ Aggiungi spesa</h3>
+      <div class="add-row">
+        <input class="add-imp" id="qsImporto" type="number" inputmode="decimal" placeholder="€ importo">
+        <select class="add-cat" id="qsCat"></select>
+      </div>
+      <input class="add-desc" id="qsDesc" type="text" placeholder="Descrizione (facoltativa)">
+      <button class="add-btn" onclick="aggiungiSpesaRapida()">Aggiungi spesa</button>
+    </div>
     <div class="card">
       <div class="card-head"><h2><span class="ic">📊</span> Dove vanno i soldi</h2></div>
       <div class="chart-wrap"><div id="donut"></div><div class="legend" id="legend"></div></div>
@@ -790,7 +806,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 27;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 28;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -954,8 +970,16 @@ function render(){
   document.getElementById("hRis").textContent=euro(ris);
   renderGauge(ent,sp,ris);
   renderNote();renderScadenze();renderBachecaObiettivi();
-  renderGrafico();renderPersone();renderRate();renderGantt();renderListe();renderObiettivi();renderTrend();renderCategorie();renderReport();renderLotteria();
+  renderGrafico();renderPersone();renderRate();renderGantt();renderListe();renderObiettivi();renderTrend();renderCategorie();renderReport();renderLotteria();popolaQsCat();
   save();
+}
+function popolaQsCat(){const sel=document.getElementById("qsCat");if(!sel)return;const cur=sel.value;sel.innerHTML=state.categorie.map(c=>`<option value="${esc(c.nome)}">${esc(c.nome)}</option>`).join("");if(cur)sel.value=cur;}
+function aggiungiSpesaRapida(){
+  const el=document.getElementById("qsImporto"),imp=+el.value||0;
+  if(imp<=0){el.focus();return;}
+  const cat=document.getElementById("qsCat").value,desc=document.getElementById("qsDesc").value.trim();
+  state.spese.push({id:id(),nome:desc||cat,importo:imp,cat,tipo:"variabile",mese:meseSel});
+  el.value="";document.getElementById("qsDesc").value="";render();
 }
 
 function renderNote(){
@@ -1380,12 +1404,14 @@ function renderSudoku(){
   const g=s.celle.map(c=>c.v);
   const completa=g.every(v=>v>0),vinto=completa&&sudValida(g);
   if(vinto&&!s.registrato){s.registrato=true;s.tempoFinale=(Date.now()-s.t0)/1000;s.nuovoRecord=registraRecord(giocoEroe,'sudoku',s.tempoFinale);}
-  const celle=s.celle.map((c,i)=>{const cls=(c.fissa?'fix ':'')+(s.sel===i?'sel ':'');return `<button class="sc ${cls}" ${c.fissa?'disabled':''} onclick="sudClick(${i})">${c.v||''}</button>`;}).join("");
+  const cella=(i)=>{const c=s.celle[i];const cls=(c.fissa?'fix ':'')+(s.sel===i?'sel ':'');return `<button class="sc ${cls}" ${c.fissa?'disabled':''} onclick="sudClick(${i})">${c.v||''}</button>`;};
+  const boxIdx=[[0,1,4,5],[2,3,6,7],[8,9,12,13],[10,11,14,15]],boxCls=['dark','light','light','dark'];
+  const griglia=boxIdx.map((b,bi)=>`<div class="sud-box ${boxCls[bi]}">${b.map(cella).join("")}</div>`).join("");
   const tendina=(s.sel!=null&&!vinto)?`<div class="sud-pad"><div class="sud-pad-lbl">Scegli il numero</div><div class="sud-pad-row">${[1,2,3,4].map(n=>`<button class="sud-num" onclick="sudSetNum(${n})">${n}</button>`).join("")}<button class="sud-num clear" onclick="sudSetNum(0)">✕</button></div></div>`:'';
   box.innerHTML=`<div class="gk-head"><div class="gk-tit">🔢 Sudoku 4×4</div><button class="gk-close" onclick="tornaGiochi()">✕</button></div>
     <div class="gioco-area">
       <div class="mem-info">${s.sel!=null?'Scegli il numero dalla barra in basso':'Tocca una casella vuota'}</div>
-      <div class="sud-grid">${celle}</div>
+      <div class="sud-grid">${griglia}</div>
       ${vinto?celebraVittoria(giocoEroe,`Risolto in ${fmtTempo(s.tempoFinale)}${s.nuovoRecord?' · record! 🌟':''}`):`${completa?'<div style="text-align:center;color:#d9744f;font-size:.84rem;margin-top:12px;">Quasi! Controlla righe, colonne e quadrati 🤔</div>':''}`}
     </div>
     ${tendina}`;
