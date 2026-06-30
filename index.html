@@ -114,6 +114,45 @@
   .wp{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:20px;padding:6px 12px;font-size:.85rem;font-weight:700;color:#46565b;cursor:pointer;}
   .wp-dot{width:11px;height:11px;border-radius:50%;}
   .wp.on{border-color:var(--primary);background:var(--green-tint);color:var(--primary-dark);}
+  .appt-cal{margin-top:10px;padding-top:11px;border-top:1px dashed #dfeae9;font-size:.84rem;font-weight:800;color:var(--primary);cursor:pointer;}
+  .seg{display:flex;gap:7px;}
+  .seg button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:9px 4px;font-size:.82rem;font-weight:700;color:#46565b;cursor:pointer;font-family:inherit;}
+  .seg button.on{border-color:var(--primary);background:var(--primary);color:#fff;}
+  .rip-dur{background:#f3f9f9;border-radius:12px;padding:12px;margin-bottom:4px;}
+  .anteprima{font-size:.8rem;color:#0c6b59;background:#D7EFE9;border-radius:9px;padding:9px 11px;margin-top:10px;font-weight:600;}
+  /* calendario */
+  #ovCalendario{z-index:45;}
+  .cal-modal{background:#fff;width:100%;max-width:460px;border-radius:24px 24px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.2);animation:slideUp .25s ease;max-height:94vh;overflow:auto;}
+  .cal-top{position:sticky;top:0;z-index:2;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;padding:15px 16px;display:flex;align-items:center;justify-content:space-between;border-radius:24px 24px 0 0;}
+  .cal-top h3{font-size:1.12rem;}
+  .cal-nav{display:flex;align-items:center;gap:6px;}
+  .cal-nav button{width:32px;height:32px;border-radius:9px;border:none;background:rgba(255,255,255,.18);color:#fff;font-size:1.05rem;cursor:pointer;}
+  .cal-nav .oggi{width:auto;padding:0 11px;font-size:.7rem;font-weight:800;}
+  .cal-body{padding:0 14px 16px;}
+  .cal-dow{display:grid;grid-template-columns:repeat(7,1fr);padding:10px 0 3px;}
+  .cal-dow span{text-align:center;font-size:.64rem;font-weight:800;color:#9aa8a2;text-transform:uppercase;}
+  .cal-week{border-bottom:1px solid #eef3f3;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);}
+  .cal-cell{min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;position:relative;padding:4px 0;}
+  .cal-n{font-size:.96rem;font-weight:700;color:var(--ink);}
+  .cal-cell.out .cal-n{color:#cdd6da;}
+  .cal-pips{display:flex;gap:2px;height:6px;align-items:center;}
+  .cal-pip{width:5px;height:5px;border-radius:50%;}
+  .cal-cell.today .cal-n{background:var(--primary);color:#fff;border-radius:50%;width:27px;height:27px;display:grid;place-items:center;}
+  .cal-cell.sel{background:#FCF3E0;border-radius:10px;}
+  .cal-day-open{background:#f7fbfb;padding:12px 13px 13px;border-top:1px solid #e8f0ef;}
+  .cal-doh{font-size:.86rem;font-weight:800;color:var(--primary-dark);margin-bottom:9px;}
+  .cal-ev{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:12px;background:#fff;margin-bottom:7px;border-left:4px solid var(--primary);box-shadow:0 2px 8px rgba(20,90,100,.06);cursor:pointer;}
+  .cal-ev.fatto{opacity:.55;}.cal-ev.fatto .cal-ev-nm{text-decoration:line-through;}
+  .cal-ev-t{font-size:.8rem;font-weight:800;color:var(--primary-dark);width:46px;flex-shrink:0;}
+  .cal-ev-ic{font-size:1.15rem;}
+  .cal-ev-nm{flex:1;font-size:.9rem;font-weight:600;}
+  .cal-ev-who{display:block;font-size:.74rem;color:var(--ink-soft);font-weight:700;}
+  .rep{font-size:.72rem;opacity:.6;}
+  .cal-day-empty{font-size:.84rem;color:#a9b6b4;padding:2px 0 10px;}
+  .cal-add{width:100%;margin-top:3px;background:var(--primary);color:#fff;border:none;border-radius:11px;padding:11px;font-weight:800;font-size:.88rem;cursor:pointer;}
+  .cal-collapse{display:flex;align-items:center;justify-content:space-between;padding:11px 2px 6px;border-top:1px solid #eef3f3;margin-top:8px;cursor:pointer;}
+  .cal-listbox{padding:0 2px;}
   .note .del{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:1rem;padding:4px;}
   .note .eur{background:none;border:none;color:var(--primary);cursor:pointer;font-size:1.05rem;font-weight:800;padding:4px 7px;}
   .pdetail{margin:6px 0 4px 54px;border-left:2px solid var(--line);padding-left:12px;}
@@ -875,12 +914,39 @@
   </div>
   <div class="field"><label>Icona</label><button type="button" id="apptIconaBtn" class="pick-btn" onclick="apriIconPicker('apptIconaBtn')"><span class="pick-em">📅</span><span class="pick-lbl">Tocca per scegliere ▾</span></button></div>
   <div class="field"><label>Per chi (facoltativo)</label><div class="who-pick" id="apptWho"></div></div>
+  <div class="field" id="apptRicField"><label>Si ripete?</label>
+    <div class="seg" id="apptRicSeg">
+      <button type="button" data-ric="no" class="on" onclick="setApptRic('no')">Una volta</button>
+      <button type="button" data-ric="sett" onclick="setApptRic('sett')">Ogni settimana</button>
+      <button type="button" data-ric="mese" onclick="setApptRic('mese')">Ogni mese</button>
+    </div>
+  </div>
+  <div class="rip-dur" id="apptDurField" style="display:none">
+    <label id="apptDurLab" style="display:block;font-size:.82rem;font-weight:700;color:var(--primary-dark);margin-bottom:7px">Per quante volte?</label>
+    <input type="number" id="aDur" inputmode="numeric" value="8" min="2" max="52" onchange="aggiornaAnteprima()" oninput="aggiornaAnteprima()" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:9px;font-size:.95rem">
+    <div class="anteprima" id="apptAnteprima"></div>
+  </div>
   <div class="modal-actions">
     <button class="btn btn-danger" id="aDelete" onclick="eliminaAppuntamento()" style="display:none">Elimina</button>
     <button class="btn btn-cancel" onclick="chiudi('ovAppt')">Annulla</button>
     <button class="btn" onclick="salvaAppuntamento()">Salva</button>
   </div>
 </div></div>
+
+<!-- MODALE ELIMINA SERIE -->
+<div class="overlay" id="ovSerieDel"><div class="modal">
+  <h3>Appuntamento ricorrente</h3>
+  <p style="color:var(--ink-soft);font-size:.92rem;margin:-6px 0 16px">Questo appuntamento fa parte di una serie. Cosa vuoi eliminare?</p>
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <button class="btn" onclick="eliminaSerieScelta('uno')">Solo questo</button>
+    <button class="btn btn-danger" onclick="eliminaSerieScelta('tutti')">Tutta la serie</button>
+    <button class="btn btn-cancel" onclick="chiudi('ovSerieDel')">Annulla</button>
+  </div>
+</div></div>
+
+<!-- MODALE CALENDARIO -->
+<div class="overlay" id="ovCalendario"><div class="cal-modal" id="calBox"></div></div>
+
 
 <!-- MODALE SELETTORE ICONA -->
 <div class="overlay ov-icona" id="ovIcona"><div class="icona-sheet">
@@ -932,7 +998,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 37;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 38;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -1106,6 +1172,7 @@ function render(){
   renderGauge(ent,sp,ris);
   renderNote();renderAppuntamenti();renderScadenze();renderBachecaObiettivi();
   renderGrafico();renderPersone();renderRate();renderGantt();renderListe();renderObiettivi();renderTrend();renderCategorie();renderReport();renderLotteria();popolaQsCat();renderComponenti();
+  if(calOpen)renderCalendario();
   save();
 }
 function popolaQsCat(){const sel=document.getElementById("qsCat");if(!sel)return;const cur=sel.value;sel.innerHTML=state.categorie.map(c=>`<option value="${esc(c.nome)}">${esc(c.nome)}</option>`).join("");if(cur)sel.value=cur;}
@@ -1149,14 +1216,15 @@ function scadutiApp(){const o=oggiISO();return state.appuntamenti.filter(a=>!a.f
 function archiviatiApp(){return state.appuntamenti.filter(a=>a.fatto).sort((x,y)=>appKey(y).localeCompare(appKey(x)));}
 
 let scadutiOpen=false, archiviatiOpen=false;
-function toggleScaduti(){scadutiOpen=!scadutiOpen;renderAppuntamenti();}
-function toggleArchiviati(){archiviatiOpen=!archiviatiOpen;renderAppuntamenti();}
+function toggleScaduti(){scadutiOpen=!scadutiOpen;renderAppuntamenti();if(calOpen)renderCalendario();}
+function toggleArchiviati(){archiviatiOpen=!archiviatiOpen;renderAppuntamenti();if(calOpen)renderCalendario();}
 function renderAppuntamenti(){
   const el=document.getElementById("listaAppuntamenti");if(!el)return;
   const pross=prossimiApp(),scad=scadutiApp(),arch=archiviatiApp();
   let html="";
   html+= pross.length ? pross.slice(0,3).map(rigaAppPannello).join("")
                       : '<div class="empty">Nessun appuntamento in programma. Aggiungine uno col ＋</div>';
+  html+=`<div class="appt-cal" onclick="apriCalendario()">📆 Apri il calendario ›</div>`;
   if(scad.length){
     html+=`<div class="appt-toggle" onclick="toggleScaduti()"><span class="pill-warn">⚠️ ${scad.length} scadut${scad.length===1?'o':'i'} da confermare</span><span class="tg-arrow">${scadutiOpen?'▾':'▸'}</span></div>`;
     if(scadutiOpen)html+='<div class="scaduti-box">'+scad.map(rigaAppScaduto).join("")+'</div>';
@@ -1215,6 +1283,9 @@ function apriAppuntamento(dataPre){
   document.getElementById("aOra").value="";
   setIconaBtn("apptIconaBtn","📅");
   apptPersoneSel=[];popolaApptWho();
+  document.getElementById("apptRicField").style.display="";
+  setApptRic("no");
+  document.getElementById("aDur").value="8";
   document.getElementById("aDelete").style.display="none";
   apri("ovAppt");setTimeout(()=>document.getElementById("aTesto").focus(),100);
 }
@@ -1226,21 +1297,104 @@ function modificaAppuntamento(aid){
   document.getElementById("aOra").value=editAppt.ora||"";
   setIconaBtn("apptIconaBtn",editAppt.icona||"📅");
   apptPersoneSel=personeApp(editAppt).slice();popolaApptWho();
+  document.getElementById("apptRicField").style.display="none";
+  document.getElementById("apptDurField").style.display="none";
   document.getElementById("aDelete").style.display="block";
   apri("ovAppt");
 }
+let apptRic="no";
+function setApptRic(v){apptRic=v;
+  document.querySelectorAll("#apptRicSeg button").forEach(b=>b.classList.toggle("on",b.dataset.ric===v));
+  document.getElementById("apptDurField").style.display=(v==="no")?"none":"";
+  document.getElementById("apptDurLab").textContent=(v==="sett")?"Per quante settimane?":"Per quanti mesi?";
+  aggiornaAnteprima();
+}
+function aggiornaAnteprima(){
+  if(apptRic==="no")return;
+  const n=Math.max(1,Math.min(52,+document.getElementById("aDur").value||1));
+  const data=document.getElementById("aData").value||oggiISO();
+  let fine=data;for(let k=1;k<n;k++)fine=(apptRic==="sett")?isoPiu(fine,7):isoPiuMese(fine,1);
+  const passo=(apptRic==="sett")?"settimana":"mese";
+  document.getElementById("apptAnteprima").innerHTML=`🔁 Crea ${n} appuntament${n===1?'o':'i'} (ogni ${passo}) dal ${fmtGiornoApp(data)} al ${fmtGiornoApp(fine)}`;
+}
+function isoPiuMese(iso,n){const [y,m,d]=iso.split("-").map(Number);const nm=m-1+n,ny=y+Math.floor(nm/12),nmm=((nm%12)+12)%12;const ult=new Date(ny,nmm+1,0,12,0,0).getDate();const dd=Math.min(d,ult);return ny+"-"+String(nmm+1).padStart(2,"0")+"-"+String(dd).padStart(2,"0");}
 function salvaAppuntamento(){
   const testo=document.getElementById("aTesto").value.trim(),data=document.getElementById("aData").value;
   if(!testo){document.getElementById("aTesto").focus();return;}
   if(!data){document.getElementById("aData").focus();return;}
   const ora=document.getElementById("aOra").value,icona=iconaDi("apptIconaBtn")||"📅",pers=apptPersoneSel.slice();
   if(editAppt){editAppt.testo=testo;editAppt.data=data;editAppt.ora=ora;editAppt.icona=icona;delete editAppt.persona;if(pers.length)editAppt.persone=pers;else delete editAppt.persone;}
-  else{const obj={id:id(),testo,data,ora,icona,fatto:false};if(pers.length)obj.persone=pers;state.appuntamenti.push(obj);}
+  else if(apptRic==="no"){const obj={id:id(),testo,data,ora,icona,fatto:false};if(pers.length)obj.persone=pers;state.appuntamenti.push(obj);}
+  else{const n=Math.max(1,Math.min(52,+document.getElementById("aDur").value||1)),serie=id();let cur=data;
+    for(let k=0;k<n;k++){const obj={id:id(),testo,data:cur,ora,icona,fatto:false,serie};if(pers.length)obj.persone=pers.slice();state.appuntamenti.push(obj);cur=(apptRic==="sett")?isoPiu(cur,7):isoPiuMese(cur,1);}}
   chiudi("ovAppt");render();
 }
+let serieDelTarget=null;
 function eliminaAppuntamento(){
   if(!editAppt)return;const a=editAppt;chiudi("ovAppt");
-  chiediConferma('Vuoi eliminare l\'appuntamento "'+a.testo+'"?',()=>{state.appuntamenti=state.appuntamenti.filter(x=>x.id!==a.id);render();});
+  if(a.serie&&state.appuntamenti.filter(x=>x.serie===a.serie).length>1){serieDelTarget=a;apri("ovSerieDel");}
+  else chiediConferma('Vuoi eliminare l\'appuntamento "'+a.testo+'"?',()=>{state.appuntamenti=state.appuntamenti.filter(x=>x.id!==a.id);render();});
+}
+function eliminaSerieScelta(modo){const a=serieDelTarget;chiudi("ovSerieDel");if(!a)return;
+  if(modo==="uno")state.appuntamenti=state.appuntamenti.filter(x=>x.id!==a.id);
+  else state.appuntamenti=state.appuntamenti.filter(x=>x.serie!==a.serie);
+  serieDelTarget=null;render();
+}
+
+/* ===== CALENDARIO (vista mese verticale) ===== */
+const GIORNI_FULL=["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"];
+let calMese=null, calGiornoSel=null, calOpen=false;
+function apriCalendario(){calMese=meseCorrente();calGiornoSel=oggiISO();calOpen=true;renderCalendario();apri("ovCalendario");}
+function chiudiCalendario(){calOpen=false;chiudi("ovCalendario");}
+function calVaiMese(d){calMese=spostaMese(calMese,d);calGiornoSel=null;renderCalendario();}
+function calOggi(){calMese=meseCorrente();calGiornoSel=oggiISO();renderCalendario();}
+function calSelGiorno(iso){calGiornoSel=(calGiornoSel===iso?null:iso);renderCalendario();}
+function settimaneDelMese(meseISO){const [y,m]=meseISO.split("-").map(Number);
+  const primo=new Date(y,m-1,1,12,0,0),ultimo=new Date(y,m,0,12,0,0);
+  const start=new Date(primo);start.setDate(primo.getDate()-((primo.getDay()+6)%7));
+  const end=new Date(ultimo);end.setDate(ultimo.getDate()+(6-((ultimo.getDay()+6)%7)));
+  const settimane=[];let cur=new Date(start);
+  while(cur<=end){const sett=[];for(let i=0;i<7;i++){const iso=cur.getFullYear()+"-"+String(cur.getMonth()+1).padStart(2,"0")+"-"+String(cur.getDate()).padStart(2,"0");sett.push({iso,giorno:cur.getDate(),inMese:cur.getMonth()===m-1});cur.setDate(cur.getDate()+1);}settimane.push(sett);}
+  return settimane;
+}
+function appDelGiorno(iso){return state.appuntamenti.filter(a=>a.data===iso).sort((x,y)=>appKey(x).localeCompare(appKey(y)));}
+function pipsGiorno(iso){const apps=state.appuntamenti.filter(a=>a.data===iso&&!a.fatto);if(!apps.length)return "";
+  const cols=[];apps.forEach(a=>{const ps=personeApp(a);if(ps.length)ps.forEach(pid=>{const p=persona(pid);if(p&&!cols.includes(p.colore))cols.push(p.colore);});else if(!cols.includes("#E0A03A"))cols.push("#E0A03A");});
+  return cols.slice(0,4).map(c=>`<span class="cal-pip" style="background:${c}"></span>`).join("");
+}
+function renderCalendario(){
+  const box=document.getElementById("calBox");if(!box)return;
+  const [y,m]=calMese.split("-").map(Number),oggi=oggiISO();
+  let html=`<div class="cal-top"><h3>${NOMI[m-1].charAt(0).toUpperCase()+NOMI[m-1].slice(1)} ${y}</h3>
+    <div class="cal-nav"><button onclick="calVaiMese(-1)">‹</button><button class="oggi" onclick="calOggi()">Oggi</button><button onclick="calVaiMese(1)">›</button><button onclick="chiudiCalendario()">✕</button></div></div>
+    <div class="cal-body"><div class="cal-dow">${["lun","mar","mer","gio","ven","sab","dom"].map(d=>`<span>${d}</span>`).join("")}</div>`;
+  settimaneDelMese(calMese).forEach(week=>{
+    html+=`<div class="cal-week"><div class="cal-grid">`+week.map(d=>{
+      const cls=[d.inMese?"":"out",d.iso===oggi?"today":"",d.iso===calGiornoSel?"sel":""].filter(Boolean).join(" ");
+      return `<div class="cal-cell ${cls}" onclick="calSelGiorno('${d.iso}')"><div class="cal-n">${d.giorno}</div><div class="cal-pips">${pipsGiorno(d.iso)}</div></div>`;
+    }).join("")+`</div>`;
+    if(week.some(d=>d.iso===calGiornoSel))html+=renderGiornoTendina(calGiornoSel);
+    html+=`</div>`;
+  });
+  const scad=scadutiApp(),arch=archiviatiApp();
+  if(scad.length){html+=`<div class="cal-collapse" onclick="toggleScaduti()"><span class="pill-warn">⚠️ ${scad.length} scadut${scad.length===1?'o':'i'} da confermare</span><span class="tg-arrow">${scadutiOpen?'▾':'▸'}</span></div>`;if(scadutiOpen)html+='<div class="cal-listbox">'+scad.map(rigaAppScaduto).join("")+'</div>';}
+  if(arch.length){html+=`<div class="cal-collapse" onclick="toggleArchiviati()"><span class="tg-arch">✅ ${arch.length} archiviat${arch.length===1?'o':'i'}</span><span class="tg-arrow">${archiviatiOpen?'▾':'▸'}</span></div>`;if(archiviatiOpen)html+='<div class="cal-listbox">'+arch.map(rigaAppArchiviato).join("")+'</div>';}
+  html+=`</div>`;
+  box.innerHTML=html;
+}
+function renderGiornoTendina(iso){
+  const apps=appDelGiorno(iso),[y,m,d]=iso.split("-").map(Number),dt=new Date(y,m-1,d,12,0,0);
+  const tit=GIORNI_FULL[dt.getDay()].charAt(0).toUpperCase()+GIORNI_FULL[dt.getDay()].slice(1)+" "+d+" "+NOMI[m-1]+(iso===oggiISO()?" · oggi":"");
+  let h=`<div class="cal-day-open"><div class="cal-doh">${tit}</div>`;
+  if(apps.length){h+=apps.map(a=>{const w=whoAppText(a).replace(' · ','');
+    return `<div class="cal-ev ${a.fatto?'fatto':''}" onclick="modificaAppuntamento('${a.id}')">
+      <div class="cal-ev-t">${a.ora||'—'}</div><div class="cal-ev-ic">${esc(a.icona||'📅')}</div>
+      <div class="cal-ev-nm">${esc(a.testo)}${a.serie?' <span class="rep">🔁</span>':''}${w?`<span class="cal-ev-who">${w}</span>`:''}</div>
+      ${a.fatto?`<button class="ap-chk done" onclick="event.stopPropagation();riapriApp('${a.id}')">✓</button>`:`<button class="ap-chk" onclick="event.stopPropagation();confermaAppFatto('${a.id}')"></button>`}
+    </div>`;}).join("");
+  }else h+=`<div class="cal-day-empty">Nessun appuntamento</div>`;
+  h+=`<button class="cal-add" onclick="apriAppuntamento('${iso}')">＋ nuovo appuntamento</button></div>`;
+  return h;
 }
 
 function renderScadenze(){
