@@ -859,7 +859,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 31;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 32;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -1534,7 +1534,7 @@ function renderTalpa(){
 
 /* ===== QUIZ LAMPO MATEMATICA ===== */
 let quizState=null;
-const QUIZ_SEC=60;
+const QUIZ_SEC=45;
 function quizLivello(pid,sfida){
   if(sfida)return 'sfida';
   return pid==='leo'?'facile':'completo';
