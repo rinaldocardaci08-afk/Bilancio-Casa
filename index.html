@@ -345,6 +345,24 @@
   .add-cat{flex:1;min-width:0;border:none;border-radius:10px;padding:11px;font-size:.9rem;color:#46565b;background:#fff;font-family:inherit;}
   .add-desc{width:100%;border:none;border-radius:10px;padding:11px;font-size:.9rem;font-family:inherit;margin-bottom:9px;}
   .add-btn{width:100%;background:#fff;color:var(--primary);border:none;border-radius:10px;padding:12px;font-weight:800;font-size:.95rem;cursor:pointer;font-family:inherit;}
+  .av,.mini,.cel-av,.pp-av,.get-av,.comp-av,.pod-ava,.camp-ava,.camp-mini,.rec-av{display:grid;place-items:center;}
+  .av{font-size:1.5rem;} .mini{font-size:1rem;} .cel-av{font-size:3.2rem;} .pp-av.first{font-size:1.9rem;} .pp-av.second{font-size:1.5rem;}
+  .get-av{font-size:1.2rem;} .pod-ava.win{font-size:2.1rem;} .pod-ava.sec{font-size:1.5rem;} .camp-ava{font-size:1.8rem;} .camp-mini{font-size:1rem;} .rec-av{font-size:1rem;}
+  .comp{display:flex;align-items:center;gap:11px;padding:10px 0;border-top:1px solid var(--line);cursor:pointer;}
+  .comp:first-child{border-top:none;}
+  .comp-av{width:42px;height:42px;border-radius:50%;background-size:cover;background-position:center;font-size:1.5rem;flex:none;color:#fff;}
+  .comp-info{flex:1;min-width:0;} .comp-nome{font-weight:700;font-size:.95rem;}
+  .comp-eroe{font-size:.7rem;background:#FBE7BF;color:#8a5a12;border-radius:6px;padding:2px 7px;font-weight:700;}
+  .comp-edit{color:#bcccc8;font-size:1.1rem;}
+  .emojis{display:flex;gap:7px;flex-wrap:wrap;}
+  .em{width:42px;height:42px;border-radius:11px;background:#f1f6f6;display:grid;place-items:center;font-size:1.5rem;cursor:pointer;border:2px solid transparent;}
+  .em.on{border-color:var(--primary);background:var(--green-tint);}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;background:#FBF3E2;border-radius:12px;padding:12px 14px;cursor:pointer;}
+  .toggle-row .t-txt{font-weight:700;font-size:.9rem;color:#8a5a12;}
+  .toggle-row .t-sub{font-size:.72rem;color:#a07d3c;font-weight:400;}
+  .switch{width:48px;height:28px;background:#cfd8d8;border-radius:20px;position:relative;flex:none;transition:background .2s;}
+  .switch::after{content:"";position:absolute;width:22px;height:22px;background:#fff;border-radius:50%;top:3px;left:3px;transition:left .2s;}
+  .switch.on{background:var(--amber);} .switch.on::after{left:23px;}
   .sud-box.dark{background:#d0e4e4;} .sud-box.light{background:#eef5f5;}
   .sc{aspect-ratio:1;border:none;background:#fff;font-size:2rem;font-weight:800;color:var(--primary-dark);cursor:pointer;display:grid;place-items:center;border-radius:7px;font-family:inherit;}
   .sc.fix{background:var(--green-tint);color:var(--primary);} .sc:disabled{cursor:default;}
@@ -629,6 +647,11 @@
 
     <div class="sectitle">Impostazioni</div>
     <div class="card">
+      <div class="card-head"><h2><span class="ic">👨‍👩‍👧‍👦</span> Componenti della famiglia</h2>
+        <button class="btn btn-ghost btn-sm" onclick="apriComponente()">+ Aggiungi</button></div>
+      <div id="listaComponenti"></div>
+    </div>
+    <div class="card">
       <div class="card-head"><h2><span class="ic">🏷️</span> Le tue categorie</h2>
         <button class="btn btn-ghost btn-sm" onclick="apriCategoria()">+ Aggiungi</button></div>
       <div class="cats" id="listaCat"></div>
@@ -685,6 +708,24 @@
     <button class="btn btn-danger" id="rDelete" onclick="eliminaRata()" style="display:none">Elimina</button>
     <button class="btn btn-cancel" onclick="chiudi('ovRata')">Annulla</button>
     <button class="btn btn-primary" onclick="salvaRata()">Salva</button>
+  </div>
+</div></div>
+
+<!-- MODALE COMPONENTE FAMIGLIA -->
+<div class="overlay" id="ovComp"><div class="modal">
+  <h3 id="compTitle">Nuovo componente</h3>
+  <div class="field"><label>Nome</label><input type="text" id="cpNome" placeholder="Es. Nonna"></div>
+  <div class="field"><label>Avatar</label><div class="emojis" id="cpEmojis"></div></div>
+  <div class="field"><label>Colore</label><div class="swatches" id="cpSwatches"></div></div>
+  <div class="field"><label>Genere</label>
+    <div class="seg"><button type="button" id="cpGenM" class="on" onclick="setCompGenere('M')">Maschile</button><button type="button" id="cpGenF" onclick="setCompGenere('F')">Femminile</button></div>
+  </div>
+  <div class="field">
+    <div class="toggle-row" onclick="toggleCompEroe()"><div><div class="t-txt">Partecipa alla Lotteria 🏆</div><div class="t-sub">Monete, giochi e classifiche</div></div><div class="switch" id="cpSwitch"></div></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn-cancel" onclick="chiudi('ovComp')">Annulla</button>
+    <button class="btn btn-primary" onclick="salvaComponente()">Salva</button>
   </div>
 </div></div>
 
@@ -806,7 +847,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 28;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 29;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -917,7 +958,7 @@ const GENERE_NOTO={papa:"M",mamma:"F",leo:"M",giulia:"F"};
 function genereDi(pid){const p=persona(pid);if(p&&p.genere)return p.genere;return GENERE_NOTO[pid]||null;}
 function complimento(pid){return genereDi(pid)==="F"?"Brava":"Bravo";}
 function coriandoliHTML(){const cols=["#FFD76A","#1FB6A6","#FF8C7C","#5BB8E8","#9B8CFF","#7BD88F"];let h="";for(let i=0;i<24;i++){h+=`<span class="conf" style="left:${(Math.random()*100).toFixed(1)}%;background:${cols[i%cols.length]};animation-duration:${(1.8+Math.random()*1.6).toFixed(2)}s;animation-delay:${(Math.random()).toFixed(2)}s;"></span>`;}return h;}
-function celebraVittoria(pid,sottotesto){const p=persona(pid);return `<div class="celebra"><div class="conf-layer">${coriandoliHTML()}</div><div class="cel-av-wrap"><div class="cel-av" style="${avBg(p)}"></div><div class="cel-badge">🏅</div></div><div class="cel-msg">${complimento(pid)} ${esc(p?p.nome:'')}!</div><div class="cel-sub">${sottotesto}</div><button class="btn pod-ok" style="margin-top:16px" onclick="tornaGiochi()">Evviva! 🎉</button></div>`;}
+function celebraVittoria(pid,sottotesto){const p=persona(pid);return `<div class="celebra"><div class="conf-layer">${coriandoliHTML()}</div><div class="cel-av-wrap"><div class="cel-av" style="${avBg(p)}">${avEmoji(p)}</div><div class="cel-badge">🏅</div></div><div class="cel-msg">${complimento(pid)} ${esc(p?p.nome:'')}!</div><div class="cel-sub">${sottotesto}</div><button class="btn pod-ok" style="margin-top:16px" onclick="tornaGiochi()">Evviva! 🎉</button></div>`;}
 function speseDi(m){return state.spese.filter(s=>s.tipo==="fissa"||s.mese===m);}
 function totEntrate(){return state.entrate.reduce((a,e)=>a+(+e.importo||0),0);}
 // rate
@@ -970,7 +1011,7 @@ function render(){
   document.getElementById("hRis").textContent=euro(ris);
   renderGauge(ent,sp,ris);
   renderNote();renderScadenze();renderBachecaObiettivi();
-  renderGrafico();renderPersone();renderRate();renderGantt();renderListe();renderObiettivi();renderTrend();renderCategorie();renderReport();renderLotteria();popolaQsCat();
+  renderGrafico();renderPersone();renderRate();renderGantt();renderListe();renderObiettivi();renderTrend();renderCategorie();renderReport();renderLotteria();popolaQsCat();renderComponenti();
   save();
 }
 function popolaQsCat(){const sel=document.getElementById("qsCat");if(!sel)return;const cur=sel.value;sel.innerHTML=state.categorie.map(c=>`<option value="${esc(c.nome)}">${esc(c.nome)}</option>`).join("");if(cur)sel.value=cur;}
@@ -1235,6 +1276,7 @@ function renderRepProiezione(){
     <div class="prow big"><span>A questo ritmo, da qui a dicembre</span><b class="num">${euro(proiezione)}</b></div>`;
 }
 function avBg(p){return p&&p.avatar?`background-image:url('${p.avatar}');background-color:${p.colore};`:`background-color:${p?p.colore:'#9AA8A2'};`;}
+function avEmoji(p){return (p&&p.emoji&&!(p.avatar&&String(p.avatar).endsWith('.png')))?p.emoji:'';}
 function setLotPeriodo(p){lotPeriodo=p;renderLotteria();}
 function dataNelPeriodoLot(data){return lotPeriodo==="mese"?(data||"").startsWith(meseSel):(data||"").startsWith(meseSel.split("-")[0]+"-");}
 function moneteEroe(pid){return state.lotteria.movimenti.filter(m=>m.persona===pid&&dataNelPeriodoLot(m.data)).reduce((a,m)=>a+(+m.monete||0),0);}
@@ -1242,7 +1284,7 @@ function classificaLot(){return state.lotteria.eroi.map(pid=>({pid,p:persona(pid
 function moneteEroeMese(pid,mese){return state.lotteria.movimenti.filter(m=>m.persona===pid&&(m.data||"").startsWith(mese)).reduce((a,m)=>a+(+m.monete||0),0);}
 function classificaMeseLot(mese){return state.lotteria.eroi.map(pid=>({pid,p:persona(pid),monete:moneteEroeMese(pid,mese)})).sort((a,b)=>b.monete-a.monete);}
 function vincitoriMese(mese){const c=classificaMeseLot(mese),max=c.length?c[0].monete:0;if(max<=0)return [];return c.filter(x=>x.monete===max).map(x=>x.pid);}
-function postaPodio(x,pos){const win=pos===1;return `<div class="pod-post">${win?'<div class="pod-crown">👑</div>':''}<div class="pod-ava ${win?'win':'sec'}" style="${avBg(x.p)}"></div><div class="pod-nome">${esc(x.p?x.p.nome:'?')}</div><div class="pod-mon num">${x.monete} 🪙</div><div class="pod-base b${pos}">${pos}°</div></div>`;}
+function postaPodio(x,pos){const win=pos===1;return `<div class="pod-post">${win?'<div class="pod-crown">👑</div>':''}<div class="pod-ava ${win?'win':'sec'}" style="${avBg(x.p)}">${avEmoji(x.p)}</div><div class="pod-nome">${esc(x.p?x.p.nome:'?')}</div><div class="pod-mon num">${x.monete} 🪙</div><div class="pod-base b${pos}">${pos}°</div></div>`;}
 function apriPremiazione(){
   const mese=spostaMese(meseCorrente(),-1),c=classificaMeseLot(mese),max=c.length?c[0].monete:0,box=document.getElementById("podioBox");
   if(max<=0){box.className="modal";box.innerHTML=`<h3>Premiazione di ${meseLabel(mese)}</h3><p style="color:var(--ink-soft);font-size:.92rem;margin:-8px 0 12px;">In questo mese non sono state assegnate monete, quindi non c'è ancora un campione. Assegnane qualcuna e riprova! 🪙</p><div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovPodio')" style="width:100%">Chiudi</button></div>`;apri("ovPodio");return;}
@@ -1264,9 +1306,9 @@ function apriCampione(){
   const maxN=righe.length?righe[0].n:0,campioni=righe.filter(r=>r.n===maxN&&maxN>0);
   let head;
   if(maxN<=0)head=`<div class="camp-txt"><h3>Campione ${anno}</h3><p>Ancora nessun mese assegnato</p></div>`;
-  else{const nomi=campioni.map(r=>esc(r.p?r.p.nome:'?')).join(' e ');const av=campioni.length===1?`<div class="camp-ava" style="${avBg(campioni[0].p)}"></div>`:'<div class="camp-ava camp-ava-multi">👑</div>';head=`${av}<div class="camp-txt"><h3>👑 ${nomi}, campion${campioni.length>1?'i':'e'} ${anno}</h3><p>${maxN} ${maxN===1?'mese vinto':'mesi vinti'}${mesi.length?' su '+mesi.length:''}</p></div>`;}
+  else{const nomi=campioni.map(r=>esc(r.p?r.p.nome:'?')).join(' e ');const av=campioni.length===1?`<div class="camp-ava" style="${avBg(campioni[0].p)}">${avEmoji(campioni[0].p)}</div>`:'<div class="camp-ava camp-ava-multi">👑</div>';head=`${av}<div class="camp-txt"><h3>👑 ${nomi}, campion${campioni.length>1?'i':'e'} ${anno}</h3><p>${maxN} ${maxN===1?'mese vinto':'mesi vinti'}${mesi.length?' su '+mesi.length:''}</p></div>`;}
   const maxBar=Math.max(1,maxN);
-  const barre=righe.map(r=>`<div class="camp-row"><div class="camp-mini" style="${avBg(r.p)}"></div><span class="camp-nome">${esc(r.p?r.p.nome:'?')}</span><div class="camp-track"><div class="camp-fill" style="width:${r.n/maxBar*100}%"></div></div><span class="camp-mesi">${r.n} ${r.n===1?'mese':'mesi'}</span></div>`).join("");
+  const barre=righe.map(r=>`<div class="camp-row"><div class="camp-mini" style="${avBg(r.p)}">${avEmoji(r.p)}</div><span class="camp-nome">${esc(r.p?r.p.nome:'?')}</span><div class="camp-track"><div class="camp-fill" style="width:${r.n/maxBar*100}%"></div></div><span class="camp-mesi">${r.n} ${r.n===1?'mese':'mesi'}</span></div>`).join("");
   const badge=mesi.length?('<div class="camp-badge">'+mesi.map(x=>`<span class="cb">${meseAbbr(x.mese)} → ${x.v.map(pid=>{const p=persona(pid);return esc(p?p.nome:'?');}).join(', ')}</span>`).join("")+'</div>'):'<p style="text-align:center;color:var(--ink-soft);font-size:.84rem;margin-top:10px;">Nessun mese ancora concluso con un vincitore.</p>';
   box.innerHTML=`<div class="camp-head">${head}</div>${barre}${badge}<div class="modal-actions" style="margin-top:16px;"><button class="btn btn-cancel" onclick="chiudi('ovCampione')" style="width:100%">Chiudi</button></div>`;
   apri("ovCampione");
@@ -1288,7 +1330,7 @@ function setGiocoEroe(pid){giocoEroe=pid;memState=null;renderGiochiMenu();}
 function renderGiochiMenu(){
   const box=document.getElementById("giochiBox");
   box.className="modal modal-giochi full";
-  const tabs=state.lotteria.eroi.map(pid=>{const p=persona(pid),t=turniDisponibili(pid);return `<button class="get ${pid===giocoEroe?'on':''}" onclick="setGiocoEroe('${pid}')"><span class="get-av" style="${avBg(p)}"></span><span class="get-info"><span class="get-nome">${esc(p?p.nome:'?')}</span><span class="get-turni">${t} turni</span></span></button>`;}).join("");
+  const tabs=state.lotteria.eroi.map(pid=>{const p=persona(pid),t=turniDisponibili(pid);return `<button class="get ${pid===giocoEroe?'on':''}" onclick="setGiocoEroe('${pid}')"><span class="get-av" style="${avBg(p)}">${avEmoji(p)}</span><span class="get-info"><span class="get-nome">${esc(p?p.nome:'?')}</span><span class="get-turni">${t} turni</span></span></button>`;}).join("");
   const disp=turniDisponibili(giocoEroe),molt=moltiplicatoreProssimo(giocoEroe),monMese=moneteEroeMese(giocoEroe,meseCorrente()),haTurni=disp>0;
   const gioco=(ic,cls,nome,desc,fn,attivo)=>`<div class="gioco ${attivo?'':'soon'}"><div class="g-ic ${cls}">${ic}</div><div class="g-txt"><div class="g-nome">${nome}</div><div class="g-desc">${desc}</div></div>${attivo?(haTurni?`<button class="g-play" onclick="${fn}">Gioca</button>`:`<span class="g-lock">Servono turni</span>`):'<span class="g-lock">Presto</span>'}</div>`;
   box.innerHTML=`<div class="gk-head"><div class="gk-tit">🎮 Giochi premio</div><button class="gk-close" onclick="chiudi('ovGiochi')">✕</button></div>
@@ -1323,13 +1365,13 @@ function renderClassifica(){
   const box=document.getElementById("giochiBox");
   box.className="modal modal-giochi full";
   const eroi=state.lotteria.eroi,giochi=Object.keys(GIOCHI_META);
-  const recCard=eroi.map(pid=>{const p=persona(pid);const righe=giochi.map(g=>`<div class="rec-line"><span class="i">${GIOCHI_META[g].ic}</span>${GIOCHI_META[g].nome}<span class="vv">${fmtRecord(g,recordDi(pid,g))}</span></div>`).join("");return `<div class="rec-card"><div class="rec-head"><span class="rec-av" style="${avBg(p)}"></span><span class="rec-nome">${esc(p?p.nome:'?')}</span></div>${righe}</div>`;}).join("");
+  const recCard=eroi.map(pid=>{const p=persona(pid);const righe=giochi.map(g=>`<div class="rec-line"><span class="i">${GIOCHI_META[g].ic}</span>${GIOCHI_META[g].nome}<span class="vv">${fmtRecord(g,recordDi(pid,g))}</span></div>`).join("");return `<div class="rec-card"><div class="rec-head"><span class="rec-av" style="${avBg(p)}">${avEmoji(p)}</span><span class="rec-nome">${esc(p?p.nome:'?')}</span></div>${righe}</div>`;}).join("");
   const cards=giochi.map(g=>{
     const meglio=GIOCHI_META[g].bassoMeglio;
     const cl=eroi.map(pid=>({pid,p:persona(pid),v:recordDi(pid,g)})).sort((a,b)=>{if(a.v==null&&b.v==null)return 0;if(a.v==null)return 1;if(b.v==null)return -1;return meglio?a.v-b.v:b.v-a.v;});
     const primo=cl[0],secondo=cl[1];
     const hasPrimo=primo&&primo.v!=null,hasSecondo=secondo&&secondo.v!=null;
-    const posto=(x,pos)=>x?`<div class="pp">${pos===1&&hasPrimo?'<div class="pp-crown">👑</div>':''}<div class="pp-av ${pos===1?'first':'second'}" style="${avBg(x.p)}"></div><div class="pp-nome">${esc(x.p?x.p.nome:'?')}</div><div class="pp-val">${fmtRecord(g,x.v)}</div><div class="pp-base b${pos}">${pos}°</div></div>`:'';
+    const posto=(x,pos)=>x?`<div class="pp">${pos===1&&hasPrimo?'<div class="pp-crown">👑</div>':''}<div class="pp-av ${pos===1?'first':'second'}" style="${avBg(x.p)}">${avEmoji(x.p)}</div><div class="pp-nome">${esc(x.p?x.p.nome:'?')}</div><div class="pp-val">${fmtRecord(g,x.v)}</div><div class="pp-base b${pos}">${pos}°</div></div>`:'';
     const podio=hasPrimo?`<div class="podio">${hasSecondo?posto(secondo,2):''}${posto(primo,1)}</div>`:'<div class="cl-vuoto">Nessun record ancora.<br>Giocate per comparire qui! 🎮</div>';
     return `<div class="game-card"><div class="gc-tit">${GIOCHI_META[g].ic} ${GIOCHI_META[g].nome}</div>${podio}</div>`;
   }).join("");
@@ -1475,18 +1517,18 @@ function renderLotteria(){
   document.getElementById("lotPodio").innerHTML='<div class="podio">'+cl.slice(0,2).map((d,i)=>{
     const lead=d.monete>0&&d.monete===maxMon;
     return `<div class="hcard ${lead?'lead':''}">${lead?'<span class="crown">👑</span>':'<span class="rk">'+(i+1)+'°</span>'}
-      <div class="av" style="${avBg(d.p)}"></div><div class="nm">${esc(d.p?d.p.nome:'?')}</div>
+      <div class="av" style="${avBg(d.p)}">${avEmoji(d.p)}</div><div class="nm">${esc(d.p?d.p.nome:'?')}</div>
       <div class="co num">${d.monete} <small>monete</small></div></div>`;}).join("")+'</div>';
   const maxS=maxScalaLot(),premi=L.premi.slice().sort((a,b)=>(a.soglia||0)-(b.soglia||0));
   document.getElementById("lotBarre").innerHTML=cl.map(d=>{
     const w=Math.min(100,d.monete/maxS*100);
     const ms=premi.map(pr=>{const left=Math.min(100,(pr.soglia||0)/maxS*100),reached=d.monete>=(pr.soglia||0);
-      return `<div class="ms ${reached?'reached':''}" style="left:${left}%"><div class="ic">${esc(pr.icona||'🎁')}</div><div class="cap">${esc(pr.nome)}</div></div>`;}).join("");
+      return `<div class="ms ${reached?'reached':''}" style="left:${left}%"><div class="ic">${esc(pr.icona||'🎁')}</div><div class="cap">${pr.soglia}🪙</div></div>`;}).join("");
     const exp=lotExpand===d.pid;
     let det="";
     if(exp){const mov=dettaglioEroe(d.pid);
       det='<div class="lotdet">'+(mov.length?mov.map(m=>`<div class="ldrow"><span class="ldi">${esc(iconaCompito(m.compito))}</span><span class="ldn">${esc(m.compito)}</span><span class="ldd">${formatData(m.data)}</span><span class="ldv num">+${m.monete} 🪙</span><button class="ldx" onclick="event.stopPropagation();chiediEliminaMov('${m.id}')">🗑</button></div>`).join(""):'<div class="empty" style="padding:8px 0">Nessuna moneta in questo periodo.</div>')+'</div>';}
-    return `<div><div class="lotbar" onclick="toggleLotBar('${d.pid}')"><div class="lotbar-head"><div class="mini" style="${avBg(d.p)}"></div><span class="nm">${esc(d.p?d.p.nome:'?')} <span style="color:var(--ink-soft);font-weight:400">${exp?'▾':'▸'}</span></span><span class="co num">${d.monete} 🪙</span></div>
+    return `<div><div class="lotbar" onclick="toggleLotBar('${d.pid}')"><div class="lotbar-head"><div class="mini" style="${avBg(d.p)}">${avEmoji(d.p)}</div><span class="nm">${esc(d.p?d.p.nome:'?')} <span style="color:var(--ink-soft);font-weight:400">${exp?'▾':'▸'}</span></span><span class="co num">${d.monete} 🪙</span></div>
       <div class="lottrack"><div class="lotfill" style="width:${w}%"></div>${ms}</div></div>${det}</div>`;}).join("");
   document.getElementById("lotPremi").innerHTML=premi.length?'<div class="lot-premi"><div class="lt">🎁 Premi-traguardo</div>'+premi.map(pr=>`<div class="pz"><span class="pi">${esc(pr.icona||'🎁')}</span><span class="pn">${esc(pr.nome)}</span><span class="pv num">${pr.soglia} 🪙</span></div>`).join("")+'</div>':"";
 }
@@ -1565,6 +1607,41 @@ function renderGantt(){
   }).join("");
 }
 function renderCategorie(){document.getElementById("listaCat").innerHTML=state.categorie.map(c=>`<div class="chip" onclick="modificaCategoria('${esc(c.nome)}')"><span class="dot" style="background:${c.colore}"></span>${esc(c.nome)}</div>`).join("");}
+const COMP_EMOJI=["👦","👧","🧒","👨","👩","👴","👵","🧑","👶","🐶"];
+let editComp=null, compEmojiSel="🧒", compColorSel="#5B8DEF", compGenere="M", compEroe=false;
+function renderComponenti(){
+  const el=document.getElementById("listaComponenti");if(!el)return;
+  el.innerHTML=state.persone.map(p=>{
+    const eroe=state.lotteria&&state.lotteria.eroi&&state.lotteria.eroi.includes(p.id);
+    return `<div class="comp" onclick="modificaComponente('${p.id}')"><div class="comp-av" style="${avBg(p)};background-color:${p.colore||'#999'}">${(p.avatar&&p.avatar.endsWith('.png'))?'':esc(p.emoji||'🧑')}</div><div class="comp-info"><div class="comp-nome">${esc(p.nome)}</div></div>${eroe?'<span class="comp-eroe">🏆 Eroe</span>':''}<span class="comp-edit">›</span></div>`;
+  }).join("");
+}
+function popolaCompEmoji(){document.getElementById("cpEmojis").innerHTML=COMP_EMOJI.map(e=>`<span class="em ${e===compEmojiSel?'on':''}" onclick="setCompEmoji('${e}')">${e}</span>`).join("");}
+function popolaCompSwatch(){document.getElementById("cpSwatches").innerHTML=PALETTE.map(c=>`<span class="sw ${c===compColorSel?'on':''}" style="background:${c}" onclick="setCompColor('${c}')"></span>`).join("");}
+function setCompEmoji(e){compEmojiSel=e;popolaCompEmoji();}
+function setCompColor(c){compColorSel=c;popolaCompSwatch();}
+function setCompGenere(g){compGenere=g;document.getElementById("cpGenM").classList.toggle("on",g==="M");document.getElementById("cpGenF").classList.toggle("on",g==="F");}
+function toggleCompEroe(){compEroe=!compEroe;document.getElementById("cpSwitch").classList.toggle("on",compEroe);}
+function apriComponente(){editComp=null;document.getElementById("compTitle").textContent="Nuovo componente";
+  document.getElementById("cpNome").value="";compEmojiSel="🧒";compColorSel=PALETTE[0];compEroe=false;
+  popolaCompEmoji();popolaCompSwatch();setCompGenere("M");document.getElementById("cpSwitch").classList.remove("on");
+  apri("ovComp");setTimeout(()=>document.getElementById("cpNome").focus(),100);}
+function modificaComponente(pid){editComp=persona(pid);if(!editComp)return;
+  document.getElementById("compTitle").textContent="Modifica componente";
+  document.getElementById("cpNome").value=editComp.nome;
+  compEmojiSel=editComp.emoji||"🧒";compColorSel=editComp.colore||PALETTE[0];
+  compEroe=!!(state.lotteria&&state.lotteria.eroi&&state.lotteria.eroi.includes(pid));
+  popolaCompEmoji();popolaCompSwatch();setCompGenere(editComp.genere||"M");
+  document.getElementById("cpSwitch").classList.toggle("on",compEroe);
+  apri("ovComp");}
+function salvaComponente(){const nome=document.getElementById("cpNome").value.trim();if(!nome){document.getElementById("cpNome").focus();return;}
+  if(editComp){editComp.nome=nome;editComp.emoji=compEmojiSel;editComp.colore=compColorSel;editComp.genere=compGenere;}
+  else{const pid="p"+id();state.persone.push({id:pid,nome,emoji:compEmojiSel,colore:compColorSel,genere:compGenere});editComp=persona(pid);}
+  const pid=editComp.id;
+  const eroi=state.lotteria.eroi;const giaEroe=eroi.includes(pid);
+  if(compEroe&&!giaEroe)eroi.push(pid);
+  else if(!compEroe&&giaEroe)state.lotteria.eroi=eroi.filter(x=>x!==pid);
+  chiudi("ovComp");render();}
 
 function popolaCat(){document.getElementById("mCat").innerHTML=state.categorie.map(c=>`<option value="${esc(c.nome)}">${esc(c.nome)}</option>`).join("");}
 function popolaPers(){document.getElementById("mPers").innerHTML='<option value="">Spesa di casa</option>'+state.persone.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join("");}
