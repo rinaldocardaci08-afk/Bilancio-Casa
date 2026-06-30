@@ -87,6 +87,33 @@
   .note.done .check{background:var(--primary);border-color:var(--primary);}
   .note .txt{flex:1;font-size:.95rem;} .note.done .txt{text-decoration:line-through;color:var(--ink-soft);}
   .note .note-ic{width:30px;height:30px;border-radius:8px;background:var(--green-tint);display:grid;place-items:center;font-size:1.05rem;flex:none;}
+  /* appuntamenti */
+  .mini-add{border:none;background:var(--primary);color:#fff;border-radius:9px;width:32px;height:32px;font-size:1.2rem;cursor:pointer;flex:none;}
+  .ap{display:flex;align-items:center;gap:11px;padding:9px 2px;border-bottom:1px solid var(--line);cursor:pointer;}
+  .ap:last-child{border-bottom:none;}
+  .ap-ic{width:38px;height:38px;border-radius:10px;background:var(--green-tint);display:grid;place-items:center;font-size:1.2rem;flex:none;}
+  .ap-ic.sc{background:#fbeee9;}
+  .ap-mid{flex:1;min-width:0;}
+  .ap-d1{font-size:.93rem;font-weight:700;}
+  .ap-d2{font-size:.78rem;color:var(--ink-soft);margin-top:1px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+  .ap-d2.sc{color:#b07a5e;}
+  .ap.arch .ap-d1{color:var(--ink-soft);text-decoration:line-through;}
+  .ap-badge{font-size:.66rem;font-weight:800;padding:2px 7px;border-radius:20px;background:var(--amber-soft,#FBE7BF);color:#9a6b16;}
+  .ap-badge.today{background:#D7EFE9;color:#0c6b59;}
+  .ap-who{display:inline-flex;align-items:center;gap:4px;font-weight:700;}
+  .ap-dot{width:8px;height:8px;border-radius:50%;}
+  .ap-chk{width:26px;height:26px;border-radius:8px;border:2px solid #cfdcdc;background:#fff;flex:none;cursor:pointer;display:grid;place-items:center;color:#fff;font-size:.85rem;font-weight:800;}
+  .ap-chk.sc{border-color:#e3b59c;}
+  .ap-chk.done{background:var(--primary);border-color:var(--primary);}
+  .appt-toggle{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding:8px 2px 0;border-top:1px dashed #dfeae9;cursor:pointer;}
+  .pill-warn{font-size:.73rem;font-weight:800;color:#fff;background:var(--coral,#D9644A);padding:3px 10px;border-radius:20px;}
+  .tg-arch{font-size:.78rem;font-weight:700;color:var(--ink-soft);}
+  .tg-arrow{color:var(--ink-soft);font-size:.8rem;}
+  .scaduti-box{margin-top:4px;}
+  .who-pick{display:flex;gap:7px;flex-wrap:wrap;}
+  .wp{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:20px;padding:6px 12px;font-size:.85rem;font-weight:700;color:#46565b;cursor:pointer;}
+  .wp-dot{width:11px;height:11px;border-radius:50%;}
+  .wp.on{border-color:var(--primary);background:var(--green-tint);color:var(--primary-dark);}
   .note .del{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:1rem;padding:4px;}
   .note .eur{background:none;border:none;color:var(--primary);cursor:pointer;font-size:1.05rem;font-weight:800;padding:4px 7px;}
   .pdetail{margin:6px 0 4px 54px;border-left:2px solid var(--line);padding-left:12px;}
@@ -535,6 +562,10 @@
       <div id="listaNote"></div>
     </div>
     <div class="card">
+      <div class="card-head" style="justify-content:space-between"><h2><span class="ic">⏰</span> Prossimi appuntamenti</h2><button class="mini-add" onclick="apriAppuntamento()">＋</button></div>
+      <div id="listaAppuntamenti"></div>
+    </div>
+    <div class="card">
       <div class="card-head"><h2><span class="ic">📅</span> Da pagare questo mese</h2></div>
       <div id="listaScadenze"></div>
     </div>
@@ -834,6 +865,23 @@
   <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovGestione')">Chiudi</button></div>
 </div></div>
 
+<!-- MODALE APPUNTAMENTO -->
+<div class="overlay" id="ovAppt"><div class="modal">
+  <h3 id="apptTitle">Nuovo appuntamento</h3>
+  <div class="field"><label>Descrizione</label><input type="text" id="aTesto" placeholder="Es. Dentista"></div>
+  <div style="display:flex;gap:10px">
+    <div class="field" style="flex:1"><label>Data</label><input type="date" id="aData"></div>
+    <div class="field" style="flex:1"><label>Ora (facolt.)</label><input type="time" id="aOra"></div>
+  </div>
+  <div class="field"><label>Icona</label><button type="button" id="apptIconaBtn" class="pick-btn" onclick="apriIconPicker('apptIconaBtn')"><span class="pick-em">📅</span><span class="pick-lbl">Tocca per scegliere ▾</span></button></div>
+  <div class="field"><label>Per chi (facoltativo)</label><div class="who-pick" id="apptWho"></div></div>
+  <div class="modal-actions">
+    <button class="btn btn-danger" id="aDelete" onclick="eliminaAppuntamento()" style="display:none">Elimina</button>
+    <button class="btn btn-cancel" onclick="chiudi('ovAppt')">Annulla</button>
+    <button class="btn" onclick="salvaAppuntamento()">Salva</button>
+  </div>
+</div></div>
+
 <!-- MODALE SELETTORE ICONA -->
 <div class="overlay ov-icona" id="ovIcona"><div class="icona-sheet">
   <div class="icona-h"><b>Scegli un'icona</b><button class="icona-x" onclick="chiudi('ovIcona')">✕</button></div>
@@ -884,7 +932,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 34;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 35;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -934,9 +982,14 @@ function datiEsempio(){return{
   rate:[],
   obiettivi:[{id:id(),nome:"Vacanza in famiglia",target:3000,saved:600,mensile:200}],
   note:[{id:id(),testo:"Comprare il latte",fatto:false},{id:id(),testo:"Pagare bolletta luce",fatto:false}],
+  appuntamenti:datiAppuntamentiEsempio(),
   lotteria:datiLotteriaEsempio()
 };}
-function statoVuoto(){return{entrate:[],spese:[],categorie:DEFAULT_CATS.map(c=>({...c})),persone:DEFAULT_PERSONE.map(p=>({...p})),rate:[],obiettivi:[],note:[],lotteria:nuovaLotteria()};}
+function datiAppuntamentiEsempio(){const o=oggiISO();return[
+  {id:id(),testo:"Dentista",data:o,ora:"15:00",icona:"🦷",persona:"giulia",fatto:false},
+  {id:id(),testo:"Calcetto",data:isoPiu(o,1),ora:"16:00",icona:"⚽",persona:"leo",fatto:false}
+];}
+function statoVuoto(){return{entrate:[],spese:[],categorie:DEFAULT_CATS.map(c=>({...c})),persone:DEFAULT_PERSONE.map(p=>({...p})),rate:[],obiettivi:[],note:[],appuntamenti:[],lotteria:nuovaLotteria()};}
 
 function migrate(){
   if(!state.categorie||!state.categorie.length) state.categorie=DEFAULT_CATS.map(c=>({...c}));
@@ -947,6 +1000,7 @@ function migrate(){
   if(!state.obiettivi) state.obiettivi=[];
   state.obiettivi.forEach(o=>{if(!o.versamenti)o.versamenti=[];});
   if(!state.note) state.note=[];
+  if(!state.appuntamenti) state.appuntamenti=[];
   if(!state.lotteria)state.lotteria=nuovaLotteria();
   else{if(!state.lotteria.eroi)state.lotteria.eroi=["leo","giulia"];if(!state.lotteria.compiti)state.lotteria.compiti=[];if(!state.lotteria.premi)state.lotteria.premi=[];if(!state.lotteria.movimenti)state.lotteria.movimenti=[];if(!state.lotteria.turniUsati)state.lotteria.turniUsati={};if(!state.lotteria.record)state.lotteria.record={};}
 }
@@ -1047,7 +1101,7 @@ function render(){
   document.getElementById("hSpese").textContent=euro(sp);
   document.getElementById("hRis").textContent=euro(ris);
   renderGauge(ent,sp,ris);
-  renderNote();renderScadenze();renderBachecaObiettivi();
+  renderNote();renderAppuntamenti();renderScadenze();renderBachecaObiettivi();
   renderGrafico();renderPersone();renderRate();renderGantt();renderListe();renderObiettivi();renderTrend();renderCategorie();renderReport();renderLotteria();popolaQsCat();renderComponenti();
   save();
 }
@@ -1079,6 +1133,107 @@ function promemoriaInSpesa(nid){
   document.getElementById("mNome").value=n.testo.replace(/^(compra(re)?|prendi|paga(re)?)\s+/i,"");
   noteOrigine=nid;
   setTimeout(()=>document.getElementById("mImporto").focus(),120);
+}
+
+/* ===== APPUNTAMENTI ===== */
+const GIORNI_ABBR=["dom","lun","mar","mer","gio","ven","sab"];
+function isoPiu(iso,giorni){const [y,m,d]=iso.split("-").map(Number);const dt=new Date(y,m-1,d,12,0,0);dt.setDate(dt.getDate()+giorni);return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");}
+function fmtGiornoApp(iso){const [y,m,d]=iso.split("-").map(Number);const dt=new Date(y,m-1,d,12,0,0);return GIORNI_ABBR[dt.getDay()]+" "+d+" "+ABBR[m-1];}
+function badgeApp(iso){const o=oggiISO();if(iso===o)return{t:"Oggi",cls:"today"};if(iso===isoPiu(o,1))return{t:"Domani",cls:""};return null;}
+function appKey(a){return a.data+"T"+(a.ora||"99:99");}
+function prossimiApp(){const o=oggiISO();return state.appuntamenti.filter(a=>!a.fatto&&a.data>=o).sort((x,y)=>appKey(x).localeCompare(appKey(y)));}
+function scadutiApp(){const o=oggiISO();return state.appuntamenti.filter(a=>!a.fatto&&a.data<o).sort((x,y)=>appKey(y).localeCompare(appKey(x)));}
+function archiviatiApp(){return state.appuntamenti.filter(a=>a.fatto).sort((x,y)=>appKey(y).localeCompare(appKey(x)));}
+
+let scadutiOpen=false, archiviatiOpen=false;
+function toggleScaduti(){scadutiOpen=!scadutiOpen;renderAppuntamenti();}
+function toggleArchiviati(){archiviatiOpen=!archiviatiOpen;renderAppuntamenti();}
+function renderAppuntamenti(){
+  const el=document.getElementById("listaAppuntamenti");if(!el)return;
+  const pross=prossimiApp(),scad=scadutiApp(),arch=archiviatiApp();
+  let html="";
+  html+= pross.length ? pross.slice(0,3).map(rigaAppPannello).join("")
+                      : '<div class="empty">Nessun appuntamento in programma. Aggiungine uno col ＋</div>';
+  if(scad.length){
+    html+=`<div class="appt-toggle" onclick="toggleScaduti()"><span class="pill-warn">⚠️ ${scad.length} scadut${scad.length===1?'o':'i'} da confermare</span><span class="tg-arrow">${scadutiOpen?'▾':'▸'}</span></div>`;
+    if(scadutiOpen)html+='<div class="scaduti-box">'+scad.map(rigaAppScaduto).join("")+'</div>';
+  }
+  if(arch.length){
+    html+=`<div class="appt-toggle" onclick="toggleArchiviati()"><span class="tg-arch">✅ ${arch.length} archiviat${arch.length===1?'o':'i'}</span><span class="tg-arrow">${archiviatiOpen?'▾':'▸'}</span></div>`;
+    if(archiviatiOpen)html+='<div class="scaduti-box">'+arch.map(rigaAppArchiviato).join("")+'</div>';
+  }
+  el.innerHTML=html;
+}
+function rigaAppPannello(a){
+  const p=a.persona?persona(a.persona):null,b=badgeApp(a.data);
+  return `<div class="ap" onclick="modificaAppuntamento('${a.id}')">
+    <div class="ap-ic">${esc(a.icona||'📅')}</div>
+    <div class="ap-mid"><div class="ap-d1">${esc(a.testo)}${a.ora?' · '+a.ora:''}</div>
+      <div class="ap-d2">${b?`<span class="ap-badge ${b.cls}">${b.t}</span> `:''}${fmtGiornoApp(a.data)}${p?` · <span class="ap-who"><span class="ap-dot" style="background:${p.colore}"></span>${esc(p.nome)}</span>`:''}</div></div>
+    <button class="ap-chk" title="Segna come fatto" onclick="event.stopPropagation();confermaAppFatto('${a.id}')"></button>
+  </div>`;
+}
+function rigaAppScaduto(a){
+  const p=a.persona?persona(a.persona):null;
+  return `<div class="ap scaduto" onclick="modificaAppuntamento('${a.id}')">
+    <div class="ap-ic sc">${esc(a.icona||'📅')}</div>
+    <div class="ap-mid"><div class="ap-d1">${esc(a.testo)}${a.ora?' · '+a.ora:''}</div>
+      <div class="ap-d2 sc">${fmtGiornoApp(a.data)}${p?' · '+esc(p.nome):''}</div></div>
+    <button class="ap-chk sc" title="Segna come fatto" onclick="event.stopPropagation();confermaAppFatto('${a.id}')"></button>
+  </div>`;
+}
+function rigaAppArchiviato(a){
+  const p=a.persona?persona(a.persona):null;
+  return `<div class="ap arch" onclick="modificaAppuntamento('${a.id}')">
+    <div class="ap-ic">${esc(a.icona||'📅')}</div>
+    <div class="ap-mid"><div class="ap-d1">${esc(a.testo)}${a.ora?' · '+a.ora:''}</div>
+      <div class="ap-d2">${fmtGiornoApp(a.data)}${p?' · '+esc(p.nome):''}</div></div>
+    <button class="ap-chk done" title="Riporta da fare" onclick="event.stopPropagation();riapriApp('${a.id}')">✓</button>
+  </div>`;
+}
+function confermaAppFatto(aid){const a=state.appuntamenti.find(x=>x.id===aid);if(!a)return;chiediConferma('Hai fatto questo appuntamento? '+a.testo,()=>{a.fatto=true;render();});}
+function riapriApp(aid){const a=state.appuntamenti.find(x=>x.id===aid);if(a){a.fatto=false;render();}}
+
+let editAppt=null, apptPersonaSel=null;
+function popolaApptWho(){
+  const cont=document.getElementById("apptWho");if(!cont)return;
+  cont.innerHTML=`<span class="wp ${apptPersonaSel===null?'on':''}" onclick="setApptPersona(null)">Tutti</span>`+
+    state.persone.map(p=>`<span class="wp ${apptPersonaSel===p.id?'on':''}" onclick="setApptPersona('${p.id}')"><span class="wp-dot" style="background:${p.colore}"></span>${esc(p.nome)}</span>`).join("");
+}
+function setApptPersona(pid){apptPersonaSel=pid;popolaApptWho();}
+function apriAppuntamento(dataPre){
+  editAppt=null;document.getElementById("apptTitle").textContent="Nuovo appuntamento";
+  document.getElementById("aTesto").value="";
+  document.getElementById("aData").value=(typeof dataPre==="string"&&dataPre)?dataPre:oggiISO();
+  document.getElementById("aOra").value="";
+  setIconaBtn("apptIconaBtn","📅");
+  apptPersonaSel=null;popolaApptWho();
+  document.getElementById("aDelete").style.display="none";
+  apri("ovAppt");setTimeout(()=>document.getElementById("aTesto").focus(),100);
+}
+function modificaAppuntamento(aid){
+  editAppt=state.appuntamenti.find(x=>x.id===aid);if(!editAppt)return;
+  document.getElementById("apptTitle").textContent="Modifica appuntamento";
+  document.getElementById("aTesto").value=editAppt.testo;
+  document.getElementById("aData").value=editAppt.data;
+  document.getElementById("aOra").value=editAppt.ora||"";
+  setIconaBtn("apptIconaBtn",editAppt.icona||"📅");
+  apptPersonaSel=editAppt.persona||null;popolaApptWho();
+  document.getElementById("aDelete").style.display="block";
+  apri("ovAppt");
+}
+function salvaAppuntamento(){
+  const testo=document.getElementById("aTesto").value.trim(),data=document.getElementById("aData").value;
+  if(!testo){document.getElementById("aTesto").focus();return;}
+  if(!data){document.getElementById("aData").focus();return;}
+  const ora=document.getElementById("aOra").value,icona=iconaDi("apptIconaBtn")||"📅",pers=apptPersonaSel;
+  if(editAppt){editAppt.testo=testo;editAppt.data=data;editAppt.ora=ora;editAppt.icona=icona;if(pers)editAppt.persona=pers;else delete editAppt.persona;}
+  else{const obj={id:id(),testo,data,ora,icona,fatto:false};if(pers)obj.persona=pers;state.appuntamenti.push(obj);}
+  chiudi("ovAppt");render();
+}
+function eliminaAppuntamento(){
+  if(!editAppt)return;const a=editAppt;chiudi("ovAppt");
+  chiediConferma('Vuoi eliminare l\'appuntamento "'+a.testo+'"?',()=>{state.appuntamenti=state.appuntamenti.filter(x=>x.id!==a.id);render();});
 }
 
 function renderScadenze(){
