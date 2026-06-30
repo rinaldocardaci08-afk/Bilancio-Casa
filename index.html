@@ -86,6 +86,7 @@
   .note .check{width:22px;height:22px;border-radius:7px;border:2px solid var(--line);flex:none;cursor:pointer;display:grid;place-items:center;font-size:.9rem;color:#fff;}
   .note.done .check{background:var(--primary);border-color:var(--primary);}
   .note .txt{flex:1;font-size:.95rem;} .note.done .txt{text-decoration:line-through;color:var(--ink-soft);}
+  .note .note-ic{width:30px;height:30px;border-radius:8px;background:var(--green-tint);display:grid;place-items:center;font-size:1.05rem;flex:none;}
   .note .del{background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:1rem;padding:4px;}
   .note .eur{background:none;border:none;color:var(--primary);cursor:pointer;font-size:1.05rem;font-weight:800;padding:4px 7px;}
   .pdetail{margin:6px 0 4px 54px;border-left:2px solid var(--line);padding-left:12px;}
@@ -525,8 +526,9 @@
       </div>
     </div>
     <div class="card">
-      <div class="card-head"><h2><span class="ic">📌</span> Bacheca di famiglia</h2></div>
+      <div class="card-head"><h2><span class="ic">📝</span> Elenco promemoria</h2></div>
       <div class="note-add">
+        <button type="button" id="noteIconaBtn" class="pick-btn pick-mini" onclick="apriIconPicker('noteIconaBtn')"><span class="pick-em">📝</span></button>
         <input id="noteInput" placeholder="Aggiungi un promemoria…" onkeydown="if(event.key==='Enter')aggiungiNota()">
         <button onclick="aggiungiNota()">+</button>
       </div>
@@ -882,7 +884,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 33;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 34;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -1063,11 +1065,12 @@ function renderNote(){
   if(!state.note.length){el.innerHTML='<div class="empty">Nessun promemoria. Scrivine uno qui sopra.</div>';return;}
   el.innerHTML=state.note.map(n=>`<div class="note ${n.fatto?'done':''}">
     <div class="check" onclick="toggleNota('${n.id}')">${n.fatto?'✓':''}</div>
+    <span class="note-ic">${esc(n.icona||'📝')}</span>
     <div class="txt">${esc(n.testo)}</div>
     <button class="eur" title="Registra come spesa" onclick="promemoriaInSpesa('${n.id}')">€</button>
     <button class="del" onclick="eliminaNota('${n.id}')">🗑</button></div>`).join("");
 }
-function aggiungiNota(){const inp=document.getElementById("noteInput"),t=inp.value.trim();if(!t)return;state.note.unshift({id:id(),testo:t,fatto:false});inp.value="";render();}
+function aggiungiNota(){const inp=document.getElementById("noteInput"),t=inp.value.trim();if(!t)return;const icona=iconaDi("noteIconaBtn")||"📝";state.note.unshift({id:id(),testo:t,fatto:false,icona});inp.value="";setIconaBtn("noteIconaBtn","📝");render();}
 function toggleNota(nid){const n=state.note.find(x=>x.id===nid);if(n){n.fatto=!n.fatto;render();}}
 function eliminaNota(nid){state.note=state.note.filter(x=>x.id!==nid);render();}
 function promemoriaInSpesa(nid){
