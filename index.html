@@ -285,8 +285,9 @@
   .eroi-tile .et-ic{font-size:1.6rem;line-height:1;} .eroi-tile .et-tx{font-weight:700;font-size:.84rem;color:var(--primary);text-align:center;line-height:1.2;}
   .eroi-tile.giochi{background:linear-gradient(160deg,#FBE7BF,#F4D08A);} .eroi-tile.giochi .et-tx{color:#8a5a12;}
   .modal-giochi{max-width:440px;width:calc(100% - 24px);max-height:90vh;overflow-y:auto;}
-  .modal-giochi.full{max-width:none;width:100%;height:100dvh;max-height:100dvh;border-radius:0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;animation:none;}
-  .modal-giochi.full .gioco-area{flex:1;display:flex;flex-direction:column;justify-content:center;}
+  .modal-giochi.full{max-width:none;width:100%;height:100dvh;max-height:100dvh;border-radius:0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;animation:none;overflow:hidden;}
+  .modal-giochi.full .gioco-area{flex:1;display:flex;flex-direction:column;justify-content:center;overflow-y:auto;min-height:0;}
+  .giochi-scroll{flex:1;overflow-y:auto;min-height:0;display:flex;flex-direction:column;}
   .mc,.sc,.sud-num,.g-play,.gk-close{touch-action:manipulation;}
   .gk-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
   .gk-tit{font-size:1.2rem;font-weight:800;} .gk-close{background:var(--green-tint);border:none;border-radius:10px;width:34px;height:34px;font-size:1rem;cursor:pointer;color:var(--primary-dark);font-weight:700;}
@@ -323,6 +324,29 @@
   .sim-btn{aspect-ratio:1;border:none;border-radius:22px;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.12);transition:transform .1s,box-shadow .15s,background .12s;}
   .sim-btn:active{transform:scale(.97);} .sim-btn.on{box-shadow:0 0 0 5px #fff,0 0 26px 6px rgba(255,255,255,.85);transform:scale(1.04);}
   .sim-btn:disabled{cursor:default;}
+  .classifica-btn{width:100%;background:linear-gradient(135deg,#FFD76A,#E0A03A);color:#7a4e10;border:none;font-weight:800;margin:4px 0 14px;justify-content:center;}
+  .cl-lbl{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#7a8f93;margin:6px 0 10px;}
+  .rec-two{display:flex;gap:10px;margin-bottom:22px;}
+  .rec-card{flex:1;background:#f6f9f9;border-radius:14px;padding:12px;min-width:0;}
+  .rec-head{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+  .rec-av{width:30px;height:30px;border-radius:50%;background:center/cover no-repeat var(--green-tint);flex:none;}
+  .rec-nome{font-weight:800;font-size:.9rem;}
+  .rec-line{display:flex;align-items:center;gap:6px;font-size:.76rem;padding:3px 0;color:#46565b;}
+  .rec-line .i{width:18px;text-align:center;} .rec-line .vv{margin-left:auto;font-weight:700;color:var(--primary-dark);}
+  .carou{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;}
+  .game-card{flex:0 0 86%;scroll-snap-align:center;background:linear-gradient(165deg,#f0f7f7,#fff);border:1px solid #e3eded;border-radius:18px;padding:16px 14px 18px;}
+  .gc-tit{display:flex;align-items:center;justify-content:center;gap:7px;font-weight:800;font-size:1rem;margin-bottom:14px;}
+  .podio{display:flex;align-items:flex-end;justify-content:center;gap:14px;}
+  .pp{display:flex;flex-direction:column;align-items:center;}
+  .pp-av{border-radius:50%;background:center/cover no-repeat var(--green-tint);border:3px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.12);}
+  .pp-av.first{width:66px;height:66px;} .pp-av.second{width:52px;height:52px;}
+  .pp-crown{font-size:1.3rem;margin-bottom:2px;}
+  .pp-nome{font-weight:700;font-size:.82rem;margin-top:6px;} .pp-val{font-size:.75rem;color:var(--primary-dark);font-weight:800;}
+  .pp-base{margin-top:7px;border-radius:8px 8px 0 0;display:grid;place-items:center;font-weight:800;color:#155E8C;}
+  .pp-base.b1{width:70px;height:48px;background:linear-gradient(180deg,#FFD76A,#E0A03A);font-size:1.2rem;}
+  .pp-base.b2{width:58px;height:32px;background:#dfeaea;font-size:1rem;}
+  .cl-vuoto{text-align:center;color:#9aa8a2;font-size:.84rem;padding:24px 0;line-height:1.5;}
+  .cl-hint{text-align:center;font-size:.74rem;color:var(--ink-soft);margin-top:12px;}
   .sud-pad{margin-top:auto;padding-top:16px;}
   .sud-pad-lbl{text-align:center;font-size:.8rem;color:var(--ink-soft);margin-bottom:8px;}
   .sud-pad-row{display:flex;gap:8px;justify-content:center;}
@@ -726,7 +750,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 23;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 25;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -747,7 +771,8 @@ function nuovaLotteria(){return{
   compiti:[{id:id(),nome:"Compiti svolti",icona:"📚",monete:3},{id:id(),nome:"Apparecchiare la tavola",icona:"🍽️",monete:2},{id:id(),nome:"Sistemare la stanza",icona:"🧹",monete:1}],
   premi:[{id:id(),nome:"Gelato",icona:"🍦",soglia:5},{id:id(),nome:"1 ora di gioco",icona:"🎮",soglia:10},{id:id(),nome:"5€ di paghetta",icona:"💶",soglia:20}],
   movimenti:[],
-  turniUsati:{}
+  turniUsati:{},
+  record:{}
 };}
 function datiLotteriaEsempio(){const l=nuovaLotteria(),o=oggiISO();
   l.movimenti=[{id:id(),persona:"giulia",compito:"Compiti svolti",monete:3,data:o},{id:id(),persona:"giulia",compito:"Apparecchiare la tavola",monete:2,data:o},{id:id(),persona:"leo",compito:"Sistemare la stanza",monete:1,data:o}];
@@ -788,7 +813,7 @@ function migrate(){
   state.obiettivi.forEach(o=>{if(!o.versamenti)o.versamenti=[];});
   if(!state.note) state.note=[];
   if(!state.lotteria)state.lotteria=nuovaLotteria();
-  else{if(!state.lotteria.eroi)state.lotteria.eroi=["leo","giulia"];if(!state.lotteria.compiti)state.lotteria.compiti=[];if(!state.lotteria.premi)state.lotteria.premi=[];if(!state.lotteria.movimenti)state.lotteria.movimenti=[];if(!state.lotteria.turniUsati)state.lotteria.turniUsati={};}
+  else{if(!state.lotteria.eroi)state.lotteria.eroi=["leo","giulia"];if(!state.lotteria.compiti)state.lotteria.compiti=[];if(!state.lotteria.premi)state.lotteria.premi=[];if(!state.lotteria.movimenti)state.lotteria.movimenti=[];if(!state.lotteria.turniUsati)state.lotteria.turniUsati={};if(!state.lotteria.record)state.lotteria.record={};}
 }
 function loadLocal(){
   try{const raw=localStorage.getItem(KEY);if(raw){state=JSON.parse(raw);migrate();return;}}catch(e){}
@@ -1174,21 +1199,60 @@ function apriGiochi(){if(!giocoEroe||!state.lotteria.eroi.includes(giocoEroe))gi
 function setGiocoEroe(pid){giocoEroe=pid;memState=null;renderGiochiMenu();}
 function renderGiochiMenu(){
   const box=document.getElementById("giochiBox");
-  box.className="modal modal-giochi";
+  box.className="modal modal-giochi full";
   const tabs=state.lotteria.eroi.map(pid=>{const p=persona(pid),t=turniDisponibili(pid);return `<button class="get ${pid===giocoEroe?'on':''}" onclick="setGiocoEroe('${pid}')"><span class="get-av" style="${avBg(p)}"></span><span class="get-info"><span class="get-nome">${esc(p?p.nome:'?')}</span><span class="get-turni">${t} turni</span></span></button>`;}).join("");
   const disp=turniDisponibili(giocoEroe),molt=moltiplicatoreProssimo(giocoEroe),monMese=moneteEroeMese(giocoEroe,meseCorrente()),haTurni=disp>0;
   const gioco=(ic,cls,nome,desc,fn,attivo)=>`<div class="gioco ${attivo?'':'soon'}"><div class="g-ic ${cls}">${ic}</div><div class="g-txt"><div class="g-nome">${nome}</div><div class="g-desc">${desc}</div></div>${attivo?(haTurni?`<button class="g-play" onclick="${fn}">Gioca</button>`:`<span class="g-lock">Servono turni</span>`):'<span class="g-lock">Presto</span>'}</div>`;
   box.innerHTML=`<div class="gk-head"><div class="gk-tit">🎮 Giochi premio</div><button class="gk-close" onclick="chiudi('ovGiochi')">✕</button></div>
-    <div class="get-row">${tabs}</div>
-    <div class="salv"><div class="salv-big num">${disp}</div><div class="salv-lb">turni per ${esc(persona(giocoEroe)?persona(giocoEroe).nome:'?')} 🎮</div>
-      <div class="salv-calc">Questo mese: <b>${monMese} 🪙</b>. ${haTurni?`Le prossime monete valgono <b>${molt} ${molt===1?'turno':'turni'}</b> l'una!`:'Guadagna monete per fare turni!'}</div></div>
-    <div class="giochi">
-      ${gioco('🃏','memory','Memory','Trova tutte le coppie','avviaMemory()',true)}
-      ${gioco('🔢','sudoku','Sudoku 4×4','Riempi la griglia','avviaSudoku()',true)}
-      ${gioco('🔴','simon','Sequenza colori','Ripeti la sequenza','avviaSimon()',true)}
-      ${gioco('✖️','cross','Cross-math','Incastra i numeri','',false)}
-    </div>
-    <div class="gk-note">Ogni moneta del mese dà turni di gioco. I turni restano finché non li usi. I giochi non danno monete — sono il premio! 🎉</div>`;
+    <div class="giochi-scroll">
+      <div class="get-row">${tabs}</div>
+      <div class="salv"><div class="salv-big num">${disp}</div><div class="salv-lb">turni per ${esc(persona(giocoEroe)?persona(giocoEroe).nome:'?')} 🎮</div>
+        <div class="salv-calc">Questo mese: <b>${monMese} 🪙</b>. ${haTurni?`Le prossime monete valgono <b>${molt} ${molt===1?'turno':'turni'}</b> l'una!`:'Guadagna monete per fare turni!'}</div></div>
+      <button class="btn classifica-btn" onclick="apriClassifica()">🏆 Classifica</button>
+      <div class="giochi">
+        ${gioco('🃏','memory','Memory','Trova tutte le coppie','avviaMemory()',true)}
+        ${gioco('🔢','sudoku','Sudoku 4×4','Riempi la griglia','avviaSudoku()',true)}
+        ${gioco('🔴','simon','Sequenza colori','Ripeti la sequenza','avviaSimon()',true)}
+      </div>
+      <div class="gk-note">Ogni moneta del mese dà turni di gioco. I turni restano finché non li usi. I giochi non danno monete — sono il premio! 🎉</div>
+    </div>`;
+}
+
+/* ===== RECORD E CLASSIFICA ===== */
+const GIOCHI_META={memory:{ic:'🃏',nome:'Memory',bassoMeglio:true},sudoku:{ic:'🔢',nome:'Sudoku',bassoMeglio:true},simon:{ic:'🔴',nome:'Sequenza colori',bassoMeglio:false}};
+function registraRecord(pid,gioco,valore){
+  if(!state.lotteria.record)state.lotteria.record={};
+  if(!state.lotteria.record[pid])state.lotteria.record[pid]={};
+  const att=state.lotteria.record[pid][gioco],meglio=GIOCHI_META[gioco].bassoMeglio;
+  if(att==null||(meglio?valore<att:valore>att))state.lotteria.record[pid][gioco]=valore;
+  save();
+}
+function recordDi(pid,gioco){return (state.lotteria.record&&state.lotteria.record[pid]&&state.lotteria.record[pid][gioco]!=null)?state.lotteria.record[pid][gioco]:null;}
+function fmtTempo(sec){sec=Math.round(sec);const m=Math.floor(sec/60),s=sec%60;return m>0?(m+"m "+(s<10?"0":"")+s+"s"):(s+"s");}
+function fmtRecord(gioco,v){if(v==null)return "—";if(gioco==='sudoku')return fmtTempo(v);if(gioco==='memory')return v+" mosse";return v+" seq.";}
+function apriClassifica(){renderClassifica();}
+function renderClassifica(){
+  const box=document.getElementById("giochiBox");
+  box.className="modal modal-giochi full";
+  const eroi=state.lotteria.eroi,giochi=Object.keys(GIOCHI_META);
+  const recCard=eroi.map(pid=>{const p=persona(pid);const righe=giochi.map(g=>`<div class="rec-line"><span class="i">${GIOCHI_META[g].ic}</span>${GIOCHI_META[g].nome}<span class="vv">${fmtRecord(g,recordDi(pid,g))}</span></div>`).join("");return `<div class="rec-card"><div class="rec-head"><span class="rec-av" style="${avBg(p)}"></span><span class="rec-nome">${esc(p?p.nome:'?')}</span></div>${righe}</div>`;}).join("");
+  const cards=giochi.map(g=>{
+    const meglio=GIOCHI_META[g].bassoMeglio;
+    const cl=eroi.map(pid=>({pid,p:persona(pid),v:recordDi(pid,g)})).sort((a,b)=>{if(a.v==null&&b.v==null)return 0;if(a.v==null)return 1;if(b.v==null)return -1;return meglio?a.v-b.v:b.v-a.v;});
+    const primo=cl[0],secondo=cl[1];
+    const hasPrimo=primo&&primo.v!=null,hasSecondo=secondo&&secondo.v!=null;
+    const posto=(x,pos)=>x?`<div class="pp">${pos===1&&hasPrimo?'<div class="pp-crown">👑</div>':''}<div class="pp-av ${pos===1?'first':'second'}" style="${avBg(x.p)}"></div><div class="pp-nome">${esc(x.p?x.p.nome:'?')}</div><div class="pp-val">${fmtRecord(g,x.v)}</div><div class="pp-base b${pos}">${pos}°</div></div>`:'';
+    const podio=hasPrimo?`<div class="podio">${hasSecondo?posto(secondo,2):''}${posto(primo,1)}</div>`:'<div class="cl-vuoto">Nessun record ancora.<br>Giocate per comparire qui! 🎮</div>';
+    return `<div class="game-card"><div class="gc-tit">${GIOCHI_META[g].ic} ${GIOCHI_META[g].nome}</div>${podio}</div>`;
+  }).join("");
+  box.innerHTML=`<div class="gk-head"><div class="gk-tit">🏆 Classifica</div><button class="gk-close" onclick="renderGiochiMenu()">✕</button></div>
+    <div class="giochi-scroll">
+      <div class="cl-lbl">I record di ognuno</div>
+      <div class="rec-two">${recCard}</div>
+      <div class="cl-lbl">Podio per gioco — scorri →</div>
+      <div class="carou">${cards}</div>
+      <div class="cl-hint">${giochi.map(g=>GIOCHI_META[g].nome).join(' · ')}</div>
+    </div>`;
 }
 
 /* ===== MEMORY ===== */
@@ -1219,7 +1283,7 @@ function memClick(i){
   c.girata=true;m.sel.push(i);
   if(m.sel.length===2){
     m.mosse++;const a=m.sel[0],b=m.sel[1];
-    if(m.carte[a].e===m.carte[b].e){m.carte[a].trovata=true;m.carte[b].trovata=true;m.sel=[];renderMemory();}
+    if(m.carte[a].e===m.carte[b].e){m.carte[a].trovata=true;m.carte[b].trovata=true;m.sel=[];if(m.carte.every(c=>c.trovata)&&!m.registrato){m.registrato=true;registraRecord(giocoEroe,'memory',m.mosse);}renderMemory();}
     else{m.blocco=true;renderMemory();setTimeout(()=>{m.carte[a].girata=false;m.carte[b].girata=false;m.sel=[];m.blocco=false;renderMemory();},850);}
   }else renderMemory();
 }
@@ -1243,7 +1307,7 @@ function avviaSudoku(){
   const nascondi=7;const idx=[...Array(16).keys()];
   for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
   const nasc=new Set(idx.slice(0,nascondi));
-  sudState={celle:sol.map((v,i)=>nasc.has(i)?{v:0,fissa:false}:{v,fissa:true}),sel:null};
+  sudState={celle:sol.map((v,i)=>nasc.has(i)?{v:0,fissa:false}:{v,fissa:true}),sel:null,t0:Date.now(),registrato:false};
   renderSudoku();
 }
 function renderSudoku(){
@@ -1251,6 +1315,7 @@ function renderSudoku(){
   box.className="modal modal-giochi full";
   const g=s.celle.map(c=>c.v);
   const completa=g.every(v=>v>0),vinto=completa&&sudValida(g);
+  if(vinto&&!s.registrato){s.registrato=true;registraRecord(giocoEroe,'sudoku',(Date.now()-s.t0)/1000);}
   const celle=s.celle.map((c,i)=>{const cls=(c.fissa?'fix ':'')+(s.sel===i?'sel ':'');return `<button class="sc ${cls}" ${c.fissa?'disabled':''} onclick="sudClick(${i})">${c.v||''}</button>`;}).join("");
   const tendina=(s.sel!=null&&!vinto)?`<div class="sud-pad"><div class="sud-pad-lbl">Scegli il numero</div><div class="sud-pad-row">${[1,2,3,4].map(n=>`<button class="sud-num" onclick="sudSetNum(${n})">${n}</button>`).join("")}<button class="sud-num clear" onclick="sudSetNum(0)">✕</button></div></div>`:'';
   box.innerHTML=`<div class="gk-head"><div class="gk-tit">🔢 Sudoku 4×4</div><button class="gk-close" onclick="tornaGiochi()">✕</button></div>
@@ -1287,7 +1352,7 @@ function simProssimoRound(){
 }
 function simClick(c){
   const s=simState;if(!s||s.fase!=="ripeti"||s.finita)return;
-  if(c!==s.seq[s.pos]){s.finita=true;s.fase="fine";renderSimon();return;}
+  if(c!==s.seq[s.pos]){s.finita=true;s.fase="fine";registraRecord(giocoEroe,'simon',s.round-1);renderSimon();return;}
   s.attivo=c;renderSimon();setTimeout(()=>{if(!simState||simState!==s)return;s.attivo=null;renderSimon();},200);
   s.pos++;
   if(s.pos>=s.seq.length){setTimeout(()=>{if(!simState||simState!==s)return;simProssimoRound();},550);}
@@ -1305,6 +1370,7 @@ function renderSimon(){
       ${s.finita?`<div class="mem-win">🎉 Bravo ${esc(persona(giocoEroe)?persona(giocoEroe).nome:'')}!<br>Hai ripetuto ${s.round-1} ${s.round-1===1?'sequenza':'sequenze'}!</div><button class="btn pod-ok" style="margin-top:14px" onclick="tornaGiochi()">Torna ai giochi</button>`:''}
     </div>`;
 }
+function toggleLotBar(pid){lotExpand=lotExpand===pid?null:pid;renderLotteria();}
 function dettaglioEroe(pid){return state.lotteria.movimenti.filter(m=>m.persona===pid&&dataNelPeriodoLot(m.data)).slice().sort((a,b)=>(b.data||"").localeCompare(a.data||""));}
 function iconaCompito(nome){const c=state.lotteria.compiti.find(x=>x.nome===nome);return c?c.icona:"⭐";}
 function maxScalaLot(){const L=state.lotteria;const s=Math.max(0,...L.premi.map(p=>+p.soglia||0));const m=Math.max(0,...L.eroi.map(moneteEroe));return Math.max(s,m,1);}
