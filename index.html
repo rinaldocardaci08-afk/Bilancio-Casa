@@ -370,11 +370,19 @@
   .sc.fix{background:var(--green-tint);color:var(--primary);} .sc:disabled{cursor:default;}
   .sc.sel{background:#FFD76A;color:var(--primary-dark);box-shadow:inset 0 0 0 3px #E0A03A;}
   .gioco-esci-mini{align-self:flex-start;background:none;border:none;color:var(--ink-soft);font-size:.82rem;font-weight:700;cursor:pointer;padding:8px 4px;font-family:inherit;margin-top:6px;}
-  .sim-round{text-align:center;font-size:.95rem;color:var(--primary-dark);font-weight:700;margin-bottom:4px;}
-  .sim-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:min(82vw,360px);margin:14px auto 0;}
-  .sim-btn{aspect-ratio:1;border:none;border-radius:22px;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.12);transition:transform .1s,box-shadow .15s,background .12s;}
-  .sim-btn:active{transform:scale(.97);} .sim-btn.on{box-shadow:0 0 0 5px #fff,0 0 26px 6px rgba(255,255,255,.85);transform:scale(1.04);}
-  .sim-btn:disabled{cursor:default;}
+  .hud{display:flex;justify-content:space-around;background:var(--green-tint);border-radius:12px;padding:10px;margin-bottom:14px;}
+  .hud .b{text-align:center;} .hud .v{font-size:1.3rem;font-weight:800;color:var(--primary-dark);} .hud .k{font-size:.68rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
+  .mole-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;max-width:360px;margin:0 auto;width:100%;}
+  .hole{aspect-ratio:1;border:none;background:#cbe0df;border-radius:50%;display:grid;place-items:center;font-size:1.9rem;box-shadow:inset 0 -5px 0 rgba(0,0,0,.08);overflow:hidden;cursor:pointer;}
+  .hole.up{background:radial-gradient(circle at 50% 40%,#FBE7BF,#E8C98A);}
+  .hole .m{transform:translateY(60px);transition:transform .12s;} .hole.up .m{transform:translateY(0);}
+  .hole:active{transform:scale(.96);}
+  .quiz-q{background:linear-gradient(135deg,#1FB6A6,#16808F);color:#fff;border-radius:18px;padding:26px 16px;text-align:center;margin-bottom:18px;}
+  .quiz-q .op{font-size:2.4rem;font-weight:800;}
+  .quiz-opts{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;max-width:360px;margin:0 auto;width:100%;}
+  .qopt{background:#fff;border:2px solid var(--green-tint);border-radius:14px;padding:18px;font-size:1.5rem;font-weight:800;color:var(--primary-dark);cursor:pointer;font-family:inherit;}
+  .qopt.ok{background:#d6f5e4;border-color:#3ECF8E;} .qopt.no{background:#fbe0da;border-color:#FF7D6E;}
+  .streak{text-align:center;margin-top:14px;font-size:.85rem;color:var(--amber);font-weight:700;}
   .classifica-btn{width:100%;background:linear-gradient(135deg,#FFD76A,#E0A03A);color:#7a4e10;border:none;font-weight:800;margin:4px 0 14px;justify-content:center;}
   .cl-lbl{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#7a8f93;margin:6px 0 10px;}
   .rec-two{display:flex;gap:10px;margin-bottom:22px;}
@@ -851,7 +859,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 30;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 31;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -1346,15 +1354,16 @@ function renderGiochiMenu(){
       <div class="giochi">
         ${gioco('🃏','memory','Memory','Trova tutte le coppie','avviaMemory()',true)}
         ${gioco('🔢','sudoku','Sudoku 4×4','Riempi la griglia','avviaSudoku()',true)}
-        ${gioco('🔴','simon','Sequenza colori','Ripeti la sequenza','avviaSimon()',true)}
+        ${gioco('🐹','talpa','Acchiappa la talpa','Tocca le talpe a tempo','avviaTalpa()',true)}
+        ${gioco('➗','quiz','Quiz lampo','Calcola più in fretta','avviaQuiz()',true)}
       </div>
       <div class="gk-note">Ogni moneta del mese dà turni di gioco. I turni restano finché non li usi. I giochi non danno monete — sono il premio! 🎉</div>
     </div>`;
 }
 
 /* ===== RECORD E CLASSIFICA ===== */
-const GIOCHI_META={memory:{ic:'🃏',nome:'Memory',bassoMeglio:true},sudoku:{ic:'🔢',nome:'Sudoku',bassoMeglio:true},simon:{ic:'🔴',nome:'Sequenza colori',bassoMeglio:false},memory_sfida:{ic:'🔥',nome:'Memory sfida',bassoMeglio:true},sudoku_sfida:{ic:'🔥',nome:'Sudoku sfida',bassoMeglio:true}};
-const GIOCHI_BASE=['memory','sudoku','simon'];
+const GIOCHI_META={memory:{ic:'🃏',nome:'Memory',bassoMeglio:true},sudoku:{ic:'🔢',nome:'Sudoku',bassoMeglio:true},talpa:{ic:'🐹',nome:'Acchiappa la talpa',bassoMeglio:false},quiz:{ic:'➗',nome:'Quiz lampo',bassoMeglio:false},memory_sfida:{ic:'🔥',nome:'Memory sfida',bassoMeglio:true},sudoku_sfida:{ic:'🔥',nome:'Sudoku sfida',bassoMeglio:true},talpa_sfida:{ic:'🔥',nome:'Talpa sfida',bassoMeglio:false},quiz_sfida:{ic:'🔥',nome:'Quiz sfida',bassoMeglio:false}};
+const GIOCHI_BASE=['memory','sudoku','talpa','quiz'];
 function registraRecord(pid,gioco,valore){
   if(!state.lotteria.record)state.lotteria.record={};
   if(!state.lotteria.record[pid])state.lotteria.record[pid]={};
@@ -1364,13 +1373,13 @@ function registraRecord(pid,gioco,valore){
 }
 function recordDi(pid,gioco){return (state.lotteria.record&&state.lotteria.record[pid]&&state.lotteria.record[pid][gioco]!=null)?state.lotteria.record[pid][gioco]:null;}
 function fmtTempo(sec){sec=Math.round(sec);const m=Math.floor(sec/60),s=sec%60;return m>0?(m+"m "+(s<10?"0":"")+s+"s"):(s+"s");}
-function fmtRecord(gioco,v){if(v==null)return "—";if(gioco==='sudoku'||gioco==='sudoku_sfida')return fmtTempo(v);if(gioco==='memory'||gioco==='memory_sfida')return v+" mosse";return v+" seq.";}
+function fmtRecord(gioco,v){if(v==null)return "—";if(gioco==='sudoku'||gioco==='sudoku_sfida')return fmtTempo(v);if(gioco==='memory'||gioco==='memory_sfida')return v+" mosse";if(gioco==='talpa'||gioco==='talpa_sfida')return v+" talpe";if(gioco==='quiz'||gioco==='quiz_sfida')return v+" giuste";return v+" seq.";}
 function apriClassifica(){renderClassifica();}
 function renderClassifica(){
   const box=document.getElementById("giochiBox");
   box.className="modal modal-giochi full";
   const eroi=state.lotteria.eroi,giochi=GIOCHI_BASE;
-  const recCard=eroi.map(pid=>{const p=persona(pid);let righe=giochi.map(g=>`<div class="rec-line"><span class="i">${GIOCHI_META[g].ic}</span>${GIOCHI_META[g].nome}<span class="vv">${fmtRecord(g,recordDi(pid,g))}</span></div>`).join("");['memory_sfida','sudoku_sfida'].forEach(g=>{if(recordDi(pid,g)!=null)righe+=`<div class="rec-line rl-sfida"><span class="i">${GIOCHI_META[g].ic}</span>${GIOCHI_META[g].nome}<span class="vv">${fmtRecord(g,recordDi(pid,g))}</span></div>`;});return `<div class="rec-card"><div class="rec-head"><span class="rec-av" style="${avBg(p)}">${avEmoji(p)}</span><span class="rec-nome">${esc(p?p.nome:'?')}</span></div>${righe}</div>`;}).join("");
+  const recCard=eroi.map(pid=>{const p=persona(pid);let righe=giochi.map(g=>`<div class="rec-line"><span class="i">${GIOCHI_META[g].ic}</span>${GIOCHI_META[g].nome}<span class="vv">${fmtRecord(g,recordDi(pid,g))}</span></div>`).join("");['memory_sfida','sudoku_sfida','talpa_sfida','quiz_sfida'].forEach(g=>{if(recordDi(pid,g)!=null)righe+=`<div class="rec-line rl-sfida"><span class="i">${GIOCHI_META[g].ic}</span>${GIOCHI_META[g].nome}<span class="vv">${fmtRecord(g,recordDi(pid,g))}</span></div>`;});return `<div class="rec-card"><div class="rec-head"><span class="rec-av" style="${avBg(p)}">${avEmoji(p)}</span><span class="rec-nome">${esc(p?p.nome:'?')}</span></div>${righe}</div>`;}).join("");
   const cards=giochi.map(g=>{
     const meglio=GIOCHI_META[g].bassoMeglio;
     const cl=eroi.map(pid=>({pid,p:persona(pid),v:recordDi(pid,g)})).sort((a,b)=>{if(a.v==null&&b.v==null)return 0;if(a.v==null)return 1;if(b.v==null)return -1;return meglio?a.v-b.v:b.v-a.v;});
@@ -1425,7 +1434,7 @@ function memClick(i){
     else{m.blocco=true;renderMemory();setTimeout(()=>{m.carte[a].girata=false;m.carte[b].girata=false;m.sel=[];m.blocco=false;renderMemory();},850);}
   }else renderMemory();
 }
-function tornaGiochi(){memState=null;sudState=null;simState=null;renderGiochiMenu();}
+function tornaGiochi(){memState=null;sudState=null;talpaState=null;quizState=null;renderGiochiMenu();}
 
 /* ===== SUDOKU 4x4 ===== */
 let sudState=null;
@@ -1469,45 +1478,124 @@ function renderSudoku(){
 function sudClick(i){const c=sudState.celle[i];if(c.fissa)return;sudState.sel=(sudState.sel===i?null:i);renderSudoku();}
 function sudSetNum(n){if(sudState.sel==null)return;sudState.celle[sudState.sel].v=n;sudState.sel=null;renderSudoku();}
 
-/* ===== SIMON (sequenza colori) ===== */
-let simState=null;
-const SIM_COLORI=[{id:0,nome:"verde",c:"#3ECF8E",on:"#9DF5CC"},{id:1,nome:"rosso",c:"#FF7D6E",on:"#FFC2BA"},{id:2,nome:"giallo",c:"#FFD15C",on:"#FFE9AE"},{id:3,nome:"blu",c:"#5BB8E8",on:"#B6E2F7"}];
-function avviaSimon(){
-  if(turniDisponibili(giocoEroe)<1){renderGiochiMenu();return;}
-  consumaTurno(giocoEroe);
-  simState={seq:[],pos:0,attivo:null,fase:"guarda",round:0,finita:false};
-  simProssimoRound();
+/* ===== ACCHIAPPA LA TALPA ===== */
+let talpaState=null;
+const TALPA_SEC=30;
+function avviaTalpa(sfida){
+  if(!sfida){if(turniDisponibili(giocoEroe)<1){renderGiochiMenu();return;}consumaTurno(giocoEroe);}
+  talpaState={punti:0,tempo:TALPA_SEC,buche:Array(12).fill(false),finita:false,sfida:!!sfida,sid:Date.now()};
+  renderTalpa();
+  talpaTick();talpaSpawn();
 }
-function simProssimoRound(){
-  const s=simState;s.seq.push(Math.floor(Math.random()*4));s.round=s.seq.length;s.pos=0;s.fase="guarda";
-  renderSimon();
-  let i=0;
-  const mostra=()=>{
-    if(!simState||simState!==s){return;}
-    if(i>=s.seq.length){s.fase="ripeti";s.attivo=null;renderSimon();return;}
-    s.attivo=s.seq[i];renderSimon();
-    setTimeout(()=>{if(!simState||simState!==s)return;s.attivo=null;renderSimon();setTimeout(()=>{i++;mostra();},250);},600);
-  };
-  setTimeout(mostra,700);
+function talpaTick(){
+  const s=talpaState,sid=s.sid;
+  setTimeout(()=>{
+    if(!talpaState||talpaState.sid!==sid||talpaState.finita)return;
+    talpaState.tempo--;
+    if(talpaState.tempo<=0){talpaFine();return;}
+    renderTalpa();talpaTick();
+  },1000);
 }
-function simClick(c){
-  const s=simState;if(!s||s.fase!=="ripeti"||s.finita)return;
-  if(c!==s.seq[s.pos]){s.finita=true;s.fase="fine";s.nuovoRecord=registraRecord(giocoEroe,'simon',s.round-1);renderSimon();return;}
-  s.attivo=c;renderSimon();setTimeout(()=>{if(!simState||simState!==s)return;s.attivo=null;renderSimon();},200);
-  s.pos++;
-  if(s.pos>=s.seq.length){setTimeout(()=>{if(!simState||simState!==s)return;simProssimoRound();},550);}
+function talpaSpawn(){
+  const s=talpaState,sid=s.sid;
+  const veloce=s.sfida;
+  const su=(TALPA_SEC-s.tempo);
+  const minD=veloce?420:650,maxD=veloce?780:1100;
+  const durata=Math.max(minD, maxD-su*18); // più veloci col passare del tempo
+  setTimeout(()=>{
+    if(!talpaState||talpaState.sid!==sid||talpaState.finita)return;
+    const vuote=[];talpaState.buche.forEach((b,i)=>{if(!b)vuote.push(i);});
+    if(vuote.length){const i=vuote[Math.floor(Math.random()*vuote.length)];talpaState.buche[i]=true;renderTalpa();
+      setTimeout(()=>{if(!talpaState||talpaState.sid!==sid||talpaState.finita)return;talpaState.buche[i]=false;renderTalpa();},durata);}
+    talpaSpawn();
+  }, veloce?500:750);
 }
-function renderSimon(){
-  const box=document.getElementById("giochiBox"),s=simState;
+function talpaClick(i){
+  const s=talpaState;if(!s||s.finita||!s.buche[i])return;
+  s.buche[i]=false;s.punti++;renderTalpa();
+}
+function talpaFine(){
+  const s=talpaState;s.finita=true;s.buche=Array(12).fill(false);
+  const gio=s.sfida?'talpa_sfida':'talpa',prec=recordDi(giocoEroe,gio);
+  s.recordOPari=(prec==null)||(s.punti>=prec);s.nuovoRecord=registraRecord(giocoEroe,gio,s.punti);
+  renderTalpa();
+}
+function renderTalpa(){
+  const box=document.getElementById("giochiBox"),s=talpaState;
   box.className="modal modal-giochi full";
-  const msg=s.fase==="guarda"?"Guarda bene… 👀":(s.fase==="ripeti"?"Tocca a te! Ripeti la sequenza":(s.fase==="fine"?"":""));
-  const bottoni=SIM_COLORI.map(col=>{const acceso=s.attivo===col.id;return `<button class="sim-btn ${acceso?'on':''}" style="background:${acceso?col.on:col.c}" ${s.fase==="ripeti"?'':'disabled'} onclick="simClick(${col.id})"></button>`;}).join("");
-  box.innerHTML=`<div class="gk-head"><div class="gk-tit">🔴 Sequenza colori</div><button class="gk-close" onclick="tornaGiochi()">✕</button></div>
+  const buche=s.buche.map((up,i)=>`<button class="hole ${up?'up':'down'}" onclick="talpaClick(${i})"><span class="m">🐹</span></button>`).join("");
+  const sfidaBtn=(s.finita&&!s.sfida&&s.recordOPari)?`<button class="btn-sfida" onclick="avviaTalpa(true)">🔥 Sfida veloce!</button>`:'';
+  box.innerHTML=`<div class="gk-head"><div class="gk-tit">🐹 Acchiappa la talpa${s.sfida?' · Sfida':''}</div><button class="gk-close" onclick="tornaGiochi()">✕</button></div>
     <div class="gioco-area">
-      <div class="sim-round">Sequenza di <b>${s.round}</b></div>
-      <div class="mem-info">${msg}</div>
-      <div class="sim-grid">${bottoni}</div>
-      ${s.finita?(s.round-1>=1?celebraVittoria(giocoEroe,`${s.round-1} ${s.round-1===1?'sequenza':'sequenze'}${s.nuovoRecord?' · nuovo record! 🌟':''}`):`<div class="mem-win" style="font-size:.95rem">Ops, riprova! 🙂</div><button class="btn pod-ok" style="margin-top:14px" onclick="tornaGiochi()">Torna ai giochi</button>`):''}
+      <div class="hud"><div class="b"><div class="v">${s.punti}</div><div class="k">Punti</div></div><div class="b"><div class="v">0:${String(s.tempo).padStart(2,'0')}</div><div class="k">Tempo</div></div></div>
+      ${s.finita?celebraVittoria(giocoEroe,`${s.sfida?'Sfida · ':''}${s.punti} ${s.punti===1?'talpa presa':'talpe prese'}${s.nuovoRecord?' · nuovo record! 🌟':''}`,sfidaBtn):`<div class="mole-grid">${buche}</div>`}
+    </div>`;
+}
+
+/* ===== QUIZ LAMPO MATEMATICA ===== */
+let quizState=null;
+const QUIZ_SEC=60;
+function quizLivello(pid,sfida){
+  if(sfida)return 'sfida';
+  return pid==='leo'?'facile':'completo';
+}
+function nuovaDomandaQuiz(liv){
+  let a,b,op,ris;
+  const ops = liv==='facile'?['+','-']:['+','-','×'];
+  op=ops[Math.floor(Math.random()*ops.length)];
+  if(op==='×'){const max=liv==='sfida'?12:10;a=2+Math.floor(Math.random()*(max-1));b=2+Math.floor(Math.random()*(max-1));ris=a*b;}
+  else if(op==='+'){
+    if(liv==='facile'){a=1+Math.floor(Math.random()*19);b=1+Math.floor(Math.random()*(20-a));}
+    else{const max=liv==='sfida'?99:50;a=1+Math.floor(Math.random()*max);b=1+Math.floor(Math.random()*max);}
+    ris=a+b;
+  }
+  else{const max=liv==='facile'?20:(liv==='sfida'?99:50);a=2+Math.floor(Math.random()*(max-1));b=1+Math.floor(Math.random()*a);ris=a-b;}
+  // distrattori plausibili
+  const set=new Set([ris]);
+  while(set.size<4){let d=ris+(Math.floor(Math.random()*9)-4);if(d<0)d=Math.abs(d)+1;if(d!==ris)set.add(d);else set.add(ris+set.size);}
+  const opzioni=[...set];for(let i=opzioni.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[opzioni[i],opzioni[j]]=[opzioni[j],opzioni[i]];}
+  return {a,b,op,ris,opzioni,esito:null};
+}
+function avviaQuiz(sfida){
+  if(!sfida){if(turniDisponibili(giocoEroe)<1){renderGiochiMenu();return;}consumaTurno(giocoEroe);}
+  const liv=quizLivello(giocoEroe,sfida);
+  quizState={giuste:0,streak:0,tempo:QUIZ_SEC,liv,dom:nuovaDomandaQuiz(liv),finita:false,sfida:!!sfida,sid:Date.now()};
+  renderQuiz();quizTick();
+}
+function quizTick(){
+  const sid=quizState.sid;
+  setTimeout(()=>{
+    if(!quizState||quizState.sid!==sid||quizState.finita)return;
+    quizState.tempo--;
+    if(quizState.tempo<=0){quizFine();return;}
+    renderQuiz();quizTick();
+  },1000);
+}
+function quizRisp(n){
+  const s=quizState;if(!s||s.finita||s.dom.esito!=null)return;
+  if(n===s.dom.ris){s.giuste++;s.streak++;s.dom.esito='ok';renderQuiz();
+    setTimeout(()=>{if(!quizState||quizState.sid!==s.sid||quizState.finita)return;s.dom=nuovaDomandaQuiz(s.liv);renderQuiz();},350);}
+  else{s.streak=0;s.dom.esito='no';s.dom.scelta=n;renderQuiz();
+    setTimeout(()=>{if(!quizState||quizState.sid!==s.sid||quizState.finita)return;s.dom=nuovaDomandaQuiz(s.liv);renderQuiz();},650);}
+}
+function quizFine(){
+  const s=quizState;s.finita=true;
+  const gio=s.sfida?'quiz_sfida':'quiz',prec=recordDi(giocoEroe,gio);
+  s.recordOPari=(prec==null)||(s.giuste>=prec);s.nuovoRecord=registraRecord(giocoEroe,gio,s.giuste);
+  renderQuiz();
+}
+function renderQuiz(){
+  const box=document.getElementById("giochiBox"),s=quizState,d=s.dom;
+  box.className="modal modal-giochi full";
+  const opts=d.opzioni.map(n=>{let cls='';if(d.esito==='ok'&&n===d.ris)cls='ok';if(d.esito==='no'&&n===d.scelta)cls='no';if(d.esito==='no'&&n===d.ris)cls='ok';return `<button class="qopt ${cls}" onclick="quizRisp(${n})">${n}</button>`;}).join("");
+  const sfidaBtn=(s.finita&&!s.sfida&&s.recordOPari)?`<button class="btn-sfida" onclick="avviaQuiz(true)">🔥 Sfida esperto!</button>`:'';
+  box.innerHTML=`<div class="gk-head"><div class="gk-tit">➗ Quiz lampo${s.sfida?' · Sfida':''}</div><button class="gk-close" onclick="tornaGiochi()">✕</button></div>
+    <div class="gioco-area">
+      <div class="hud"><div class="b"><div class="v">${s.giuste}</div><div class="k">Giuste</div></div><div class="b"><div class="v">0:${String(s.tempo).padStart(2,'0')}</div><div class="k">Tempo</div></div></div>
+      ${s.finita?celebraVittoria(giocoEroe,`${s.sfida?'Sfida · ':''}${s.giuste} ${s.giuste===1?'risposta giusta':'risposte giuste'}${s.nuovoRecord?' · nuovo record! 🌟':''}`,sfidaBtn):
+        `<div class="quiz-q"><div class="op">${d.a} ${d.op} ${d.b} = ?</div></div>
+         <div class="quiz-opts">${opts}</div>
+         ${s.streak>=2?`<div class="streak">🔥 ${s.streak} di fila!</div>`:''}`}
     </div>`;
 }
 function toggleLotBar(pid){lotExpand=lotExpand===pid?null:pid;renderLotteria();}
