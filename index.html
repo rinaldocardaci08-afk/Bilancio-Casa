@@ -318,6 +318,11 @@
   .sc.fix{background:var(--green-tint);color:var(--primary);} .sc:disabled{cursor:default;}
   .sc.sel{background:#FFD76A;color:var(--primary-dark);box-shadow:inset 0 0 0 3px #E0A03A;}
   .gioco-esci-mini{align-self:flex-start;background:none;border:none;color:var(--ink-soft);font-size:.82rem;font-weight:700;cursor:pointer;padding:8px 4px;font-family:inherit;margin-top:6px;}
+  .sim-round{text-align:center;font-size:.95rem;color:var(--primary-dark);font-weight:700;margin-bottom:4px;}
+  .sim-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:min(82vw,360px);margin:14px auto 0;}
+  .sim-btn{aspect-ratio:1;border:none;border-radius:22px;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.12);transition:transform .1s,box-shadow .15s,background .12s;}
+  .sim-btn:active{transform:scale(.97);} .sim-btn.on{box-shadow:0 0 0 5px #fff,0 0 26px 6px rgba(255,255,255,.85);transform:scale(1.04);}
+  .sim-btn:disabled{cursor:default;}
   .sud-pad{margin-top:auto;padding-top:16px;}
   .sud-pad-lbl{text-align:center;font-size:.8rem;color:var(--ink-soft);margin-bottom:8px;}
   .sud-pad-row{display:flex;gap:8px;justify-content:center;}
@@ -721,7 +726,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 22;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 23;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -1180,7 +1185,7 @@ function renderGiochiMenu(){
     <div class="giochi">
       ${gioco('🃏','memory','Memory','Trova tutte le coppie','avviaMemory()',true)}
       ${gioco('🔢','sudoku','Sudoku 4×4','Riempi la griglia','avviaSudoku()',true)}
-      ${gioco('🔴','simon','Sequenza colori','Ripeti la sequenza','',false)}
+      ${gioco('🔴','simon','Sequenza colori','Ripeti la sequenza','avviaSimon()',true)}
       ${gioco('✖️','cross','Cross-math','Incastra i numeri','',false)}
     </div>
     <div class="gk-note">Ogni moneta del mese dà turni di gioco. I turni restano finché non li usi. I giochi non danno monete — sono il premio! 🎉</div>`;
@@ -1218,7 +1223,7 @@ function memClick(i){
     else{m.blocco=true;renderMemory();setTimeout(()=>{m.carte[a].girata=false;m.carte[b].girata=false;m.sel=[];m.blocco=false;renderMemory();},850);}
   }else renderMemory();
 }
-function tornaGiochi(){memState=null;sudState=null;renderGiochiMenu();}
+function tornaGiochi(){memState=null;sudState=null;simState=null;renderGiochiMenu();}
 
 /* ===== SUDOKU 4x4 ===== */
 let sudState=null;
@@ -1258,6 +1263,48 @@ function renderSudoku(){
 }
 function sudClick(i){const c=sudState.celle[i];if(c.fissa)return;sudState.sel=(sudState.sel===i?null:i);renderSudoku();}
 function sudSetNum(n){if(sudState.sel==null)return;sudState.celle[sudState.sel].v=n;sudState.sel=null;renderSudoku();}
+
+/* ===== SIMON (sequenza colori) ===== */
+let simState=null;
+const SIM_COLORI=[{id:0,nome:"verde",c:"#3ECF8E",on:"#9DF5CC"},{id:1,nome:"rosso",c:"#FF7D6E",on:"#FFC2BA"},{id:2,nome:"giallo",c:"#FFD15C",on:"#FFE9AE"},{id:3,nome:"blu",c:"#5BB8E8",on:"#B6E2F7"}];
+function avviaSimon(){
+  if(turniDisponibili(giocoEroe)<1){renderGiochiMenu();return;}
+  consumaTurno(giocoEroe);
+  simState={seq:[],pos:0,attivo:null,fase:"guarda",round:0,finita:false};
+  simProssimoRound();
+}
+function simProssimoRound(){
+  const s=simState;s.seq.push(Math.floor(Math.random()*4));s.round=s.seq.length;s.pos=0;s.fase="guarda";
+  renderSimon();
+  let i=0;
+  const mostra=()=>{
+    if(!simState||simState!==s){return;}
+    if(i>=s.seq.length){s.fase="ripeti";s.attivo=null;renderSimon();return;}
+    s.attivo=s.seq[i];renderSimon();
+    setTimeout(()=>{if(!simState||simState!==s)return;s.attivo=null;renderSimon();setTimeout(()=>{i++;mostra();},250);},600);
+  };
+  setTimeout(mostra,700);
+}
+function simClick(c){
+  const s=simState;if(!s||s.fase!=="ripeti"||s.finita)return;
+  if(c!==s.seq[s.pos]){s.finita=true;s.fase="fine";renderSimon();return;}
+  s.attivo=c;renderSimon();setTimeout(()=>{if(!simState||simState!==s)return;s.attivo=null;renderSimon();},200);
+  s.pos++;
+  if(s.pos>=s.seq.length){setTimeout(()=>{if(!simState||simState!==s)return;simProssimoRound();},550);}
+}
+function renderSimon(){
+  const box=document.getElementById("giochiBox"),s=simState;
+  box.className="modal modal-giochi full";
+  const msg=s.fase==="guarda"?"Guarda bene… 👀":(s.fase==="ripeti"?"Tocca a te! Ripeti la sequenza":(s.fase==="fine"?"":""));
+  const bottoni=SIM_COLORI.map(col=>{const acceso=s.attivo===col.id;return `<button class="sim-btn ${acceso?'on':''}" style="background:${acceso?col.on:col.c}" ${s.fase==="ripeti"?'':'disabled'} onclick="simClick(${col.id})"></button>`;}).join("");
+  box.innerHTML=`<div class="gk-head"><div class="gk-tit">🔴 Sequenza colori</div><button class="gk-close" onclick="tornaGiochi()">✕</button></div>
+    <div class="gioco-area">
+      <div class="sim-round">Sequenza di <b>${s.round}</b></div>
+      <div class="mem-info">${msg}</div>
+      <div class="sim-grid">${bottoni}</div>
+      ${s.finita?`<div class="mem-win">🎉 Bravo ${esc(persona(giocoEroe)?persona(giocoEroe).nome:'')}!<br>Hai ripetuto ${s.round-1} ${s.round-1===1?'sequenza':'sequenze'}!</div><button class="btn pod-ok" style="margin-top:14px" onclick="tornaGiochi()">Torna ai giochi</button>`:''}
+    </div>`;
+}
 function dettaglioEroe(pid){return state.lotteria.movimenti.filter(m=>m.persona===pid&&dataNelPeriodoLot(m.data)).slice().sort((a,b)=>(b.data||"").localeCompare(a.data||""));}
 function iconaCompito(nome){const c=state.lotteria.compiti.find(x=>x.nome===nome);return c?c.icona:"⭐";}
 function maxScalaLot(){const L=state.lotteria;const s=Math.max(0,...L.premi.map(p=>+p.soglia||0));const m=Math.max(0,...L.eroi.map(moneteEroe));return Math.max(s,m,1);}
