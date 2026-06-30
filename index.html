@@ -311,18 +311,19 @@
   .mc{aspect-ratio:1;border:none;border-radius:12px;background:linear-gradient(135deg,#1FB6A6,#16808F);font-size:1.9rem;cursor:pointer;display:grid;place-items:center;transition:background .15s;}
   .mc.su{background:#fff;box-shadow:inset 0 0 0 2px var(--green-tint);} .mc.ok{background:#FBE7BF;box-shadow:inset 0 0 0 2px #E0A03A;}
   .mem-win{text-align:center;font-size:1rem;font-weight:800;color:var(--primary-dark);margin-top:16px;line-height:1.4;}
-  .sud-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;max-width:300px;margin:0 auto;background:var(--primary-dark);padding:3px;border-radius:12px;}
-  .sc{aspect-ratio:1;border:none;background:#fff;font-size:1.5rem;font-weight:800;color:var(--primary-dark);cursor:pointer;display:grid;place-items:center;border-radius:3px;font-family:inherit;}
+  .sud-grid{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;width:min(86vw,380px);aspect-ratio:1;margin:0 auto;background:var(--primary-dark);padding:4px;border-radius:14px;}
+  .sud-grid::before{content:"";position:absolute;left:50%;top:4px;bottom:4px;width:3px;transform:translateX(-50%);background:#fff;opacity:.55;border-radius:2px;pointer-events:none;}
+  .sud-grid::after{content:"";position:absolute;top:50%;left:4px;right:4px;height:3px;transform:translateY(-50%);background:#fff;opacity:.55;border-radius:2px;pointer-events:none;}
+  .sc{border:none;background:#fff;font-size:2.2rem;font-weight:800;color:var(--primary-dark);cursor:pointer;display:grid;place-items:center;border-radius:5px;font-family:inherit;}
   .sc.fix{background:var(--green-tint);color:var(--primary);} .sc:disabled{cursor:default;}
-  .sc.br{margin-right:3px;} .sc.bb{margin-bottom:3px;}
   .sc.sel{background:#FFD76A;color:var(--primary-dark);box-shadow:inset 0 0 0 3px #E0A03A;}
+  .gioco-esci-mini{align-self:flex-start;background:none;border:none;color:var(--ink-soft);font-size:.82rem;font-weight:700;cursor:pointer;padding:8px 4px;font-family:inherit;margin-top:6px;}
   .sud-pad{margin-top:auto;padding-top:16px;}
   .sud-pad-lbl{text-align:center;font-size:.8rem;color:var(--ink-soft);margin-bottom:8px;}
   .sud-pad-row{display:flex;gap:8px;justify-content:center;}
   .sud-num{flex:1;max-width:70px;aspect-ratio:1;border:none;border-radius:14px;background:linear-gradient(135deg,#1FB6A6,#16808F);color:#fff;font-size:1.7rem;font-weight:800;cursor:pointer;font-family:inherit;}
   .sud-num.clear{background:#f1f5f5;color:#9aa8a2;font-size:1.2rem;}
   .modal-giochi.full .mem-grid{max-width:420px;margin:0 auto;width:100%;gap:10px;}
-  .modal-giochi.full .sud-grid{max-width:340px;}
   .lot-btn-main{background:linear-gradient(135deg,#1FB6A6,#16808F);color:#fff;} .lot-btn-ghost{background:var(--green-tint);color:var(--primary-dark);}
   .lot-note{font-size:.78rem;color:var(--ink-soft);text-align:center;margin-top:14px;line-height:1.5;}
   .ass-eroi{display:flex;gap:10px;} .ass-eroi .ae{flex:1;border:2px solid var(--line);border-radius:14px;padding:10px;text-align:center;cursor:pointer;background:#fff;}
@@ -720,7 +721,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 20;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 22;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -1205,7 +1206,7 @@ function renderMemory(){
     <div class="gioco-area">
       <div class="mem-info">Mosse: <b>${m.mosse}</b> · Coppie: <b>${trovate/2}/${m.carte.length/2}</b></div>
       <div class="mem-grid">${celle}</div>
-      ${vinto?`<div class="mem-win">🎉 Bravo ${esc(persona(giocoEroe)?persona(giocoEroe).nome:'')}! Hai trovato tutte le coppie!</div><button class="btn pod-ok" style="margin-top:12px" onclick="tornaGiochi()">Torna ai giochi</button>`:`<button class="btn lot-btn-ghost" style="width:100%;margin-top:14px" onclick="tornaGiochi()">Esci dalla partita</button>`}
+      ${vinto?`<div class="mem-win">🎉 Bravo ${esc(persona(giocoEroe)?persona(giocoEroe).nome:'')}! Hai trovato tutte le coppie!</div><button class="btn pod-ok" style="margin-top:12px" onclick="tornaGiochi()">Torna ai giochi</button>`:``}
     </div>`;
 }
 function memClick(i){
@@ -1245,13 +1246,13 @@ function renderSudoku(){
   box.className="modal modal-giochi full";
   const g=s.celle.map(c=>c.v);
   const completa=g.every(v=>v>0),vinto=completa&&sudValida(g);
-  const celle=s.celle.map((c,i)=>{const cls=(i%4===1?'br ':'')+(Math.floor(i/4)===1?'bb ':'')+(c.fissa?'fix ':'')+(s.sel===i?'sel ':'');return `<button class="sc ${cls}" ${c.fissa?'disabled':''} onclick="sudClick(${i})">${c.v||''}</button>`;}).join("");
+  const celle=s.celle.map((c,i)=>{const cls=(c.fissa?'fix ':'')+(s.sel===i?'sel ':'');return `<button class="sc ${cls}" ${c.fissa?'disabled':''} onclick="sudClick(${i})">${c.v||''}</button>`;}).join("");
   const tendina=(s.sel!=null&&!vinto)?`<div class="sud-pad"><div class="sud-pad-lbl">Scegli il numero</div><div class="sud-pad-row">${[1,2,3,4].map(n=>`<button class="sud-num" onclick="sudSetNum(${n})">${n}</button>`).join("")}<button class="sud-num clear" onclick="sudSetNum(0)">✕</button></div></div>`:'';
   box.innerHTML=`<div class="gk-head"><div class="gk-tit">🔢 Sudoku 4×4</div><button class="gk-close" onclick="tornaGiochi()">✕</button></div>
     <div class="gioco-area">
       <div class="mem-info">${s.sel!=null?'Scegli il numero dalla barra in basso':'Tocca una casella vuota'}</div>
       <div class="sud-grid">${celle}</div>
-      ${vinto?`<div class="mem-win">🎉 Bravo ${esc(persona(giocoEroe)?persona(giocoEroe).nome:'')}! Sudoku risolto!</div><button class="btn pod-ok" style="margin-top:12px" onclick="tornaGiochi()">Torna ai giochi</button>`:`${completa?'<div style="text-align:center;color:#d9744f;font-size:.84rem;margin-top:12px;">Quasi! Controlla righe, colonne e quadrati 🤔</div>':''}<button class="btn lot-btn-ghost" style="width:100%;margin-top:14px" onclick="tornaGiochi()">Esci dalla partita</button>`}
+      ${vinto?`<div class="mem-win">🎉 Bravo ${esc(persona(giocoEroe)?persona(giocoEroe).nome:'')}! Sudoku risolto!</div><button class="btn pod-ok" style="margin-top:12px" onclick="tornaGiochi()">Torna ai giochi</button>`:`${completa?'<div style="text-align:center;color:#d9744f;font-size:.84rem;margin-top:12px;">Quasi! Controlla righe, colonne e quadrati 🤔</div>':''}`}
     </div>
     ${tendina}`;
 }
