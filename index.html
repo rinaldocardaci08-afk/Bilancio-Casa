@@ -932,7 +932,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 35;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 36;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -1000,6 +1000,8 @@ function migrate(){
   if(!state.obiettivi) state.obiettivi=[];
   state.obiettivi.forEach(o=>{if(!o.versamenti)o.versamenti=[];});
   if(!state.note) state.note=[];
+  if(!state.entrate) state.entrate=[];
+  state.entrate.forEach(e=>{if(!e.ricorrente&&!e.mese)e.mese=meseCorrente();});
   if(!state.appuntamenti) state.appuntamenti=[];
   if(!state.lotteria)state.lotteria=nuovaLotteria();
   else{if(!state.lotteria.eroi)state.lotteria.eroi=["leo","giulia"];if(!state.lotteria.compiti)state.lotteria.compiti=[];if(!state.lotteria.premi)state.lotteria.premi=[];if(!state.lotteria.movimenti)state.lotteria.movimenti=[];if(!state.lotteria.turniUsati)state.lotteria.turniUsati={};if(!state.lotteria.record)state.lotteria.record={};}
@@ -1051,7 +1053,7 @@ function complimento(pid){return genereDi(pid)==="F"?"Brava":"Bravo";}
 function coriandoliHTML(){const cols=["#FFD76A","#1FB6A6","#FF8C7C","#5BB8E8","#9B8CFF","#7BD88F"];let h="";for(let i=0;i<24;i++){h+=`<span class="conf" style="left:${(Math.random()*100).toFixed(1)}%;background:${cols[i%cols.length]};animation-duration:${(1.8+Math.random()*1.6).toFixed(2)}s;animation-delay:${(Math.random()).toFixed(2)}s;"></span>`;}return h;}
 function celebraVittoria(pid,sottotesto,extra){const p=persona(pid);return `<div class="celebra"><div class="conf-layer">${coriandoliHTML()}</div><div class="cel-av-wrap"><div class="cel-av" style="${avBg(p)}">${avEmoji(p)}</div><div class="cel-badge">🏅</div></div><div class="cel-msg">${complimento(pid)} ${esc(p?p.nome:'')}!</div><div class="cel-sub">${sottotesto}</div>${extra||''}<button class="btn pod-ok" style="margin-top:10px" onclick="tornaGiochi()">Torna ai giochi</button></div>`;}
 function speseDi(m){return state.spese.filter(s=>s.tipo==="fissa"||s.mese===m);}
-function totEntrate(){return state.entrate.reduce((a,e)=>a+(+e.importo||0),0);}
+function totEntrateDi(m){return state.entrate.filter(e=>e.ricorrente||e.mese===m).reduce((a,e)=>a+(+e.importo||0),0);}
 // rate
 function rataFine(r){return spostaMese(r.inizio,(+r.nRate||1)-1);}
 function rataAttivaIn(r,m){return m>=r.inizio && m<=rataFine(r);}
@@ -1094,7 +1096,7 @@ function renderGauge(ent,sp,ris){
 }
 function render(){
   document.getElementById("meseLabel").textContent=meseLabel(meseSel);
-  const ent=totEntrate(),sp=totSpeseDi(meseSel),ris=risparmioMensile(),disp=ent-sp-ris;
+  const ent=totEntrateDi(meseSel),sp=totSpeseDi(meseSel),ris=risparmioMensile(),disp=ent-sp-ris;
   const dEl=document.getElementById("hDisp");dEl.textContent=euro(disp);dEl.classList.toggle("neg",disp<0);
   document.getElementById("hHint").textContent=disp>=0?"dopo spese e risparmio":"stai spendendo più di quanto entra";
   document.getElementById("hEntrate").textContent=euro(ent);
@@ -1343,10 +1345,11 @@ function dettaglioRateHTML(r,pag,n,residuo){
 
 function renderListe(){
   const le=document.getElementById("listaEntrate");
-  le.innerHTML=state.entrate.length?state.entrate.map(e=>`
+  const entVis=state.entrate.filter(e=>e.ricorrente||e.mese===meseSel);
+  le.innerHTML=entVis.length?entVis.map(e=>`
     <div class="row income" onclick="modificaVoce('entrata','${e.id}')">
       <span class="dot" style="background:var(--primary)"></span>
-      <div style="flex:1;min-width:0"><div class="name">${esc(e.nome)}</div><div class="cat">${e.ricorrente?"ogni mese":"una tantum"}</div></div>
+      <div style="flex:1;min-width:0"><div class="name">${esc(e.nome)}</div><div class="cat">${e.ricorrente?"ogni mese":"una tantum · "+meseLabel(e.mese||meseSel)}</div></div>
       <span class="amt num">${euro(e.importo)}</span></div>`).join("")
     :'<div class="empty">Nessuna entrata. Aggiungi lo stipendio.</div>';
   const fisse=state.spese.filter(s=>s.tipo==="fissa"),varie=state.spese.filter(s=>s.tipo==="variabile"&&s.mese===meseSel);
@@ -1399,7 +1402,7 @@ function renderCardSfida(o){
 }
 function renderTrend(){
   let mesi=[],m=meseSel;for(let i=0;i<6;i++){mesi.unshift(m);m=spostaMese(m,-1);}
-  const dati=mesi.map(mm=>({m:mm,ent:totEntrate(),sp:totSpeseDi(mm)}));
+  const dati=mesi.map(mm=>({m:mm,ent:totEntrateDi(mm),sp:totSpeseDi(mm)}));
   const max=Math.max(1,...dati.map(d=>Math.max(d.ent,d.sp)));
   document.getElementById("trend").innerHTML=dati.map(d=>{const he=Math.round(d.ent/max*100),hs=Math.round(d.sp/max*100),sel=d.m===meseSel?"sel":"";
     return `<div class="tcol ${sel}" title="${meseLabel(d.m)} — Entrate ${euro(d.ent)}, Spese ${euro(d.sp)}">
@@ -1413,7 +1416,7 @@ function totCatAnno(cat,anno){
 }
 function renderReport(){renderRepKpi();renderRepClassifica();renderRepAnnuale();renderRepPersone();renderRepProiezione();}
 function renderRepKpi(){
-  const ent=totEntrate(),sp=totSpeseDi(meseSel);
+  const ent=totEntrateDi(meseSel),sp=totSpeseDi(meseSel);
   const tasso=ent>0?Math.round((ent-sp)/ent*100):0;
   const anno=meseSel.split("-")[0],meseN=+meseSel.split("-")[1];
   let mc=null,ml=null;
@@ -1461,7 +1464,7 @@ function renderRepPersone(){
 }
 function renderRepProiezione(){
   const mesi=[meseSel,spostaMese(meseSel,-1),spostaMese(meseSel,-2)];
-  const media=mesi.reduce((a,m)=>a+totSpeseDi(m),0)/3,ent=totEntrate(),rispMedio=ent-media;
+  const media=mesi.reduce((a,m)=>a+totSpeseDi(m),0)/3,ent=totEntrateDi(meseSel),rispMedio=ent-media;
   const meseN=+meseSel.split("-")[1],restano=12-meseN+1;
   const proiezione=Math.max(0,rispMedio)*restano;
   document.getElementById("repProiezione").innerHTML=`
@@ -1875,7 +1878,7 @@ function renderGantt(){
   const carichi=mesiF.map(mm=>({mm,val:totRateDi(mm)}));
   const maxC=Math.max(1,...carichi.map(c=>c.val));
   const scal=[];carichi.forEach((c,i)=>{if(i===0||c.val!==carichi[i-1].val)scal.push(c);});
-  const ent=totEntrate();
+  const ent=totEntrateDi(meseSel);
   document.getElementById("ganttCarico").innerHTML=scal.map((c,i)=>{
     const pct=ent>0?Math.round(c.val/ent*100):0,w=c.val/maxC*100;
     const prev=i>0?scal[i-1].val:null,calo=(prev!==null&&c.val<prev&&prev>0)?Math.round((prev-c.val)/prev*100):0;
@@ -1977,7 +1980,9 @@ function setRic(v){ricSel=v;document.getElementById("ricSeg").querySelectorAll("
 function salvaVoce(){
   const nome=document.getElementById("mNome").value.trim(),imp=+document.getElementById("mImporto").value||0;
   if(!nome){document.getElementById("mNome").focus();return;}
-  if(modKind==="entrata"){const obj={nome,importo:imp,ricorrente:ricSel==="fissa"};if(editing)Object.assign(editing,obj);else state.entrate.push({id:id(),...obj});}
+  if(modKind==="entrata"){const ricorrente=ricSel==="fissa";
+    if(editing){editing.nome=nome;editing.importo=imp;editing.ricorrente=ricorrente;if(ricorrente)delete editing.mese;else if(!editing.mese)editing.mese=meseSel;}
+    else{const obj={id:id(),nome,importo:imp,ricorrente};if(!ricorrente)obj.mese=meseSel;state.entrate.push(obj);}}
   else{const cat=document.getElementById("mCat").value,pers=document.getElementById("mPers").value,icona=iconaDi("voceIconaBtn")||"🧾";
     if(editing){editing.nome=nome;editing.importo=imp;editing.cat=cat;editing.tipo=ricSel;editing.icona=icona;if(pers)editing.persona=pers;else delete editing.persona;if(ricSel==="variabile"&&!editing.mese)editing.mese=meseSel;if(ricSel==="fissa")delete editing.mese;}
     else{const obj={id:id(),nome,importo:imp,cat,tipo:ricSel,icona};if(pers)obj.persona=pers;if(ricSel==="variabile")obj.mese=meseSel;state.spese.push(obj);}}
