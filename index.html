@@ -359,6 +359,21 @@
   .emojis{display:flex;gap:7px;flex-wrap:wrap;}
   .em{width:42px;height:42px;border-radius:11px;background:#f1f6f6;display:grid;place-items:center;font-size:1.5rem;cursor:pointer;border:2px solid transparent;}
   .em.on{border-color:var(--primary);background:var(--green-tint);}
+  /* selettore icona */
+  .pick-btn{display:inline-flex;align-items:center;gap:8px;border:1.5px solid #d2dee0;border-radius:11px;padding:8px 12px;background:#f7fbfb;cursor:pointer;}
+  .pick-btn .pick-em{font-size:1.55rem;line-height:1;}
+  .pick-btn .pick-lbl{font-size:.8rem;color:var(--ink-soft);font-weight:700;}
+  .pick-mini{width:54px;justify-content:center;padding:8px 0;}
+  .icona-sheet{background:#fff;width:100%;max-width:460px;border-radius:24px 24px 0 0;padding:18px 18px 26px;box-shadow:0 -10px 40px rgba(0,0,0,.2);animation:slideUp .25s ease;max-height:80vh;overflow:auto;}
+  .icona-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+  .icona-h b{font-size:1.02rem;color:var(--primary-dark);}
+  .icona-x{font-size:1.3rem;color:#9aa8a2;background:none;border:none;cursor:pointer;}
+  .icona-grp-t{font-size:.72rem;font-weight:800;color:#9aa8a2;text-transform:uppercase;letter-spacing:.04em;margin:13px 2px 7px;}
+  .icona-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .icona-em{font-size:1.5rem;text-align:center;padding:8px 0;border-radius:10px;cursor:pointer;border:2px solid transparent;}
+  .icona-em:active{background:var(--green-tint);}
+  .icona-em.on{border-color:var(--amber);background:#FBE7BF;}
+  .sp-ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:1.05rem;flex-shrink:0;}
   .toggle-row{display:flex;align-items:center;justify-content:space-between;background:#FBF3E2;border-radius:12px;padding:12px 14px;cursor:pointer;}
   .toggle-row .t-txt{font-weight:700;font-size:.9rem;color:#8a5a12;}
   .toggle-row .t-sub{font-size:.72rem;color:#a07d3c;font-weight:400;}
@@ -535,6 +550,7 @@
       <div class="add-row">
         <input class="add-imp" id="qsImporto" type="number" inputmode="decimal" placeholder="€ importo">
         <select class="add-cat" id="qsCat"></select>
+        <button type="button" id="qsIconaBtn" class="pick-btn pick-mini" onclick="apriIconPicker('qsIconaBtn')"><span class="pick-em">🧾</span></button>
       </div>
       <input class="add-desc" id="qsDesc" type="text" placeholder="Descrizione (facoltativa)">
       <button class="add-btn" onclick="aggiungiSpesaRapida()">Aggiungi spesa</button>
@@ -694,6 +710,7 @@
   <div class="field"><label>Nome</label><input type="text" id="mNome" placeholder="Es. Scarpe"></div>
   <div class="field"><label>Importo (€)</label><input type="number" id="mImporto" inputmode="decimal" placeholder="0"></div>
   <div class="field" id="catField"><label>Categoria</label><select id="mCat"></select></div>
+  <div class="field" id="iconaField"><label>Icona</label><button type="button" id="voceIconaBtn" class="pick-btn" onclick="apriIconPicker('voceIconaBtn')"><span class="pick-em">🧾</span><span class="pick-lbl">Tocca per scegliere ▾</span></button></div>
   <div class="field" id="persField"><label>Per chi (facoltativo)</label><select id="mPers"></select></div>
   <div class="field"><label>Ricorrenza</label>
     <div class="segm" id="ricSeg">
@@ -745,6 +762,7 @@
 <div class="overlay" id="ovGoal"><div class="modal">
   <h3 id="goalTitle">Nuovo obiettivo</h3>
   <div class="field"><label>Nome</label><input type="text" id="gNome" placeholder="Es. Vacanza / Cene fuori"></div>
+  <div class="field"><label>Icona</label><button type="button" id="goalIconaBtn" class="pick-btn" onclick="apriIconPicker('goalIconaBtn')"><span class="pick-em">🎯</span><span class="pick-lbl">Tocca per scegliere ▾</span></button></div>
   <div class="field"><label>Tipo</label>
     <div class="seg" id="gTipoSeg">
       <button type="button" class="on" id="gTipoRacc" onclick="setGoalTipo('raccolta')">Raccolta fondi</button>
@@ -798,7 +816,7 @@
   <div class="group-label">Compiti</div>
   <div id="gestCompiti"></div>
   <div class="ass-add">
-    <input type="text" id="cmpIcona" placeholder="📚" maxlength="2" style="width:46px;text-align:center">
+    <button type="button" id="cmpIconaBtn" class="pick-btn pick-mini" onclick="apriIconPicker('cmpIconaBtn')"><span class="pick-em">📚</span></button>
     <input type="text" id="cmpNome" placeholder="Nome compito" style="flex:1">
     <input type="number" id="cmpMonete" placeholder="🪙" inputmode="numeric" style="width:54px">
     <button class="btn lot-btn-main btn-sm" onclick="aggiungiCompito()">+</button>
@@ -806,7 +824,7 @@
   <div class="group-label">Premi-traguardo</div>
   <div id="gestPremi"></div>
   <div class="ass-add">
-    <input type="text" id="prmIcona" placeholder="🍦" maxlength="2" style="width:46px;text-align:center">
+    <button type="button" id="prmIconaBtn" class="pick-btn pick-mini" onclick="apriIconPicker('prmIconaBtn')"><span class="pick-em">🍦</span></button>
     <input type="text" id="prmNome" placeholder="Nome premio" style="flex:1">
     <input type="number" id="prmSoglia" placeholder="🪙" inputmode="numeric" style="width:54px">
     <button class="btn lot-btn-main btn-sm" onclick="aggiungiPremio()">+</button>
@@ -814,7 +832,12 @@
   <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovGestione')">Chiudi</button></div>
 </div></div>
 
-<!-- MODALE VERSAMENTO -->
+<!-- MODALE SELETTORE ICONA -->
+<div class="overlay ov-icona" id="ovIcona"><div class="icona-sheet">
+  <div class="icona-h"><b>Scegli un'icona</b><button class="icona-x" onclick="chiudi('ovIcona')">✕</button></div>
+  <div id="iconaGriglia"></div>
+</div></div>
+
 <div class="overlay" id="ovVers"><div class="modal">
   <h3>Aggiungi versamento</h3>
   <p style="color:var(--ink-soft);font-size:.9rem;margin:-8px 0 16px;">Una somma messa da parte oggi per questo obiettivo, oltre al risparmio mensile.</p>
@@ -859,7 +882,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 32;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 33;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -1030,9 +1053,9 @@ function popolaQsCat(){const sel=document.getElementById("qsCat");if(!sel)return
 function aggiungiSpesaRapida(){
   const el=document.getElementById("qsImporto"),imp=+el.value||0;
   if(imp<=0){el.focus();return;}
-  const cat=document.getElementById("qsCat").value,desc=document.getElementById("qsDesc").value.trim();
-  state.spese.push({id:id(),nome:desc||cat,importo:imp,cat,tipo:"variabile",mese:meseSel});
-  el.value="";document.getElementById("qsDesc").value="";render();
+  const cat=document.getElementById("qsCat").value,desc=document.getElementById("qsDesc").value.trim(),icona=iconaDi("qsIconaBtn")||"🧾";
+  state.spese.push({id:id(),nome:desc||cat,importo:imp,cat,tipo:"variabile",mese:meseSel,icona});
+  el.value="";document.getElementById("qsDesc").value="";setIconaBtn("qsIconaBtn","🧾");render();
 }
 
 function renderNote(){
@@ -1177,8 +1200,9 @@ function renderListe(){
 function rigaSpesa(s){
   const p=s.persona?persona(s.persona):null;
   const avHtml=p?`<span class="mini-av" style="background-image:url('${p.avatar}');background-color:${p.colore}"></span>`:'';
+  const ic=s.icona?`<span class="sp-ic" style="background:${catColor(s.cat)}22">${esc(s.icona)}</span>`:`<span class="dot" style="background:${catColor(s.cat)}"></span>`;
   return `<div class="row" onclick="modificaVoce('spesa','${s.id}')">
-    <span class="dot" style="background:${catColor(s.cat)}"></span>
+    ${ic}
     <div style="flex:1;min-width:0"><div class="name">${esc(s.nome)}</div><div class="cat">${esc(s.cat)}${p?' · '+esc(p.nome):''}</div></div>
     ${avHtml}<span class="amt num">${euro(s.importo)}</span></div>`;
 }
@@ -1191,7 +1215,7 @@ function renderObiettivi(){
     let eta=rim<=0?"🎉 Raggiunto!":(o.mensile>0?("mancano ~"+Math.ceil(rim/o.mensile)+(Math.ceil(rim/o.mensile)===1?" mese":" mesi")):"imposta un mensile");
     const vers=(o.versamenti||[]).slice().reverse().map(v=>`<div class="vers"><span class="vd">${formatData(v.data)}</span><span class="va">+${euro(v.importo)}</span><button class="vx" onclick="event.stopPropagation();chiediEliminaVersamento('${o.id}','${v.id}')">🗑</button></div>`).join("");
     return `<div class="goal" onclick="modificaObiettivo('${o.id}')">
-      <div class="goal-top"><span class="goal-name">${esc(o.nome)}</span><span class="goal-monthly">da parte <b class="num">${euro(o.mensile)}</b>/mese</span></div>
+      <div class="goal-top"><span class="goal-name">${o.icona?esc(o.icona)+' ':''}${esc(o.nome)}</span><span class="goal-monthly">da parte <b class="num">${euro(o.mensile)}</b>/mese</span></div>
       <div class="progress"><i style="width:${pct}%"></i></div>
       <div class="goal-meta"><span>Obiettivo <b class="num">${euro(o.target)}</b></span><span>Messo da parte <b class="num">${euro(o.saved)}</b></span><span>Manca <b class="num">${euro(rim)}</b></span></div>
       <div class="goal-act"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();apriVersamento('${o.id}')">+ Versamento</button><span class="eta">${eta} · ${Math.round(pct)}%</span></div>
@@ -1208,7 +1232,7 @@ function renderCardSfida(o){
   let esito="";
   if(s.conclusa){esito=s.sotto?`<div class="sf-win">🏆 Sfida vinta! Risparmiati ${euro(s.risparmio)}</div>`:`<div class="sf-lose">Sforata di ${euro(s.sforo)} — sarà per la prossima 💪</div>`;}
   return `<div class="goal sfida-card" onclick="modificaObiettivo('${o.id}')">
-    <div class="sf-top"><span class="goal-name">${esc(o.nome)}</span><span class="sf-per">${mlbl}${s.conclusa?' · conclusa':''}</span></div>
+    <div class="sf-top"><span class="goal-name">${o.icona?esc(o.icona)+' ':''}${esc(o.nome)}</span><span class="sf-per">${mlbl}${s.conclusa?' · conclusa':''}</span></div>
     <div class="sf-cat">${cat} · tetto ${euro(s.tetto)}</div>
     <div class="sf-bar"><div class="sf-fill ${fillCls}" style="width:${Math.max(pct,12)}%">${euro(s.speso)}</div></div>
     <div class="sf-foot">${foot}</div>
@@ -1649,18 +1673,18 @@ function renderGestione(){
   document.getElementById("gestPremi").innerHTML=L.premi.length?L.premi.slice().sort((a,b)=>(a.soglia||0)-(b.soglia||0)).map(p=>`<div class="gest-row"><span class="gi">${esc(p.icona||'🎁')}</span><span class="gn">${esc(p.nome)}</span><span class="gv num">${p.soglia} 🪙</span><button class="gx" onclick="chiediEliminaPremio('${p.id}')">🗑</button></div>`).join(""):'<div class="empty">Nessun premio.</div>';
 }
 function aggiungiCompito(){
-  const nome=document.getElementById("cmpNome").value.trim(),icona=document.getElementById("cmpIcona").value.trim()||"⭐",monete=+document.getElementById("cmpMonete").value||0;
+  const nome=document.getElementById("cmpNome").value.trim(),icona=iconaDi("cmpIconaBtn")||"⭐",monete=+document.getElementById("cmpMonete").value||0;
   if(!nome){document.getElementById("cmpNome").focus();return;}if(monete<=0){document.getElementById("cmpMonete").focus();return;}
   state.lotteria.compiti.push({id:id(),nome,icona,monete});
-  document.getElementById("cmpNome").value="";document.getElementById("cmpIcona").value="";document.getElementById("cmpMonete").value="";render();renderGestione();
+  document.getElementById("cmpNome").value="";setIconaBtn("cmpIconaBtn","📚");document.getElementById("cmpMonete").value="";render();renderGestione();
 }
 function chiediEliminaCompito(cid){const c=state.lotteria.compiti.find(x=>x.id===cid);if(!c)return;
   chiediConferma('Eliminare il compito "'+c.nome+'"?',()=>{state.lotteria.compiti=state.lotteria.compiti.filter(x=>x.id!==cid);render();renderGestione();});}
 function aggiungiPremio(){
-  const nome=document.getElementById("prmNome").value.trim(),icona=document.getElementById("prmIcona").value.trim()||"🎁",soglia=+document.getElementById("prmSoglia").value||0;
+  const nome=document.getElementById("prmNome").value.trim(),icona=iconaDi("prmIconaBtn")||"🎁",soglia=+document.getElementById("prmSoglia").value||0;
   if(!nome){document.getElementById("prmNome").focus();return;}if(soglia<=0){document.getElementById("prmSoglia").focus();return;}
   state.lotteria.premi.push({id:id(),nome,icona,soglia});
-  document.getElementById("prmNome").value="";document.getElementById("prmIcona").value="";document.getElementById("prmSoglia").value="";render();renderGestione();
+  document.getElementById("prmNome").value="";setIconaBtn("prmIconaBtn","🍦");document.getElementById("prmSoglia").value="";render();renderGestione();
 }
 function chiediEliminaPremio(pid){const p=state.lotteria.premi.find(x=>x.id===pid);if(!p)return;
   chiediConferma('Eliminare il premio "'+p.nome+'"?',()=>{state.lotteria.premi=state.lotteria.premi.filter(x=>x.id!==pid);render();renderGestione();});}
@@ -1703,6 +1727,31 @@ function renderGantt(){
   }).join("");
 }
 function renderCategorie(){document.getElementById("listaCat").innerHTML=state.categorie.map(c=>`<div class="chip" onclick="modificaCategoria('${esc(c.nome)}')"><span class="dot" style="background:${c.colore}"></span>${esc(c.nome)}</div>`).join("");}
+
+/* ===== SELETTORE ICONA (popup riutilizzabile) ===== */
+const ICON_SET=[
+  ["Casa e faccende",["🧹","🧽","🧺","🛏️","🍽️","🗑️","🪴","🚿","🧴","🐶","🐱","🌱","🔧","🧼","🍳","🛒"]],
+  ["Scuola e bravura",["📚","✏️","🎒","📖","🖍️","🎨","⭐","🏆","🎯","💪","🧠","🎵","⚽","🚲","🏊","🥋"]],
+  ["Premi e dolcezze",["🍦","🍫","🍪","🍩","🧁","🍬","🍕","🎮","🎁","🎬","🎡","🧸","🎈","🎟️","🍔","🥤"]],
+  ["Soldi e obiettivi",["💶","💰","🐷","🪙","📈","✈️","🏖️","🚗","🏠","📱","💻","👟","🎸","💍","🛋️","🎓"]],
+  ["Spese di casa",["🛒","🏠","💡","💧","🔥","📶","📺","🚙","⛽","🩺","💊","👕","🎁","🐾","🧾","📦"]]
+];
+let iconaTargetBtn=null;
+function apriIconPicker(btnId){
+  iconaTargetBtn=btnId;
+  const corr=iconaDi(btnId);
+  document.getElementById("iconaGriglia").innerHTML=ICON_SET.map(([titolo,ems])=>
+    `<div class="icona-grp-t">${titolo}</div><div class="icona-grid">`+
+    ems.map(e=>`<span class="icona-em ${e===corr?'on':''}" onclick="scegliIcona('${e}')">${e}</span>`).join("")+
+    `</div>`).join("");
+  apri("ovIcona");
+}
+function scegliIcona(e){
+  if(iconaTargetBtn){const b=document.getElementById(iconaTargetBtn);if(b)b.querySelector(".pick-em").textContent=e;}
+  chiudi("ovIcona");
+}
+function iconaDi(btnId){const b=document.getElementById(btnId);return b?b.querySelector(".pick-em").textContent.trim():"";}
+function setIconaBtn(btnId,e){const b=document.getElementById(btnId);if(b)b.querySelector(".pick-em").textContent=e;}
 const COMP_EMOJI=["👦","👧","🧒","👨","👩","👴","👵","🧑","👶","🐶"];
 let editComp=null, compEmojiSel="🧒", compColorSel="#5B8DEF", compGenere="M", compEroe=false;
 function renderComponenti(){
@@ -1747,6 +1796,8 @@ function apriModale(kind){
   document.getElementById("mNome").value="";document.getElementById("mImporto").value="";
   document.getElementById("mDelete").style.display="none";
   document.getElementById("catField").style.display=kind==="spesa"?"block":"none";
+  document.getElementById("iconaField").style.display=kind==="spesa"?"block":"none";
+  setIconaBtn("voceIconaBtn","🧾");
   document.getElementById("persField").style.display=kind==="spesa"?"block":"none";
   popolaCat();popolaPers();setRic("fissa");apri("ovVoce");setTimeout(()=>document.getElementById("mNome").focus(),100);
 }
@@ -1757,6 +1808,8 @@ function modificaVoce(kind,vid){
   document.getElementById("mNome").value=editing.nome;document.getElementById("mImporto").value=editing.importo;
   document.getElementById("mDelete").style.display="block";
   document.getElementById("catField").style.display=kind==="spesa"?"block":"none";
+  document.getElementById("iconaField").style.display=kind==="spesa"?"block":"none";
+  setIconaBtn("voceIconaBtn",editing.icona||"🧾");
   document.getElementById("persField").style.display=kind==="spesa"?"block":"none";
   popolaCat();popolaPers();
   if(kind==="spesa"){document.getElementById("mCat").value=editing.cat;document.getElementById("mPers").value=editing.persona||"";}
@@ -1767,9 +1820,9 @@ function salvaVoce(){
   const nome=document.getElementById("mNome").value.trim(),imp=+document.getElementById("mImporto").value||0;
   if(!nome){document.getElementById("mNome").focus();return;}
   if(modKind==="entrata"){const obj={nome,importo:imp,ricorrente:ricSel==="fissa"};if(editing)Object.assign(editing,obj);else state.entrate.push({id:id(),...obj});}
-  else{const cat=document.getElementById("mCat").value,pers=document.getElementById("mPers").value;
-    if(editing){editing.nome=nome;editing.importo=imp;editing.cat=cat;editing.tipo=ricSel;if(pers)editing.persona=pers;else delete editing.persona;if(ricSel==="variabile"&&!editing.mese)editing.mese=meseSel;if(ricSel==="fissa")delete editing.mese;}
-    else{const obj={id:id(),nome,importo:imp,cat,tipo:ricSel};if(pers)obj.persona=pers;if(ricSel==="variabile")obj.mese=meseSel;state.spese.push(obj);}}
+  else{const cat=document.getElementById("mCat").value,pers=document.getElementById("mPers").value,icona=iconaDi("voceIconaBtn")||"🧾";
+    if(editing){editing.nome=nome;editing.importo=imp;editing.cat=cat;editing.tipo=ricSel;editing.icona=icona;if(pers)editing.persona=pers;else delete editing.persona;if(ricSel==="variabile"&&!editing.mese)editing.mese=meseSel;if(ricSel==="fissa")delete editing.mese;}
+    else{const obj={id:id(),nome,importo:imp,cat,tipo:ricSel,icona};if(pers)obj.persona=pers;if(ricSel==="variabile")obj.mese=meseSel;state.spese.push(obj);}}
   if(modKind==="spesa"&&noteOrigine){const nn=state.note.find(x=>x.id===noteOrigine);if(nn)nn.fatto=true;noteOrigine=null;}
   chiudi("ovVoce");render();
 }
@@ -1812,19 +1865,21 @@ function setGoalTipo(t){goalTipo=t;document.getElementById("gTipoRacc").classLis
 function setGoalAmbito(a){goalAmbito=a;document.getElementById("gAmbCat").classList.toggle("on",a==="categoria");document.getElementById("gAmbTot").classList.toggle("on",a==="totale");document.getElementById("gCatField").style.display=a==="categoria"?"":"none";}
 function apriObiettivo(){editGoal=null;document.getElementById("goalTitle").textContent="Nuovo obiettivo";
   document.getElementById("gNome").value="";document.getElementById("gTarget").value="";document.getElementById("gSaved").value="";document.getElementById("gMensile").value="";document.getElementById("gTetto").value="";
-  popolaGoalCat();setGoalTipo("raccolta");setGoalAmbito("categoria");
+  popolaGoalCat();setGoalTipo("raccolta");setGoalAmbito("categoria");setIconaBtn("goalIconaBtn","🎯");
   document.getElementById("gDelete").style.display="none";apri("ovGoal");setTimeout(()=>document.getElementById("gNome").focus(),100);}
 function modificaObiettivo(gid){editGoal=state.obiettivi.find(o=>o.id===gid);if(!editGoal)return;
   document.getElementById("goalTitle").textContent="Modifica obiettivo";
   document.getElementById("gNome").value=editGoal.nome;
+  setIconaBtn("goalIconaBtn",editGoal.icona||"🎯");
   popolaGoalCat();
   if(editGoal.tipo==="sfida"){setGoalTipo("sfida");setGoalAmbito(editGoal.ambito||"categoria");if(editGoal.cat)document.getElementById("gCat").value=editGoal.cat;document.getElementById("gTetto").value=editGoal.tetto||"";}
   else{setGoalTipo("raccolta");document.getElementById("gTarget").value=editGoal.target||"";document.getElementById("gSaved").value=editGoal.saved||"";document.getElementById("gMensile").value=editGoal.mensile||"";}
   document.getElementById("gDelete").style.display="block";apri("ovGoal");}
 function salvaObiettivo(){const nome=document.getElementById("gNome").value.trim();if(!nome){document.getElementById("gNome").focus();return;}
+  const icona=iconaDi("goalIconaBtn")||"🎯";
   let obj;
-  if(goalTipo==="sfida"){const tetto=+document.getElementById("gTetto").value||0;const ambito=goalAmbito;obj={nome,tipo:"sfida",ambito,cat:ambito==="categoria"?document.getElementById("gCat").value:null,tetto,mese:(editGoal&&editGoal.mese)?editGoal.mese:meseSel};}
-  else{obj={nome,target:+document.getElementById("gTarget").value||0,saved:+document.getElementById("gSaved").value||0,mensile:+document.getElementById("gMensile").value||0};}
+  if(goalTipo==="sfida"){const tetto=+document.getElementById("gTetto").value||0;const ambito=goalAmbito;obj={nome,icona,tipo:"sfida",ambito,cat:ambito==="categoria"?document.getElementById("gCat").value:null,tetto,mese:(editGoal&&editGoal.mese)?editGoal.mese:meseSel};}
+  else{obj={nome,icona,target:+document.getElementById("gTarget").value||0,saved:+document.getElementById("gSaved").value||0,mensile:+document.getElementById("gMensile").value||0};}
   if(editGoal){if(goalTipo!=="sfida"&&!editGoal.versamenti)editGoal.versamenti=[];Object.keys(editGoal).forEach(k=>{if(!['id','versamenti'].includes(k))delete editGoal[k];});Object.assign(editGoal,obj);}
   else state.obiettivi.push({id:id(),...obj});
   chiudi("ovGoal");render();}
