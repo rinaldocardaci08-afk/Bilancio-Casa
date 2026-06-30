@@ -322,6 +322,8 @@
   .g-lock{background:#f1f5f5;color:#9aa8a2;border-radius:10px;padding:7px 11px;font-size:.72rem;font-weight:700;flex:none;}
   .mem-info{text-align:center;font-size:.86rem;color:var(--ink-soft);margin-bottom:12px;}
   .mem-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .mem-grid.g10{grid-template-columns:repeat(5,1fr);}
+  .btn-sfida{margin-top:12px;background:linear-gradient(135deg,#FF9F43,#E0701A);color:#fff;border:none;border-radius:12px;padding:12px 20px;font-weight:800;width:100%;font-size:.95rem;cursor:pointer;font-family:inherit;box-shadow:0 6px 16px rgba(224,112,26,.3);}
   .mc{aspect-ratio:1;border:none;border-radius:12px;background:linear-gradient(135deg,#1FB6A6,#16808F);font-size:1.9rem;cursor:pointer;display:grid;place-items:center;transition:background .15s;}
   .mc.su{background:#fff;box-shadow:inset 0 0 0 2px var(--green-tint);} .mc.ok{background:#FBE7BF;box-shadow:inset 0 0 0 2px #E0A03A;}
   .mem-win{text-align:center;font-size:1rem;font-weight:800;color:var(--primary-dark);margin-top:16px;line-height:1.4;}
@@ -381,6 +383,7 @@
   .rec-av{width:30px;height:30px;border-radius:50%;background:center/cover no-repeat var(--green-tint);flex:none;}
   .rec-nome{font-weight:800;font-size:.9rem;}
   .rec-line{display:flex;align-items:center;gap:6px;font-size:.76rem;padding:3px 0;color:#46565b;}
+  .rec-line.rl-sfida{color:#E0701A;font-weight:700;}
   .rec-line .i{width:18px;text-align:center;} .rec-line .vv{margin-left:auto;font-weight:700;color:var(--primary-dark);}
   .carou{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;}
   .game-card{flex:0 0 86%;scroll-snap-align:center;background:linear-gradient(165deg,#f0f7f7,#fff);border:1px solid #e3eded;border-radius:18px;padding:16px 14px 18px;}
@@ -402,6 +405,7 @@
   .sud-num{flex:1;max-width:70px;aspect-ratio:1;border:none;border-radius:14px;background:linear-gradient(135deg,#1FB6A6,#16808F);color:#fff;font-size:1.7rem;font-weight:800;cursor:pointer;font-family:inherit;}
   .sud-num.clear{background:#f1f5f5;color:#9aa8a2;font-size:1.2rem;}
   .modal-giochi.full .mem-grid{max-width:420px;margin:0 auto;width:100%;gap:10px;}
+  .modal-giochi.full .mem-grid.g10{max-width:340px;gap:7px;}
   .lot-btn-main{background:linear-gradient(135deg,#1FB6A6,#16808F);color:#fff;} .lot-btn-ghost{background:var(--green-tint);color:var(--primary-dark);}
   .lot-note{font-size:.78rem;color:var(--ink-soft);text-align:center;margin-top:14px;line-height:1.5;}
   .ass-eroi{display:flex;gap:10px;} .ass-eroi .ae{flex:1;border:2px solid var(--line);border-radius:14px;padding:10px;text-align:center;cursor:pointer;background:#fff;}
@@ -847,7 +851,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 29;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 30;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -958,7 +962,7 @@ const GENERE_NOTO={papa:"M",mamma:"F",leo:"M",giulia:"F"};
 function genereDi(pid){const p=persona(pid);if(p&&p.genere)return p.genere;return GENERE_NOTO[pid]||null;}
 function complimento(pid){return genereDi(pid)==="F"?"Brava":"Bravo";}
 function coriandoliHTML(){const cols=["#FFD76A","#1FB6A6","#FF8C7C","#5BB8E8","#9B8CFF","#7BD88F"];let h="";for(let i=0;i<24;i++){h+=`<span class="conf" style="left:${(Math.random()*100).toFixed(1)}%;background:${cols[i%cols.length]};animation-duration:${(1.8+Math.random()*1.6).toFixed(2)}s;animation-delay:${(Math.random()).toFixed(2)}s;"></span>`;}return h;}
-function celebraVittoria(pid,sottotesto){const p=persona(pid);return `<div class="celebra"><div class="conf-layer">${coriandoliHTML()}</div><div class="cel-av-wrap"><div class="cel-av" style="${avBg(p)}">${avEmoji(p)}</div><div class="cel-badge">🏅</div></div><div class="cel-msg">${complimento(pid)} ${esc(p?p.nome:'')}!</div><div class="cel-sub">${sottotesto}</div><button class="btn pod-ok" style="margin-top:16px" onclick="tornaGiochi()">Evviva! 🎉</button></div>`;}
+function celebraVittoria(pid,sottotesto,extra){const p=persona(pid);return `<div class="celebra"><div class="conf-layer">${coriandoliHTML()}</div><div class="cel-av-wrap"><div class="cel-av" style="${avBg(p)}">${avEmoji(p)}</div><div class="cel-badge">🏅</div></div><div class="cel-msg">${complimento(pid)} ${esc(p?p.nome:'')}!</div><div class="cel-sub">${sottotesto}</div>${extra||''}<button class="btn pod-ok" style="margin-top:10px" onclick="tornaGiochi()">Torna ai giochi</button></div>`;}
 function speseDi(m){return state.spese.filter(s=>s.tipo==="fissa"||s.mese===m);}
 function totEntrate(){return state.entrate.reduce((a,e)=>a+(+e.importo||0),0);}
 // rate
@@ -1349,7 +1353,8 @@ function renderGiochiMenu(){
 }
 
 /* ===== RECORD E CLASSIFICA ===== */
-const GIOCHI_META={memory:{ic:'🃏',nome:'Memory',bassoMeglio:true},sudoku:{ic:'🔢',nome:'Sudoku',bassoMeglio:true},simon:{ic:'🔴',nome:'Sequenza colori',bassoMeglio:false}};
+const GIOCHI_META={memory:{ic:'🃏',nome:'Memory',bassoMeglio:true},sudoku:{ic:'🔢',nome:'Sudoku',bassoMeglio:true},simon:{ic:'🔴',nome:'Sequenza colori',bassoMeglio:false},memory_sfida:{ic:'🔥',nome:'Memory sfida',bassoMeglio:true},sudoku_sfida:{ic:'🔥',nome:'Sudoku sfida',bassoMeglio:true}};
+const GIOCHI_BASE=['memory','sudoku','simon'];
 function registraRecord(pid,gioco,valore){
   if(!state.lotteria.record)state.lotteria.record={};
   if(!state.lotteria.record[pid])state.lotteria.record[pid]={};
@@ -1359,13 +1364,13 @@ function registraRecord(pid,gioco,valore){
 }
 function recordDi(pid,gioco){return (state.lotteria.record&&state.lotteria.record[pid]&&state.lotteria.record[pid][gioco]!=null)?state.lotteria.record[pid][gioco]:null;}
 function fmtTempo(sec){sec=Math.round(sec);const m=Math.floor(sec/60),s=sec%60;return m>0?(m+"m "+(s<10?"0":"")+s+"s"):(s+"s");}
-function fmtRecord(gioco,v){if(v==null)return "—";if(gioco==='sudoku')return fmtTempo(v);if(gioco==='memory')return v+" mosse";return v+" seq.";}
+function fmtRecord(gioco,v){if(v==null)return "—";if(gioco==='sudoku'||gioco==='sudoku_sfida')return fmtTempo(v);if(gioco==='memory'||gioco==='memory_sfida')return v+" mosse";return v+" seq.";}
 function apriClassifica(){renderClassifica();}
 function renderClassifica(){
   const box=document.getElementById("giochiBox");
   box.className="modal modal-giochi full";
-  const eroi=state.lotteria.eroi,giochi=Object.keys(GIOCHI_META);
-  const recCard=eroi.map(pid=>{const p=persona(pid);const righe=giochi.map(g=>`<div class="rec-line"><span class="i">${GIOCHI_META[g].ic}</span>${GIOCHI_META[g].nome}<span class="vv">${fmtRecord(g,recordDi(pid,g))}</span></div>`).join("");return `<div class="rec-card"><div class="rec-head"><span class="rec-av" style="${avBg(p)}">${avEmoji(p)}</span><span class="rec-nome">${esc(p?p.nome:'?')}</span></div>${righe}</div>`;}).join("");
+  const eroi=state.lotteria.eroi,giochi=GIOCHI_BASE;
+  const recCard=eroi.map(pid=>{const p=persona(pid);let righe=giochi.map(g=>`<div class="rec-line"><span class="i">${GIOCHI_META[g].ic}</span>${GIOCHI_META[g].nome}<span class="vv">${fmtRecord(g,recordDi(pid,g))}</span></div>`).join("");['memory_sfida','sudoku_sfida'].forEach(g=>{if(recordDi(pid,g)!=null)righe+=`<div class="rec-line rl-sfida"><span class="i">${GIOCHI_META[g].ic}</span>${GIOCHI_META[g].nome}<span class="vv">${fmtRecord(g,recordDi(pid,g))}</span></div>`;});return `<div class="rec-card"><div class="rec-head"><span class="rec-av" style="${avBg(p)}">${avEmoji(p)}</span><span class="rec-nome">${esc(p?p.nome:'?')}</span></div>${righe}</div>`;}).join("");
   const cards=giochi.map(g=>{
     const meglio=GIOCHI_META[g].bassoMeglio;
     const cl=eroi.map(pid=>({pid,p:persona(pid),v:recordDi(pid,g)})).sort((a,b)=>{if(a.v==null&&b.v==null)return 0;if(a.v==null)return 1;if(b.v==null)return -1;return meglio?a.v-b.v:b.v-a.v;});
@@ -1386,14 +1391,13 @@ function renderClassifica(){
 }
 
 /* ===== MEMORY ===== */
-const MEM_EMOJI=["🐶","🐱","🦊","🐰","🐼","🦁","🐸","🐵"];
-function avviaMemory(){
-  if(turniDisponibili(giocoEroe)<1){renderGiochiMenu();return;}
-  consumaTurno(giocoEroe);
-  const coppie=MEM_EMOJI.slice(0,6),mazzo=[];
+const MEM_EMOJI=["🐶","🐱","🦊","🐰","🐼","🦁","🐸","🐵","🐷","🐔","🐧","🦄"];
+function avviaMemory(sfida){
+  if(!sfida){if(turniDisponibili(giocoEroe)<1){renderGiochiMenu();return;}consumaTurno(giocoEroe);}
+  const nC=sfida?10:6,coppie=MEM_EMOJI.slice(0,nC),mazzo=[];
   coppie.forEach(e=>{mazzo.push(e,e);});
   for(let i=mazzo.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[mazzo[i],mazzo[j]]=[mazzo[j],mazzo[i]];}
-  memState={carte:mazzo.map(e=>({e,girata:false,trovata:false})),sel:[],blocco:false,mosse:0};
+  memState={carte:mazzo.map(e=>({e,girata:false,trovata:false})),sel:[],blocco:false,mosse:0,sfida:!!sfida};
   renderMemory();
 }
 function renderMemory(){
@@ -1401,11 +1405,13 @@ function renderMemory(){
   box.className="modal modal-giochi full";
   const trovate=m.carte.filter(c=>c.trovata).length,vinto=trovate===m.carte.length;
   const celle=m.carte.map((c,i)=>{const su=c.girata||c.trovata;return `<button class="mc ${su?'su':''} ${c.trovata?'ok':''}" onclick="memClick(${i})">${su?c.e:''}</button>`;}).join("");
-  box.innerHTML=`<div class="gk-head"><div class="gk-tit">🃏 Memory</div><button class="gk-close" onclick="tornaGiochi()">✕</button></div>
+  const sfidaBtn=(vinto&&!m.sfida&&m.recordOPari)?`<button class="btn-sfida" onclick="avviaMemory(true)">🔥 Sfida da 10 coppie!</button>`:'';
+  const sub=`${m.sfida?'Sfida 10 coppie · ':''}${m.mosse} mosse${m.nuovoRecord?' · nuovo record! 🌟':''}`;
+  box.innerHTML=`<div class="gk-head"><div class="gk-tit">🃏 Memory${m.sfida?' · Sfida':''}</div><button class="gk-close" onclick="tornaGiochi()">✕</button></div>
     <div class="gioco-area">
       <div class="mem-info">Mosse: <b>${m.mosse}</b> · Coppie: <b>${trovate/2}/${m.carte.length/2}</b></div>
-      <div class="mem-grid">${celle}</div>
-      ${vinto?celebraVittoria(giocoEroe,`${m.mosse} mosse${m.nuovoRecord?' · nuovo record! 🌟':''}`):''}
+      <div class="mem-grid ${m.sfida?'g10':''}">${celle}</div>
+      ${vinto?celebraVittoria(giocoEroe,sub,sfidaBtn):''}
     </div>`;
 }
 function memClick(i){
@@ -1413,7 +1419,9 @@ function memClick(i){
   c.girata=true;m.sel.push(i);
   if(m.sel.length===2){
     m.mosse++;const a=m.sel[0],b=m.sel[1];
-    if(m.carte[a].e===m.carte[b].e){m.carte[a].trovata=true;m.carte[b].trovata=true;m.sel=[];if(m.carte.every(c=>c.trovata)&&!m.registrato){m.registrato=true;m.nuovoRecord=registraRecord(giocoEroe,'memory',m.mosse);}renderMemory();}
+    if(m.carte[a].e===m.carte[b].e){m.carte[a].trovata=true;m.carte[b].trovata=true;m.sel=[];
+      if(m.carte.every(c=>c.trovata)&&!m.registrato){m.registrato=true;const gio=m.sfida?'memory_sfida':'memory',prec=recordDi(giocoEroe,gio);m.recordOPari=(prec==null)||(m.mosse<=prec);m.nuovoRecord=registraRecord(giocoEroe,gio,m.mosse);}
+      renderMemory();}
     else{m.blocco=true;renderMemory();setTimeout(()=>{m.carte[a].girata=false;m.carte[b].girata=false;m.sel=[];m.blocco=false;renderMemory();},850);}
   }else renderMemory();
 }
@@ -1430,14 +1438,13 @@ function sudValida(g){
   box.forEach(b=>gruppi.push(b.map(i=>g[i])));
   return gruppi.every(gr=>{const s=new Set(gr);return s.size===4&&[1,2,3,4].every(n=>s.has(n));});
 }
-function avviaSudoku(){
-  if(turniDisponibili(giocoEroe)<1){renderGiochiMenu();return;}
-  consumaTurno(giocoEroe);
+function avviaSudoku(sfida){
+  if(!sfida){if(turniDisponibili(giocoEroe)<1){renderGiochiMenu();return;}consumaTurno(giocoEroe);}
   const sol=SUD_SOL[Math.floor(Math.random()*SUD_SOL.length)].split("").map(Number);
-  const nascondi=7;const idx=[...Array(16).keys()];
+  const nascondi=sfida?10:7;const idx=[...Array(16).keys()];
   for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
   const nasc=new Set(idx.slice(0,nascondi));
-  sudState={celle:sol.map((v,i)=>nasc.has(i)?{v:0,fissa:false}:{v,fissa:true}),sel:null,t0:Date.now(),registrato:false};
+  sudState={celle:sol.map((v,i)=>nasc.has(i)?{v:0,fissa:false}:{v,fissa:true}),sel:null,t0:Date.now(),registrato:false,sfida:!!sfida};
   renderSudoku();
 }
 function renderSudoku(){
@@ -1445,16 +1452,17 @@ function renderSudoku(){
   box.className="modal modal-giochi full";
   const g=s.celle.map(c=>c.v);
   const completa=g.every(v=>v>0),vinto=completa&&sudValida(g);
-  if(vinto&&!s.registrato){s.registrato=true;s.tempoFinale=(Date.now()-s.t0)/1000;s.nuovoRecord=registraRecord(giocoEroe,'sudoku',s.tempoFinale);}
+  if(vinto&&!s.registrato){s.registrato=true;s.tempoFinale=(Date.now()-s.t0)/1000;const gio=s.sfida?'sudoku_sfida':'sudoku',prec=recordDi(giocoEroe,gio);s.recordOPari=(prec==null)||(s.tempoFinale<=prec);s.nuovoRecord=registraRecord(giocoEroe,gio,s.tempoFinale);}
   const cella=(i)=>{const c=s.celle[i];const cls=(c.fissa?'fix ':'')+(s.sel===i?'sel ':'');return `<button class="sc ${cls}" ${c.fissa?'disabled':''} onclick="sudClick(${i})">${c.v||''}</button>`;};
   const boxIdx=[[0,1,4,5],[2,3,6,7],[8,9,12,13],[10,11,14,15]],boxCls=['dark','light','light','dark'];
   const griglia=boxIdx.map((b,bi)=>`<div class="sud-box ${boxCls[bi]}">${b.map(cella).join("")}</div>`).join("");
+  const sfidaBtn=(vinto&&!s.sfida&&s.recordOPari)?`<button class="btn-sfida" onclick="avviaSudoku(true)">🔥 Sfida esperto!</button>`:'';
   const tendina=(s.sel!=null&&!vinto)?`<div class="sud-pad"><div class="sud-pad-lbl">Scegli il numero</div><div class="sud-pad-row">${[1,2,3,4].map(n=>`<button class="sud-num" onclick="sudSetNum(${n})">${n}</button>`).join("")}<button class="sud-num clear" onclick="sudSetNum(0)">✕</button></div></div>`:'';
-  box.innerHTML=`<div class="gk-head"><div class="gk-tit">🔢 Sudoku 4×4</div><button class="gk-close" onclick="tornaGiochi()">✕</button></div>
+  box.innerHTML=`<div class="gk-head"><div class="gk-tit">🔢 Sudoku 4×4${s.sfida?' · Sfida':''}</div><button class="gk-close" onclick="tornaGiochi()">✕</button></div>
     <div class="gioco-area">
       <div class="mem-info">${s.sel!=null?'Scegli il numero dalla barra in basso':'Tocca una casella vuota'}</div>
       <div class="sud-grid">${griglia}</div>
-      ${vinto?celebraVittoria(giocoEroe,`Risolto in ${fmtTempo(s.tempoFinale)}${s.nuovoRecord?' · record! 🌟':''}`):`${completa?'<div style="text-align:center;color:#d9744f;font-size:.84rem;margin-top:12px;">Quasi! Controlla righe, colonne e quadrati 🤔</div>':''}`}
+      ${vinto?celebraVittoria(giocoEroe,`${s.sfida?'Sfida · ':''}Risolto in ${fmtTempo(s.tempoFinale)}${s.nuovoRecord?' · record! 🌟':''}`,sfidaBtn):`${completa?'<div style="text-align:center;color:#d9744f;font-size:.84rem;margin-top:12px;">Quasi! Controlla righe, colonne e quadrati 🤔</div>':''}`}
     </div>
     ${tendina}`;
 }
