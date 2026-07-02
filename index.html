@@ -599,7 +599,7 @@
       <div class="row2">
         <div><div class="k2">Entrate</div><div class="v2 num" id="hEntrate">€0</div></div>
         <div><div class="k2">Spese</div><div class="v2 num" id="hSpese">€0</div></div>
-        <div><div class="k2">Risparmio</div><div class="v2 num" id="hRis">€0</div></div>
+        <div><div class="k2">Salvadanaio</div><div class="v2 num" id="hRis">€0</div></div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.22)">
         <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;opacity:.85">Saldo contabile</div>
@@ -608,6 +608,10 @@
           <button onclick="apri('ovQuestoMese')" aria-label="Dettaglio questo mese" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:1rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center">ⓘ</button>
         </div>
       </div>
+    </div>
+    <div class="card" id="cardSalvadanaio">
+      <div class="card-head" style="justify-content:space-between"><h2><span class="ic">🐷</span> Salvadanaio</h2></div>
+      <div id="salvadanaioBody"></div>
     </div>
     <div class="card">
       <div class="card-head"><h2><span class="ic">📝</span> Elenco promemoria</h2></div>
@@ -648,6 +652,15 @@
     <h3 id="listaFullTitle">Elenco</h3>
     <div id="listaFullBody" style="overflow:auto;max-height:68vh"></div>
     <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovListaFull')">Chiudi</button></div>
+  </div></div>
+
+  <!-- POPUP SALVADANAIO -->
+  <div class="overlay" id="ovSalv"><div class="modal">
+    <h3 id="salvTitle">Salvadanaio</h3>
+    <div class="field"><label>Importo</label><input type="number" id="salvImporto" inputmode="decimal" placeholder="0,00"></div>
+    <div class="field"><label>Quando</label><input type="date" id="salvData"></div>
+    <div id="salvHint" style="font-size:.82rem;color:var(--ink-soft);margin-bottom:10px"></div>
+    <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovSalv')">Annulla</button><button class="btn" id="salvOk" onclick="salvaSalv()">Conferma</button></div>
   </div></div>
 
   <!-- SPESE -->
@@ -777,6 +790,13 @@
 
     <div class="sectitle">Impostazioni</div>
     <div class="card">
+      <div class="card-head"><h2><span class="ic">🏦</span> Saldo iniziale del conto</h2></div>
+      <div style="font-size:.82rem;color:var(--ink-soft);margin-bottom:10px">Quanto hai sul conto al mese di partenza. Da qui l'app riporta il saldo di mese in mese (credito ponte).</div>
+      <div class="field"><label>Importo di partenza</label><input type="number" id="setSaldoIniz" inputmode="decimal" placeholder="0,00"></div>
+      <div class="field"><label>Mese di partenza</label><input type="month" id="setSaldoMese"></div>
+      <button class="btn" onclick="salvaSaldoIniziale()">Salva saldo iniziale</button>
+    </div>
+    <div class="card">
       <div class="card-head"><h2><span class="ic">👨‍👩‍👧‍👦</span> Componenti della famiglia</h2>
         <button class="btn btn-ghost btn-sm" onclick="apriComponente()">+ Aggiungi</button></div>
       <div id="listaComponenti"></div>
@@ -828,6 +848,7 @@
       <button data-ric="variabile" onclick="setRic('variabile')">Solo questo mese</button>
     </div>
   </div>
+  <div class="field" id="entrataGiornoField" style="display:none"><label>Giorno di accredito (facoltativo)</label><input type="number" id="mEntrataGiorno" inputmode="numeric" min="1" max="31" placeholder="Es. 16 — INPS; 27 — stipendio"><div style="font-size:.78rem;color:var(--ink-soft);margin-top:5px">Prima di quel giorno resta tra le entrate attese; da quel giorno entra nel saldo reale. Vuoto = inizio mese.</div></div>
   <div class="field" id="pagField"><label>Pagamento</label>
     <div class="segm" id="pagSeg">
       <button data-pag="carta" onclick="setPag('carta')">💳 Carta</button>
@@ -1053,7 +1074,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 43;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 45;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -1088,7 +1109,9 @@ function id(){return Math.random().toString(36).slice(2,9);}
 function meseCorrente(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
 
 function datiEsempio(){return{
-  entrate:[{id:id(),nome:"Stipendio",importo:1800,ricorrente:true}],
+  saldoIniziale:{valore:3000,mese:oggiISO().slice(0,7)},
+  movimentiSalvadanaio:[],
+  entrate:[{id:id(),nome:"Stipendio",importo:1800,ricorrente:true,giorno:27},{id:id(),nome:"Assegno INPS",importo:180,ricorrente:true,giorno:16}],
   spese:[
     {id:id(),nome:"Affitto",importo:650,cat:"Casa",tipo:"variabile",ricorrente:true,giorno:5},
     {id:id(),nome:"Ludoteca",importo:120,cat:"Figli",tipo:"variabile",ricorrente:true,giorno:10,persone:["leo"]},
@@ -1110,13 +1133,15 @@ function datiAppuntamentiEsempio(){const o=oggiISO();return[
   {id:id(),testo:"Dentista",data:o,ora:"15:00",icona:"🦷",persone:["giulia"],fatto:false},
   {id:id(),testo:"Equitazione",data:isoPiu(o,1),ora:"16:00",icona:"🐎",persone:["giulia","leo"],fatto:false}
 ];}
-function statoVuoto(){return{entrate:[],spese:[],categorie:DEFAULT_CATS.map(c=>({...c})),persone:DEFAULT_PERSONE.map(p=>({...p})),rate:[],obiettivi:[],note:[],appuntamenti:[],lotteria:nuovaLotteria()};}
+function statoVuoto(){return{entrate:[],spese:[],categorie:DEFAULT_CATS.map(c=>({...c})),persone:DEFAULT_PERSONE.map(p=>({...p})),rate:[],obiettivi:[],note:[],appuntamenti:[],movimentiSalvadanaio:[],saldoIniziale:{valore:0,mese:oggiISO().slice(0,7)},lotteria:nuovaLotteria()};}
 
 function migrate(){
   if(!state.categorie||!state.categorie.length) state.categorie=DEFAULT_CATS.map(c=>({...c}));
   if(!state.persone||!state.persone.length) state.persone=DEFAULT_PERSONE.map(p=>({...p}));
   state.persone.forEach(p=>{if(!p.genere&&GENERE_NOTO[p.id])p.genere=GENERE_NOTO[p.id];});
   if(!state.rate) state.rate=[];
+  if(!state.movimentiSalvadanaio) state.movimentiSalvadanaio=[];
+  if(!state.saldoIniziale) state.saldoIniziale={valore:0,mese:oggiISO().slice(0,7)};
   if(state.risparmio && !state.obiettivi){const r=state.risparmio;state.obiettivi=[{id:id(),nome:r.nome||"Obiettivo",target:r.target||0,saved:r.saved||0,mensile:r.mensile||0}];delete state.risparmio;}
   if(!state.obiettivi) state.obiettivi=[];
   state.obiettivi.forEach(o=>{if(!o.versamenti)o.versamenti=[];});
@@ -1190,13 +1215,53 @@ function ricorrentiMese(m){return state.spese.filter(s=>s.ricorrente&&ricAttivaI
 function dataAddebitoRic(s,m){const ult=ultimoGiornoMese(m),g=Math.min(+s.giorno||ult,ult);return m+"-"+String(g).padStart(2,"0");}
 function speseSostenuteMese(m){const o=oggiISO();return speseUnaTantumMese(m).filter(s=>dataDiSpesa(s)<=o).concat(ricorrentiMese(m).filter(s=>dataAddebitoRic(s,m)<=o));}
 function speseProgrammateMese(m){const o=oggiISO();return speseUnaTantumMese(m).filter(s=>dataDiSpesa(s)>o).concat(ricorrentiMese(m).filter(s=>dataAddebitoRic(s,m)>o));}
-function entrateIncassateMese(m){const o=oggiISO();return state.entrate.filter(e=>e.ricorrente||((e.mese||(e.data||"").slice(0,7))===m&&dataDiEntrata(e)<=o));}
-function entrateAtteseMese(m){const o=oggiISO();return state.entrate.filter(e=>!e.ricorrente&&(e.mese||(e.data||"").slice(0,7))===m&&dataDiEntrata(e)>o);}
+function dataAccreditoRic(e,m){const ult=ultimoGiornoMese(m),g=Math.min(+e.giorno||1,ult);return m+"-"+String(g).padStart(2,"0");}
+function entrateUnaTantumMese(m){return state.entrate.filter(e=>!e.ricorrente&&(e.mese||(e.data||"").slice(0,7))===m);}
+function entrateRicorrentiMese(m){return state.entrate.filter(e=>e.ricorrente);}
+function entrateIncassateMese(m){const o=oggiISO();return entrateUnaTantumMese(m).filter(e=>dataDiEntrata(e)<=o).concat(entrateRicorrentiMese(m).filter(e=>dataAccreditoRic(e,m)<=o));}
+function entrateAtteseMese(m){const o=oggiISO();return entrateUnaTantumMese(m).filter(e=>dataDiEntrata(e)>o).concat(entrateRicorrentiMese(m).filter(e=>dataAccreditoRic(e,m)>o));}
 function rateScaduteMese(m){const o=oggiISO();return rateAttiveDi(m).filter(r=>dataScadenzaRata(r,meseDiff(r.inizio,m))<=o);}
 function rateFutureMese(m){const o=oggiISO();return rateAttiveDi(m).filter(r=>dataScadenzaRata(r,meseDiff(r.inizio,m))>o);}
 function _sum(arr,k){return arr.reduce((a,x)=>a+(+x[k]||0),0);}
-function saldoRealeMese(m){return _sum(entrateIncassateMese(m),"importo")-_sum(speseSostenuteMese(m),"importo")-_sum(rateScaduteMese(m),"rata");}
-function saldoContabileMese(m){return saldoRealeMese(m)+_sum(entrateAtteseMese(m),"importo")-_sum(speseProgrammateMese(m),"importo")-_sum(rateFutureMese(m),"rata");}
+/* ===== SALVADANAIO (cassa risparmi, movimenti manuali datati) ===== */
+function salvadanaioMovMese(m){return (state.movimentiSalvadanaio||[]).filter(mv=>(mv.data||"").slice(0,7)===m);}
+function salvadanaioSaldo(){const o=oggiISO();return (state.movimentiSalvadanaio||[]).reduce((a,mv)=>a+(((mv.data||"")<=o)?(mv.tipo==="metti"?(+mv.importo||0):-(+mv.importo||0)):0),0);}
+function _salvNettoAffrontato(m){const o=oggiISO();return salvadanaioMovMese(m).filter(mv=>(mv.data||"")<=o).reduce((a,mv)=>a+(mv.tipo==="metti"?(+mv.importo||0):-(+mv.importo||0)),0);}
+function _salvNettoMese(m){return salvadanaioMovMese(m).reduce((a,mv)=>a+(mv.tipo==="metti"?(+mv.importo||0):-(+mv.importo||0)),0);}
+
+/* ===== SALDO con RIPORTO (credito ponte) ===== */
+function _ancoraMese(){return (state.saldoIniziale&&state.saldoIniziale.mese)||oggiISO().slice(0,7);}
+function _saldoInizialeValore(){return +(state.saldoIniziale&&state.saldoIniziale.valore)||0;}
+function aperturaMese(m){const anc=_ancoraMese();if(m<=anc)return (m===anc)?_saldoInizialeValore():0;return chiusuraMese(spostaMese(m,-1));}
+function _movRealiMese(m){return _sum(entrateIncassateMese(m),"importo")-_sum(speseSostenuteMese(m),"importo")-_sum(rateScaduteMese(m),"rata")-_salvNettoAffrontato(m);}
+function _movContabiliMese(m){return _sum(entrateIncassateMese(m),"importo")+_sum(entrateAtteseMese(m),"importo")-_sum(speseSostenuteMese(m),"importo")-_sum(speseProgrammateMese(m),"importo")-_sum(rateScaduteMese(m),"rata")-_sum(rateFutureMese(m),"rata")-_salvNettoMese(m);}
+function saldoRealeMese(m){return aperturaMese(m)+_movRealiMese(m);}
+function chiusuraMese(m){return aperturaMese(m)+_movContabiliMese(m);}
+function saldoContabileMese(m){return chiusuraMese(m);}
+let salvTipo="metti";
+function renderSalvadanaio(){const el=document.getElementById("salvadanaioBody");if(!el)return;const s=salvadanaioSaldo();
+  el.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    <div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft)">Da parte</div><div class="num" style="font-size:1.6rem;font-weight:800">${euro(s)}</div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-sm" onclick="apriSalv('metti')">＋ Metti</button>
+      <button class="btn btn-ghost btn-sm" onclick="apriSalv('togli')" ${s<=0?'disabled':''}>− Togli</button>
+    </div></div>
+    <div style="font-size:.78rem;color:var(--ink-soft)">Al riparo: non compaiono nel saldo reale finché non li togli.</div>`;
+}
+function apriSalv(tipo){salvTipo=tipo;
+  document.getElementById("salvTitle").textContent=tipo==="metti"?"🐷 Metti da parte":"🐷 Togli dal salvadanaio";
+  document.getElementById("salvHint").textContent=tipo==="metti"?"Esce dal conto reale ed entra nel salvadanaio.":("Rientra nel conto reale. Disponibile: "+euro(salvadanaioSaldo()));
+  document.getElementById("salvImporto").value="";document.getElementById("salvData").value=oggiISO();
+  apri("ovSalv");setTimeout(()=>document.getElementById("salvImporto").focus(),100);
+}
+function salvaSalv(){const imp=+document.getElementById("salvImporto").value||0,data=document.getElementById("salvData").value||oggiISO();
+  if(imp<=0){document.getElementById("salvImporto").focus();return;}
+  if(salvTipo==="togli"&&imp>salvadanaioSaldo()){alert("Non puoi togliere più di quanto c'è nel salvadanaio ("+euro(salvadanaioSaldo())+").");return;}
+  state.movimentiSalvadanaio.push({id:id(),tipo:salvTipo,importo:imp,data});
+  chiudi("ovSalv");render();
+}
+function renderSaldoIniziale(){const si=state.saldoIniziale||{valore:0,mese:oggiISO().slice(0,7)};const a=document.getElementById("setSaldoIniz"),b=document.getElementById("setSaldoMese");if(a&&document.activeElement!==a)a.value=si.valore||"";if(b&&document.activeElement!==b)b.value=si.mese||oggiISO().slice(0,7);}
+function salvaSaldoIniziale(){const v=+document.getElementById("setSaldoIniz").value||0,m=document.getElementById("setSaldoMese").value||oggiISO().slice(0,7);state.saldoIniziale={valore:v,mese:m};render();}
 // rate
 function rataFine(r){return spostaMese(r.inizio,(+r.nRate||1)-1);}
 function rataAttivaIn(r,m){return m>=r.inizio && m<=rataFine(r);}
@@ -1244,10 +1309,10 @@ function render(){
   document.getElementById("hHint").textContent=disp>=0?"saldo reale · quello che hai ora":"sei sotto zero sul reale";
   document.getElementById("hEntrate").textContent=euro(ent);
   document.getElementById("hSpese").textContent=euro(sp);
-  document.getElementById("hRis").textContent=euro(ris);
+  document.getElementById("hRis").textContent=euro(salvadanaioSaldo());
   document.getElementById("hContabile").textContent=euro(saldoContabileMese(meseSel));
   renderGauge(ent,sp,ris);
-  renderSaldoMese();renderAffrontate();renderDaAffrontare();renderNote();renderAppuntamenti();renderBachecaObiettivi();
+  renderSaldoMese();renderSalvadanaio();renderSaldoIniziale();renderAffrontate();renderDaAffrontare();renderNote();renderAppuntamenti();renderBachecaObiettivi();
   renderGrafico();renderPersone();renderRate();renderGantt();renderListe();renderObiettivi();renderTrend();renderCategorie();renderReport();renderLotteria();popolaQsCat();renderComponenti();
   if(calOpen)renderCalendario();
   save();
@@ -1641,7 +1706,11 @@ function renderSaldoMese(){
   const reale=saldoRealeMese(m),cont=saldoContabileMese(m);
   const entAtt=_sum(entrateAtteseMese(m),"importo"),prog=_sum(speseProgrammateMese(m),"importo"),rateFut=_sum(rateFutureMese(m),"rata");
   const impegni=entAtt+prog+rateFut,cNeg=cont<0;
+  const apertura=aperturaMese(m),salvNet=_salvNettoMese(m);
   el.innerHTML=`
+   <div style="display:flex;justify-content:space-between;align-items:center;background:#eef3f6;border-radius:12px;padding:9px 12px;margin-bottom:12px;font-size:.85rem">
+     <span style="color:var(--ink-soft)">Riporto dal mese scorso</span><b class="num">${euro(apertura)}</b>
+   </div>
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
      <div style="background:#f3f6f4;border-radius:14px;padding:12px 14px">
        <div style="font-size:.75rem;color:var(--ink-soft)">hai ora</div>
@@ -1672,10 +1741,11 @@ function rigaImpegno(v,daFare){
   const pay=(daFare&&!isRata&&!v.ric)?`<button class="btn btn-ghost btn-sm" style="margin-left:6px" onclick="pagaOra('${v.id}')" title="Segna pagata oggi">✓</button>`:'';
   return `<div class="row">${ic}<div style="flex:1;min-width:0" ${click}><div class="name">${esc(v.nome)}</div><div class="cat">${meta}</div></div><span class="amt num">${euro(v.importo)}</span>${pay}</div>`;
 }
-function _vociSpesa(arr){return arr.map(s=>({tipo:"spesa",nome:s.nome,cat:s.cat,icona:s.icona,importo:+s.importo||0,data:dataDiSpesa(s),id:s.id,persone:personeSpesa(s),pagamento:s.pagamento,ric:!!s.ricorrente}));}
+function _dataAddebitoSpesa(s,m){return s.ricorrente?dataAddebitoRic(s,m):dataDiSpesa(s);}
+function _vociSpesa(arr,m){return arr.map(s=>({tipo:"spesa",nome:s.nome,cat:s.cat,icona:s.icona,importo:+s.importo||0,data:_dataAddebitoSpesa(s,m),id:s.id,persone:personeSpesa(s),pagamento:s.pagamento,ric:!!s.ricorrente}));}
 function _vociRata(arr,m){return arr.map(r=>({tipo:"rata",nome:r.nome,cat:"Mutui e prestiti",importo:+r.rata||0,data:dataScadenzaRata(r,meseDiff(r.inizio,m)),id:r.id}));}
-function vociDaAffrontare(m){return _vociSpesa(speseProgrammateMese(m)).concat(_vociRata(rateFutureMese(m),m)).sort((a,b)=>(a.data||"").localeCompare(b.data||""));}
-function vociAffrontate(m){return _vociSpesa(speseSostenuteMese(m)).concat(_vociRata(rateScaduteMese(m),m)).sort((a,b)=>(b.data||"").localeCompare(a.data||""));}
+function vociDaAffrontare(m){return _vociSpesa(speseProgrammateMese(m),m).concat(_vociRata(rateFutureMese(m),m)).sort((a,b)=>(a.data||"").localeCompare(b.data||""));}
+function vociAffrontate(m){return _vociSpesa(speseSostenuteMese(m),m).concat(_vociRata(rateScaduteMese(m),m)).sort((a,b)=>(b.data||"").localeCompare(a.data||""));}
 function _totRiga(lbl,tot){return `<div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:8px;padding-top:8px;font-size:.9rem"><span style="color:var(--ink-soft)">${lbl}</span><b class="num">${euro(tot)}</b></div>`;}
 function renderDaAffrontare(){
   const el=document.getElementById("listaDaAffrontare");if(!el)return;const m=meseSel;const voci=vociDaAffrontare(m);
@@ -2302,6 +2372,7 @@ function apriModale(kind,mode){
   document.getElementById("ricField").style.display=kind==="entrata"?"block":"none";
   document.getElementById("progMesiField").style.display=prog?"block":"none";
   document.getElementById("mData").value=oggiISO();
+  document.getElementById("mEntrataGiorno").value="";
   document.getElementById("mProgN").value="";
   popolaCat();spesaPersoneSel=[];popolaSpesaWho();setRic("fissa");setPag("carta");setProgMesi("uno");
   aggiornaDataField();apri("ovVoce");setTimeout(()=>document.getElementById("mNome").focus(),100);
@@ -2338,21 +2409,22 @@ function modificaVoce(kind,vid){
   popolaCat();
   if(spesa){document.getElementById("mCat").value=editing.cat;spesaPersoneSel=personeSpesa(editing).slice();popolaSpesaWho();}
   setPag(editing.pagamento||"carta");
+  document.getElementById("mEntrataGiorno").value=(kind==="entrata"&&editing.ricorrente&&editing.giorno)?editing.giorno:"";
   if(kind==="entrata")setRic(editing.ricorrente?"fissa":"variabile");
   setProgMesi(progMesiMode);
   aggiornaDataField();apri("ovVoce");
 }
-function setRic(v){ricSel=v;document.getElementById("ricSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.ric===v));aggiornaDataField();}
+function setRic(v){ricSel=v;document.getElementById("ricSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.ric===v));document.getElementById("entrataGiornoField").style.display=(modKind==="entrata"&&v==="fissa")?"block":"none";aggiornaDataField();}
 function setPag(v){pagSel=v;document.getElementById("pagSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.pag===v));}
 function salvaVoce(){
   const nome=document.getElementById("mNome").value.trim(),imp=+document.getElementById("mImporto").value||0;
   if(!nome){document.getElementById("mNome").focus();return;}
   const dataIn=document.getElementById("mData").value||oggiISO();
-  if(modKind==="entrata"){const ricorrente=ricSel==="fissa";
+  if(modKind==="entrata"){const ricorrente=ricSel==="fissa";const gEnt=+document.getElementById("mEntrataGiorno").value||0;
     if(editing){editing.nome=nome;editing.importo=imp;editing.ricorrente=ricorrente;
-      if(ricorrente){delete editing.mese;delete editing.data;}
-      else{editing.data=dataIn;editing.mese=dataIn.slice(0,7);}}
-    else{const obj={id:id(),nome,importo:imp,ricorrente};if(!ricorrente){obj.data=dataIn;obj.mese=dataIn.slice(0,7);}state.entrate.push(obj);}}
+      if(ricorrente){delete editing.mese;delete editing.data;if(gEnt)editing.giorno=gEnt;else delete editing.giorno;}
+      else{editing.data=dataIn;editing.mese=dataIn.slice(0,7);delete editing.giorno;}}
+    else{const obj={id:id(),nome,importo:imp,ricorrente};if(ricorrente){if(gEnt)obj.giorno=gEnt;}else{obj.data=dataIn;obj.mese=dataIn.slice(0,7);}state.entrate.push(obj);}}
   else{const cat=document.getElementById("mCat").value,icona=iconaDi("voceIconaBtn")||"🧾",pagamento=pagSel,persone=spesaPersoneSel.slice();
     const prog=(spesaMode==="programmata");
     function campiTempo(){
