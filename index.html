@@ -601,14 +601,13 @@
         <div><div class="k2">Spese</div><div class="v2 num" id="hSpese">€0</div></div>
         <div><div class="k2">Risparmio</div><div class="v2 num" id="hRis">€0</div></div>
       </div>
-    </div>
-    <div class="card" id="cardSaldoMese">
-      <div class="card-head"><h2><span class="ic">💰</span> Questo mese</h2></div>
-      <div id="saldoMese"></div>
-    </div>
-    <div class="card">
-      <div class="card-head" style="justify-content:space-between"><h2><span class="ic">📌</span> Spese da affrontare</h2><button class="mini-add" onclick="apriModale('spesa','programmata')">＋</button></div>
-      <div id="listaDaAffrontare"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.22)">
+        <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;opacity:.85">Saldo contabile</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="num" style="font-size:1.25rem;font-weight:800" id="hContabile">€0</div>
+          <button onclick="apri('ovQuestoMese')" aria-label="Dettaglio questo mese" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:1rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center">ⓘ</button>
+        </div>
+      </div>
     </div>
     <div class="card">
       <div class="card-head"><h2><span class="ic">📝</span> Elenco promemoria</h2></div>
@@ -624,14 +623,32 @@
       <div id="listaAppuntamenti"></div>
     </div>
     <div class="card">
-      <div class="card-head"><h2><span class="ic">📅</span> Da pagare questo mese</h2></div>
-      <div id="listaScadenze"></div>
+      <div class="card-head" style="justify-content:space-between"><h2><span class="ic">✅</span> Spese affrontate</h2><button class="mini-add" onclick="apriModale('spesa','diretta')">＋</button></div>
+      <div id="listaAffrontate"></div>
+    </div>
+    <div class="card">
+      <div class="card-head" style="justify-content:space-between"><h2><span class="ic">📌</span> Spese da affrontare</h2><button class="mini-add" onclick="apriModale('spesa','programmata')">＋</button></div>
+      <div id="listaDaAffrontare"></div>
     </div>
     <div class="card">
       <div class="card-head"><h2><span class="ic">🎯</span> I tuoi obiettivi</h2></div>
       <div id="bachecaObiettivi"></div>
     </div>
   </section>
+
+  <!-- POPUP QUESTO MESE -->
+  <div class="overlay" id="ovQuestoMese"><div class="modal">
+    <h3><span class="ic">💰</span> Questo mese</h3>
+    <div id="saldoMese"></div>
+    <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovQuestoMese')">Chiudi</button></div>
+  </div></div>
+
+  <!-- POPUP ELENCO A PAGINA INTERA -->
+  <div class="overlay" id="ovListaFull"><div class="modal">
+    <h3 id="listaFullTitle">Elenco</h3>
+    <div id="listaFullBody" style="overflow:auto;max-height:68vh"></div>
+    <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovListaFull')">Chiudi</button></div>
+  </div></div>
 
   <!-- SPESE -->
   <section id="sec-spese" class="screen">
@@ -795,23 +812,22 @@
   <div class="field"><label>Nome</label><input type="text" id="mNome" placeholder="Es. Scarpe"></div>
   <div class="field"><label>Importo (€)</label><input type="number" id="mImporto" inputmode="decimal" placeholder="0"></div>
   <div class="field" id="dataField" style="display:none"><label id="dataLbl">Data</label><input type="date" id="mData" oninput="aggiornaDataField()"><div id="dataHint" style="font-size:.78rem;color:var(--ink-soft);margin-top:5px"></div></div>
-  <div class="field" id="progMesiField" style="display:none"><label>Quanto dura?</label>
+  <div class="field" id="progMesiField" style="display:none"><label>Si ripete?</label>
     <div class="segm" id="progMesiSeg">
-      <button type="button" data-pm="uno" onclick="setProgMesi('uno')">Solo questo mese</button>
-      <button type="button" data-pm="piu" onclick="setProgMesi('piu')">Più mesi</button>
+      <button type="button" data-pm="uno" onclick="setProgMesi('uno')">Una tantum</button>
+      <button type="button" data-pm="piu" onclick="setProgMesi('piu')">Abbonamento</button>
     </div>
-    <input type="number" id="mProgN" inputmode="numeric" value="3" min="2" max="24" style="display:none;margin-top:8px" placeholder="Per quanti mesi?">
+    <input type="number" id="mProgN" inputmode="numeric" min="1" max="120" style="display:none;margin-top:8px" placeholder="Per quanti mesi? (vuoto = sempre)">
   </div>
   <div class="field" id="catField"><label>Categoria</label><select id="mCat"></select></div>
   <div class="field" id="iconaField"><label>Icona</label><button type="button" id="voceIconaBtn" class="pick-btn" onclick="apriIconPicker('voceIconaBtn')"><span class="pick-em">🧾</span><span class="pick-lbl">Tocca per scegliere ▾</span></button></div>
-  <div class="field" id="persField"><label>Per chi (facoltativo)</label><select id="mPers"></select></div>
+  <div class="field" id="persField"><label>Per chi (facoltativo)</label><div class="who" id="spesaWho"></div></div>
   <div class="field" id="ricField"><label>Ricorrenza</label>
     <div class="segm" id="ricSeg">
       <button data-ric="fissa" onclick="setRic('fissa')">Ogni mese</button>
       <button data-ric="variabile" onclick="setRic('variabile')">Solo questo mese</button>
     </div>
   </div>
-  <div class="field" id="fissaGiornoField" style="display:none"><label>Giorno di addebito (facoltativo)</label><input type="number" id="mGiorno" inputmode="numeric" min="1" max="31" placeholder="Es. 5 — il giorno in cui esce dal conto"><div style="font-size:.78rem;color:var(--ink-soft);margin-top:5px">Fino a quel giorno pesa solo sul contabile; da quel giorno anche sul reale. Se lo lasci vuoto, conta a fine mese.</div></div>
   <div class="field" id="pagField"><label>Pagamento</label>
     <div class="segm" id="pagSeg">
       <button data-pag="carta" onclick="setPag('carta')">💳 Carta</button>
@@ -1037,7 +1053,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 41;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 42;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -1074,11 +1090,11 @@ function meseCorrente(){const d=new Date();return d.getFullYear()+"-"+String(d.g
 function datiEsempio(){return{
   entrate:[{id:id(),nome:"Stipendio",importo:1800,ricorrente:true}],
   spese:[
-    {id:id(),nome:"Affitto / Mutuo",importo:650,cat:"Casa",tipo:"fissa"},
-    {id:id(),nome:"Ludoteca",importo:120,cat:"Figli",tipo:"fissa",persona:"leo"},
-    {id:id(),nome:"Palestra",importo:45,cat:"Sport/Salute",tipo:"fissa",persona:"papa"},
-    {id:id(),nome:"Equitazione",importo:90,cat:"Sport/Salute",tipo:"fissa",persona:"giulia"},
-    {id:id(),nome:"Spesa alimentare",importo:450,cat:"Spesa",tipo:"fissa"},
+    {id:id(),nome:"Affitto",importo:650,cat:"Casa",tipo:"variabile",ricorrente:true,giorno:5},
+    {id:id(),nome:"Ludoteca",importo:120,cat:"Figli",tipo:"variabile",ricorrente:true,giorno:10,persone:["leo"]},
+    {id:id(),nome:"Palestra",importo:45,cat:"Sport/Salute",tipo:"variabile",ricorrente:true,giorno:1,persone:["papa"]},
+    {id:id(),nome:"Equitazione",importo:90,cat:"Sport/Salute",tipo:"variabile",ricorrente:true,giorno:15,persone:["giulia"]},
+    {id:id(),nome:"Spesa alimentare",importo:450,cat:"Spesa",tipo:"variabile",ricorrente:true,giorno:28},
     {id:id(),nome:"Bolletta luce",importo:85,cat:"Bollette",tipo:"variabile",mese:meseCorrente()},
     {id:id(),nome:"Bolletta gas",importo:70,cat:"Bollette",tipo:"variabile",mese:meseCorrente()}
   ],
@@ -1109,6 +1125,9 @@ function migrate(){
   state.entrate.forEach(e=>{if(!e.ricorrente&&!e.mese)e.mese=meseCorrente();});
   if(!state.appuntamenti) state.appuntamenti=[];
   state.appuntamenti.forEach(a=>{if(a.persona){if(!a.persone)a.persone=[a.persona];delete a.persona;}});
+  if(!state.spese) state.spese=[];
+  state.spese.forEach(s=>{if(s.persona){if(!s.persone)s.persone=[s.persona];delete s.persona;}});   // v42: multi-intestatario
+  state.spese.forEach(s=>{if(s.tipo==="fissa"){s.tipo="variabile";s.ricorrente=true;delete s.mese;delete s.data;}});   // v42: fissa -> programmata ricorrente (giorno + nessuna fine = comportamento identico)
   if(!state.lotteria)state.lotteria=nuovaLotteria();
   else{if(!state.lotteria.eroi)state.lotteria.eroi=["leo","giulia"];if(!state.lotteria.compiti)state.lotteria.compiti=[];if(!state.lotteria.premi)state.lotteria.premi=[];if(!state.lotteria.movimenti)state.lotteria.movimenti=[];if(!state.lotteria.turniUsati)state.lotteria.turniUsati={};if(!state.lotteria.record)state.lotteria.record={};}
 }
@@ -1138,11 +1157,11 @@ function applicaRemoto(dati,remoteTs){
   if(document.querySelector(".overlay.on")){pendingRemote={dati,ts:remoteTs};return;}
   applicandoRemoto=true;state=dati;migrate();saveLocal();render();applicandoRemoto=false;
 }
-function setSync(s){const el=document.getElementById("sync"),t=document.getElementById("syncText");el.classList.remove("ok","off");
-  if(s==="ok"){el.classList.add("ok");t.textContent="Sincronizzato";}
+function setSync(s){const el=document.getElementById("sync"),t=document.getElementById("syncText");el.classList.remove("ok","off");const v=" · v"+APP_VERSION;
+  if(s==="ok"){el.classList.add("ok");t.textContent="Sincronizzato"+v;}
   else if(s==="syncing"){t.textContent="Sincronizzo…";}
-  else if(s==="off"){el.classList.add("off");t.textContent="Offline · salvo in locale";}
-  else{t.textContent="Solo questo dispositivo";}}
+  else if(s==="off"){el.classList.add("off");t.textContent="Offline · salvo in locale"+v;}
+  else{t.textContent="Solo questo dispositivo"+v;}}
 
 function euro(n){return "€"+(Math.round(n)||0).toLocaleString("it-IT");}
 const NOMI=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
@@ -1159,26 +1178,25 @@ function genereDi(pid){const p=persona(pid);if(p&&p.genere)return p.genere;retur
 function complimento(pid){return genereDi(pid)==="F"?"Brava":"Bravo";}
 function coriandoliHTML(){const cols=["#FFD76A","#1FB6A6","#FF8C7C","#5BB8E8","#9B8CFF","#7BD88F"];let h="";for(let i=0;i<24;i++){h+=`<span class="conf" style="left:${(Math.random()*100).toFixed(1)}%;background:${cols[i%cols.length]};animation-duration:${(1.8+Math.random()*1.6).toFixed(2)}s;animation-delay:${(Math.random()).toFixed(2)}s;"></span>`;}return h;}
 function celebraVittoria(pid,sottotesto,extra){const p=persona(pid);return `<div class="celebra"><div class="conf-layer">${coriandoliHTML()}</div><div class="cel-av-wrap"><div class="cel-av" style="${avBg(p)}">${avEmoji(p)}</div><div class="cel-badge">🏅</div></div><div class="cel-msg">${complimento(pid)} ${esc(p?p.nome:'')}!</div><div class="cel-sub">${sottotesto}</div>${extra||''}<button class="btn pod-ok" style="margin-top:10px" onclick="tornaGiochi()">Torna ai giochi</button></div>`;}
-function speseDi(m){return state.spese.filter(s=>s.tipo==="fissa"||s.mese===m);}
+function speseDi(m){return speseUnaTantumMese(m).concat(ricorrentiMese(m));}
 function totEntrateDi(m){return state.entrate.filter(e=>e.ricorrente||e.mese===m).reduce((a,e)=>a+(+e.importo||0),0);}
 /* ===== SALDO reale vs contabile (tutto guidato dalle date) ===== */
 function meseDiSpesa(s){return s.mese||((s.data||"").slice(0,7));}
 function dataDiSpesa(s){return s.data||(s.mese?s.mese+"-01":oggiISO());}   // legacy senza data = inizio mese (già sostenuta)
 function dataDiEntrata(e){return e.data||(e.mese?e.mese+"-01":oggiISO());}
-function speseVariabiliMese(m){return state.spese.filter(s=>s.tipo==="variabile"&&meseDiSpesa(s)===m);}
-function speseSostenuteMese(m){const o=oggiISO();return speseVariabiliMese(m).filter(s=>dataDiSpesa(s)<=o);}
-function speseProgrammateMese(m){const o=oggiISO();return speseVariabiliMese(m).filter(s=>dataDiSpesa(s)>o);}
-function totFisse(){return state.spese.filter(s=>s.tipo==="fissa").reduce((a,s)=>a+(+s.importo||0),0);}
-function dataAddebitoFissa(s,m){const ult=ultimoGiornoMese(m),g=Math.min(+s.giorno||ult,ult);return m+"-"+String(g).padStart(2,"0");}
-function fisseScaduteMese(m){const o=oggiISO();return state.spese.filter(s=>s.tipo==="fissa"&&dataAddebitoFissa(s,m)<=o);}
-function fisseFutureMese(m){const o=oggiISO();return state.spese.filter(s=>s.tipo==="fissa"&&dataAddebitoFissa(s,m)>o);}
+function speseUnaTantumMese(m){return state.spese.filter(s=>!s.ricorrente&&meseDiSpesa(s)===m);}
+function ricAttivaIn(s,m){const ini=(s.inizio||s.data||"").slice(0,7),fine=(s.fine||"").slice(0,7);if(ini&&m<ini)return false;if(fine&&m>fine)return false;return true;}
+function ricorrentiMese(m){return state.spese.filter(s=>s.ricorrente&&ricAttivaIn(s,m));}
+function dataAddebitoRic(s,m){const ult=ultimoGiornoMese(m),g=Math.min(+s.giorno||ult,ult);return m+"-"+String(g).padStart(2,"0");}
+function speseSostenuteMese(m){const o=oggiISO();return speseUnaTantumMese(m).filter(s=>dataDiSpesa(s)<=o).concat(ricorrentiMese(m).filter(s=>dataAddebitoRic(s,m)<=o));}
+function speseProgrammateMese(m){const o=oggiISO();return speseUnaTantumMese(m).filter(s=>dataDiSpesa(s)>o).concat(ricorrentiMese(m).filter(s=>dataAddebitoRic(s,m)>o));}
 function entrateIncassateMese(m){const o=oggiISO();return state.entrate.filter(e=>e.ricorrente||((e.mese||(e.data||"").slice(0,7))===m&&dataDiEntrata(e)<=o));}
 function entrateAtteseMese(m){const o=oggiISO();return state.entrate.filter(e=>!e.ricorrente&&(e.mese||(e.data||"").slice(0,7))===m&&dataDiEntrata(e)>o);}
 function rateScaduteMese(m){const o=oggiISO();return rateAttiveDi(m).filter(r=>dataScadenzaRata(r,meseDiff(r.inizio,m))<=o);}
 function rateFutureMese(m){const o=oggiISO();return rateAttiveDi(m).filter(r=>dataScadenzaRata(r,meseDiff(r.inizio,m))>o);}
 function _sum(arr,k){return arr.reduce((a,x)=>a+(+x[k]||0),0);}
-function saldoRealeMese(m){return _sum(entrateIncassateMese(m),"importo")-_sum(speseSostenuteMese(m),"importo")-_sum(rateScaduteMese(m),"rata")-_sum(fisseScaduteMese(m),"importo");}
-function saldoContabileMese(m){return saldoRealeMese(m)+_sum(entrateAtteseMese(m),"importo")-_sum(fisseFutureMese(m),"importo")-_sum(speseProgrammateMese(m),"importo")-_sum(rateFutureMese(m),"rata");}
+function saldoRealeMese(m){return _sum(entrateIncassateMese(m),"importo")-_sum(speseSostenuteMese(m),"importo")-_sum(rateScaduteMese(m),"rata");}
+function saldoContabileMese(m){return saldoRealeMese(m)+_sum(entrateAtteseMese(m),"importo")-_sum(speseProgrammateMese(m),"importo")-_sum(rateFutureMese(m),"rata");}
 // rate
 function rataFine(r){return spostaMese(r.inizio,(+r.nRate||1)-1);}
 function rataAttivaIn(r,m){return m>=r.inizio && m<=rataFine(r);}
@@ -1227,8 +1245,9 @@ function render(){
   document.getElementById("hEntrate").textContent=euro(ent);
   document.getElementById("hSpese").textContent=euro(sp);
   document.getElementById("hRis").textContent=euro(ris);
+  document.getElementById("hContabile").textContent=euro(saldoContabileMese(meseSel));
   renderGauge(ent,sp,ris);
-  renderSaldoMese();renderDaAffrontare();renderNote();renderAppuntamenti();renderScadenze();renderBachecaObiettivi();
+  renderSaldoMese();renderAffrontate();renderDaAffrontare();renderNote();renderAppuntamenti();renderBachecaObiettivi();
   renderGrafico();renderPersone();renderRate();renderGantt();renderListe();renderObiettivi();renderTrend();renderCategorie();renderReport();renderLotteria();popolaQsCat();renderComponenti();
   if(calOpen)renderCalendario();
   save();
@@ -1515,19 +1534,19 @@ function renderGrafico(){
     <span class="lname">${esc(cat)}</span><span class="lval num">${euro(v)} · ${Math.round(v/tot*100)}%</span></div>`).join("");
 }
 
+function personeSpesa(s){return (s.persone&&s.persone.length)?s.persone:(s.persona?[s.persona]:[]);}
+function quotaPersona(s,pid){const ps=personeSpesa(s);return ps.includes(pid)?(+s.importo||0)/ps.length:0;}   // v42: spesa condivisa divisa equamente
+function mesiAnno(anno){const out=[];for(let k=1;k<=12;k++)out.push(anno+"-"+String(k).padStart(2,"0"));return out;}
 function spesaPersonaPeriodo(pid){
-  if(periodoPersona==="mese"){return speseDi(meseSel).filter(s=>s.persona===pid).reduce((a,s)=>a+(+s.importo||0),0);}
+  if(periodoPersona==="mese"){return speseDi(meseSel).reduce((a,s)=>a+quotaPersona(s,pid),0);}
   const anno=meseSel.split("-")[0];
-  const fisse=state.spese.filter(s=>s.tipo==="fissa"&&s.persona===pid).reduce((a,s)=>a+(+s.importo||0),0)*12;
-  const varie=state.spese.filter(s=>s.tipo==="variabile"&&s.persona===pid&&(s.mese||"").startsWith(anno+"-")).reduce((a,s)=>a+(+s.importo||0),0);
-  return fisse+varie;
+  return mesiAnno(anno).reduce((tot,m)=>tot+speseDi(m).reduce((a,s)=>a+quotaPersona(s,pid),0),0);
 }
 function dettaglioPersona(pid){
-  if(periodoPersona==="mese"){return speseDi(meseSel).filter(s=>s.persona===pid).map(s=>({nome:s.nome,cat:s.cat,importo:+s.importo||0})).sort((a,b)=>b.importo-a.importo);}
-  const anno=meseSel.split("-")[0],out=[];
-  state.spese.filter(s=>s.tipo==="fissa"&&s.persona===pid).forEach(s=>out.push({nome:s.nome+" (×12)",cat:s.cat,importo:(+s.importo||0)*12}));
-  state.spese.filter(s=>s.tipo==="variabile"&&s.persona===pid&&(s.mese||"").startsWith(anno+"-")).forEach(s=>out.push({nome:s.nome,cat:s.cat,importo:+s.importo||0}));
-  return out.sort((a,b)=>b.importo-a.importo);
+  if(periodoPersona==="mese"){return speseDi(meseSel).filter(s=>personeSpesa(s).includes(pid)).map(s=>({nome:s.nome,cat:s.cat,importo:quotaPersona(s,pid)})).sort((a,b)=>b.importo-a.importo);}
+  const anno=meseSel.split("-")[0],acc={};
+  mesiAnno(anno).forEach(m=>speseDi(m).filter(s=>personeSpesa(s).includes(pid)).forEach(s=>{const k=s.id||s.nome;if(!acc[k])acc[k]={nome:s.nome,cat:s.cat,importo:0};acc[k].importo+=quotaPersona(s,pid);}));
+  return Object.values(acc).sort((a,b)=>b.importo-a.importo);
 }
 function togglePersona(pid){persExpand=persExpand===pid?null:pid;renderPersone();}
 function renderPersone(){
@@ -1596,11 +1615,9 @@ function renderListe(){
       <div style="flex:1;min-width:0"><div class="name">${esc(e.nome)}</div><div class="cat">${lbl}</div></div>
       <span class="amt num">${euro(e.importo)}</span></div>`;}).join("")
     :'<div class="empty">Nessuna entrata. Aggiungi lo stipendio.</div>';
-  const fisse=state.spese.filter(s=>s.tipo==="fissa");
   const sost=speseSostenuteMese(meseSel).slice().sort((a,b)=>dataDiSpesa(b).localeCompare(dataDiSpesa(a)));
   const mostrate=elencoSpeseFull?sost:sost.slice(0,5);
   let html="";
-  if(fisse.length)html+='<div class="group-label">Fisse · ogni mese</div>'+fisse.map(rigaSpesa).join("");
   if(sost.length){
     html+='<div class="group-label">Sostenute di '+meseLabel(meseSel)+(elencoSpeseFull||sost.length<=5?'':' · ultime 5')+'</div>'+mostrate.map(rigaSpesa).join("");
     if(sost.length>5)html+='<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="toggleElencoSpese()">'+(elencoSpeseFull?'▴ Mostra meno':'▾ Vedi tutte le '+sost.length+' spese del mese')+'</button>';
@@ -1608,21 +1625,22 @@ function renderListe(){
   document.getElementById("listaSpese").innerHTML=html||'<div class="empty">Nessuna spesa registrata.</div>';
 }
 function rigaSpesa(s){
-  const p=s.persona?persona(s.persona):null;
+  const ps=personeSpesa(s).map(persona).filter(Boolean);const p=ps[0]||null;
   const avHtml=p?`<span class="mini-av" style="background-image:url('${p.avatar}');background-color:${p.colore}"></span>`:'';
   const ic=s.icona?`<span class="sp-ic" style="background:${catColor(s.cat)}22">${esc(s.icona)}</span>`:`<span class="dot" style="background:${catColor(s.cat)}"></span>`;
-  const dataTxt=(s.tipo==="variabile"&&(s.data||s.mese))?' · '+formatData(dataDiSpesa(s)):'';
+  const chiTxt=ps.length?' · '+ps.map(x=>esc(x.nome)).join(", "):'';
+  const dataTxt=s.ricorrente?' · ogni mese':((s.data||s.mese)?' · '+formatData(dataDiSpesa(s)):'');
   return `<div class="row" onclick="modificaVoce('spesa','${s.id}')">
     ${ic}
-    <div style="flex:1;min-width:0"><div class="name">${esc(s.nome)}</div><div class="cat">${esc(s.cat)}${p?' · '+esc(p.nome):''}${dataTxt}${s.pagamento?' · '+(s.pagamento==='carta'?'💳':'💵'):''}</div></div>
+    <div style="flex:1;min-width:0"><div class="name">${esc(s.nome)}</div><div class="cat">${esc(s.cat)}${chiTxt}${dataTxt}${s.pagamento?' · '+(s.pagamento==='carta'?'💳':'💵'):''}</div></div>
     ${avHtml}<span class="amt num">${euro(s.importo)}</span></div>`;
 }
 function _saldoLine(lbl,val,col){return val>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:.9rem"><span style="color:${col}">${lbl}</span><b class="num" style="color:${col};font-weight:700">${euro(val)}</b></div>`:'';}
 function renderSaldoMese(){
   const el=document.getElementById("saldoMese");if(!el)return;const m=meseSel;
   const reale=saldoRealeMese(m),cont=saldoContabileMese(m);
-  const entAtt=_sum(entrateAtteseMese(m),"importo"),fisse=_sum(fisseFutureMese(m),"importo"),prog=_sum(speseProgrammateMese(m),"importo"),rateFut=_sum(rateFutureMese(m),"rata");
-  const impegni=entAtt+fisse+prog+rateFut,cNeg=cont<0;
+  const entAtt=_sum(entrateAtteseMese(m),"importo"),prog=_sum(speseProgrammateMese(m),"importo"),rateFut=_sum(rateFutureMese(m),"rata");
+  const impegni=entAtt+prog+rateFut,cNeg=cont<0;
   el.innerHTML=`
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
      <div style="background:#f3f6f4;border-radius:14px;padding:12px 14px">
@@ -1639,25 +1657,48 @@ function renderSaldoMese(){
    <div style="border-top:1px solid var(--line);padding-top:8px">
      <div style="font-size:.72rem;color:var(--ink-soft);margin-bottom:2px">dal reale al contabile</div>
      ${_saldoLine('+ entrate attese',entAtt,'#0f6e56')}
-     ${_saldoLine('− fisse da addebitare',fisse,'#b06a12')}
      ${_saldoLine('− spese programmate',prog,'#185fa5')}
      ${_saldoLine('− rate da pagare',rateFut,'#b06a12')}
      ${impegni===0?'<div style="font-size:.82rem;color:var(--ink-soft)">Nessun impegno futuro: reale e contabile coincidono.</div>':''}
    </div>`;
 }
+function rigaImpegno(v,daFare){
+  const isRata=v.tipo==="rata";
+  const ic=isRata?`<span class="sp-ic" style="background:#7A6FB022">💳</span>`:(v.icona?`<span class="sp-ic" style="background:${catColor(v.cat)}22">${esc(v.icona)}</span>`:`<span class="dot" style="background:${catColor(v.cat)}"></span>`);
+  const ps=isRata?[]:v.persone.map(persona).filter(Boolean);
+  const chi=ps.length?' · '+ps.map(p=>esc(p.nome)).join(", "):'';
+  const meta=esc(v.cat)+chi+' · '+formatData(v.data)+(v.ric?' · ogni mese':'')+(v.pagamento?' · '+(v.pagamento==='carta'?'💳':'💵'):'');
+  const click=isRata?'':`onclick="modificaVoce('spesa','${v.id}')"`;
+  const pay=(daFare&&!isRata&&!v.ric)?`<button class="btn btn-ghost btn-sm" style="margin-left:6px" onclick="pagaOra('${v.id}')" title="Segna pagata oggi">✓</button>`:'';
+  return `<div class="row">${ic}<div style="flex:1;min-width:0" ${click}><div class="name">${esc(v.nome)}</div><div class="cat">${meta}</div></div><span class="amt num">${euro(v.importo)}</span>${pay}</div>`;
+}
+function _vociSpesa(arr){return arr.map(s=>({tipo:"spesa",nome:s.nome,cat:s.cat,icona:s.icona,importo:+s.importo||0,data:dataDiSpesa(s),id:s.id,persone:personeSpesa(s),pagamento:s.pagamento,ric:!!s.ricorrente}));}
+function _vociRata(arr,m){return arr.map(r=>({tipo:"rata",nome:r.nome,cat:"Mutui e prestiti",importo:+r.rata||0,data:dataScadenzaRata(r,meseDiff(r.inizio,m)),id:r.id}));}
+function vociDaAffrontare(m){return _vociSpesa(speseProgrammateMese(m)).concat(_vociRata(rateFutureMese(m),m)).sort((a,b)=>(a.data||"").localeCompare(b.data||""));}
+function vociAffrontate(m){return _vociSpesa(speseSostenuteMese(m)).concat(_vociRata(rateScaduteMese(m),m)).sort((a,b)=>(b.data||"").localeCompare(a.data||""));}
+function _totRiga(lbl,tot){return `<div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:8px;padding-top:8px;font-size:.9rem"><span style="color:var(--ink-soft)">${lbl}</span><b class="num">${euro(tot)}</b></div>`;}
 function renderDaAffrontare(){
-  const el=document.getElementById("listaDaAffrontare");if(!el)return;
-  const prog=speseProgrammateMese(meseSel).slice().sort((a,b)=>dataDiSpesa(a).localeCompare(dataDiSpesa(b)));
-  if(!prog.length){el.innerHTML='<div class="empty">Nessuna spesa programmata per '+meseLabel(meseSel)+'. Con ＋ aggiungi le uscite che sai già di dover fare.</div>';return;}
-  const tot=_sum(prog,"importo");
-  el.innerHTML=prog.map(s=>{const p=s.persona?persona(s.persona):null;
-    const ic=s.icona?`<span class="sp-ic" style="background:${catColor(s.cat)}22">${esc(s.icona)}</span>`:`<span class="dot" style="background:${catColor(s.cat)}"></span>`;
-    return `<div class="row">
-      ${ic}
-      <div style="flex:1;min-width:0" onclick="modificaVoce('spesa','${s.id}')"><div class="name">${esc(s.nome)}</div><div class="cat">${esc(s.cat)}${p?' · '+esc(p.nome):''} · ${formatData(dataDiSpesa(s))}${s.pagamento?' · '+(s.pagamento==='carta'?'💳':'💵'):''}</div></div>
-      <span class="amt num">${euro(s.importo)}</span>
-      <button class="btn btn-ghost btn-sm" style="margin-left:6px" onclick="pagaOra('${s.id}')" title="Segna pagata oggi">✓</button></div>`;}).join("")
-    +`<div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:8px;padding-top:8px;font-size:.9rem"><span style="color:var(--ink-soft)">Totale da affrontare</span><b class="num">${euro(tot)}</b></div>`;
+  const el=document.getElementById("listaDaAffrontare");if(!el)return;const m=meseSel;const voci=vociDaAffrontare(m);
+  if(!voci.length){el.innerHTML='<div class="empty">Niente da affrontare per '+meseLabel(m)+'. Con ＋ aggiungi le uscite che sai già di dover fare.</div>';return;}
+  const tot=voci.reduce((a,v)=>a+v.importo,0);
+  el.innerHTML=voci.slice(0,3).map(v=>rigaImpegno(v,true)).join("")
+    +(voci.length>3?`<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="apriListaFull('daffrontare')">Vedi tutte le ${voci.length} →</button>`:'')
+    +_totRiga("Totale da affrontare",tot);
+}
+function renderAffrontate(){
+  const el=document.getElementById("listaAffrontate");if(!el)return;const m=meseSel;const voci=vociAffrontate(m);
+  if(!voci.length){el.innerHTML='<div class="empty">Ancora nessuna spesa affrontata a '+meseLabel(m)+'.</div>';return;}
+  const tot=voci.reduce((a,v)=>a+v.importo,0);
+  el.innerHTML=voci.slice(0,3).map(v=>rigaImpegno(v,false)).join("")
+    +(voci.length>3?`<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="apriListaFull('affrontate')">Vedi tutte le ${voci.length} →</button>`:'')
+    +_totRiga("Totale affrontate",tot);
+}
+function apriListaFull(tipo){const m=meseSel;const daFare=(tipo==="daffrontare");
+  const voci=daFare?vociDaAffrontare(m):vociAffrontate(m);
+  const tot=voci.reduce((a,v)=>a+v.importo,0);
+  document.getElementById("listaFullTitle").innerHTML=(daFare?'<span class="ic">📌</span> Spese da affrontare':'<span class="ic">✅</span> Spese affrontate')+' · '+meseLabel(m);
+  document.getElementById("listaFullBody").innerHTML=(voci.length?voci.map(v=>rigaImpegno(v,daFare)).join(""):'<div class="empty">Niente qui.</div>')+_totRiga("Totale",tot);
+  apri("ovListaFull");
 }
 function renderObiettivi(){
   const el=document.getElementById("listaObiettivi");
@@ -1702,9 +1743,7 @@ function renderTrend(){
       <div class="tlabel">${meseAbbr(d.m)}</div></div>`;}).join("");
 }
 function totCatAnno(cat,anno){
-  const fisse=state.spese.filter(s=>s.tipo==="fissa"&&s.cat===cat).reduce((a,s)=>a+(+s.importo||0),0)*12;
-  const varie=state.spese.filter(s=>s.tipo==="variabile"&&s.cat===cat&&(s.mese||"").startsWith(anno+"-")).reduce((a,s)=>a+(+s.importo||0),0);
-  return fisse+varie;
+  return mesiAnno(anno).reduce((tot,m)=>tot+speseDi(m).filter(s=>s.cat===cat).reduce((a,s)=>a+(+s.importo||0),0),0);
 }
 function renderReport(){renderRepKpi();renderRepClassifica();renderRepAnnuale();renderRepPersone();renderRepProiezione();}
 function renderRepKpi(){
@@ -2244,7 +2283,11 @@ function salvaComponente(){const nome=document.getElementById("cpNome").value.tr
   chiudi("ovComp");render();}
 
 function popolaCat(){document.getElementById("mCat").innerHTML=state.categorie.map(c=>`<option value="${esc(c.nome)}">${esc(c.nome)}</option>`).join("");}
-function popolaPers(){document.getElementById("mPers").innerHTML='<option value="">Spesa di casa</option>'+state.persone.map(p=>`<option value="${p.id}">${esc(p.nome)}</option>`).join("");}
+let spesaPersoneSel=[];
+function popolaSpesaWho(){const cont=document.getElementById("spesaWho");if(!cont)return;const tutti=spesaPersoneSel.length===0;
+  cont.innerHTML=`<span class="wp ${tutti?'on':''}" onclick="setSpesaTutti()">Spesa di casa</span>`+state.persone.map(p=>`<span class="wp ${spesaPersoneSel.includes(p.id)?'on':''}" onclick="toggleSpesaPersona('${p.id}')"><span class="wp-dot" style="background:${p.colore}"></span>${esc(p.nome)}</span>`).join("");}
+function setSpesaTutti(){spesaPersoneSel=[];popolaSpesaWho();}
+function toggleSpesaPersona(pid){const i=spesaPersoneSel.indexOf(pid);if(i>=0)spesaPersoneSel.splice(i,1);else spesaPersoneSel.push(pid);popolaSpesaWho();}
 function apriModale(kind,mode){
   modKind=kind;editing=null;noteOrigine=null;spesaMode=(kind==="spesa")?(mode||"diretta"):"";progMesiMode="uno";
   const prog=(kind==="spesa"&&spesaMode==="programmata");
@@ -2256,10 +2299,11 @@ function apriModale(kind,mode){
   setIconaBtn("voceIconaBtn","🧾");
   document.getElementById("persField").style.display=kind==="spesa"?"block":"none";
   document.getElementById("pagField").style.display=kind==="spesa"?"block":"none";
-  document.getElementById("ricField").style.display=(kind==="entrata"||(kind==="spesa"&&!prog))?"block":"none";
+  document.getElementById("ricField").style.display=kind==="entrata"?"block":"none";
   document.getElementById("progMesiField").style.display=prog?"block":"none";
-  document.getElementById("mData").value=oggiISO();document.getElementById("mGiorno").value="";
-  popolaCat();popolaPers();setRic("fissa");setPag("carta");setProgMesi("uno");
+  document.getElementById("mData").value=oggiISO();
+  document.getElementById("mProgN").value="";
+  popolaCat();spesaPersoneSel=[];popolaSpesaWho();setRic("fissa");setPag("carta");setProgMesi("uno");
   aggiornaDataField();apri("ovVoce");setTimeout(()=>document.getElementById("mNome").focus(),100);
 }
 function setProgMesi(v){progMesiMode=v;document.getElementById("progMesiSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.pm===v));document.getElementById("mProgN").style.display=v==="piu"?"block":"none";}
@@ -2268,7 +2312,7 @@ function aggiornaDataField(){
   const entUna=(modKind==="entrata"&&ricSel==="variabile");
   const show=prog||entUna;
   document.getElementById("dataField").style.display=show?"block":"none";
-  document.getElementById("dataLbl").textContent=prog?"Quando la farò":"Quando la ricevo";
+  document.getElementById("dataLbl").textContent=prog?"Data di addebito":"Quando la ricevo";
   const hint=document.getElementById("dataHint");
   if(show){const d=document.getElementById("mData").value||oggiISO();hint.textContent=d>oggiISO()?"Data futura → pesa sul contabile, non sul reale finché non arriva.":"Data odierna o passata → pesa già sul reale.";}
   else hint.textContent="";
@@ -2276,25 +2320,29 @@ function aggiornaDataField(){
 function modificaVoce(kind,vid){
   modKind=kind;const list=kind==="entrata"?state.entrate:state.spese;
   editing=list.find(x=>x.id===vid);if(!editing)return;
-  spesaMode=(kind==="spesa"&&editing.tipo==="variabile")?"programmata":"diretta";progMesiMode="uno";
+  const spesa=(kind==="spesa");
+  spesaMode=spesa?"programmata":"";progMesiMode=(spesa&&editing.ricorrente)?"piu":"uno";
   document.getElementById("modTitle").textContent=kind==="entrata"?"Modifica entrata":"Modifica spesa";
   document.getElementById("mNome").value=editing.nome;document.getElementById("mImporto").value=editing.importo;
   document.getElementById("mDelete").style.display="block";
-  document.getElementById("catField").style.display=kind==="spesa"?"block":"none";
-  document.getElementById("iconaField").style.display=kind==="spesa"?"block":"none";
+  document.getElementById("catField").style.display=spesa?"block":"none";
+  document.getElementById("iconaField").style.display=spesa?"block":"none";
   setIconaBtn("voceIconaBtn",editing.icona||"🧾");
-  document.getElementById("persField").style.display=kind==="spesa"?"block":"none";
-  document.getElementById("pagField").style.display=kind==="spesa"?"block":"none";
-  document.getElementById("ricField").style.display="block";
-  document.getElementById("progMesiField").style.display="none";
-  document.getElementById("mData").value=editing.data||(editing.mese?editing.mese+"-01":oggiISO());
-  document.getElementById("mGiorno").value=editing.giorno||"";
-  popolaCat();popolaPers();
-  if(kind==="spesa"){document.getElementById("mCat").value=editing.cat;document.getElementById("mPers").value=editing.persona||"";}
+  document.getElementById("persField").style.display=spesa?"block":"none";
+  document.getElementById("pagField").style.display=spesa?"block":"none";
+  document.getElementById("ricField").style.display=(kind==="entrata")?"block":"none";
+  document.getElementById("progMesiField").style.display=spesa?"block":"none";
+  if(spesa&&editing.ricorrente){const g=+editing.giorno||1,mm=editing.inizio||meseCorrente();document.getElementById("mData").value=mm+"-"+String(Math.min(g,ultimoGiornoMese(mm))).padStart(2,"0");}
+  else document.getElementById("mData").value=editing.data||(editing.mese?editing.mese+"-01":oggiISO());
+  document.getElementById("mProgN").value=(spesa&&editing.ricorrente&&editing.fine&&editing.inizio)?(meseDiff(editing.inizio,editing.fine)+1):"";
+  popolaCat();
+  if(spesa){document.getElementById("mCat").value=editing.cat;spesaPersoneSel=personeSpesa(editing).slice();popolaSpesaWho();}
   setPag(editing.pagamento||"carta");
-  setRic(kind==="entrata"?(editing.ricorrente?"fissa":"variabile"):editing.tipo);apri("ovVoce");
+  if(kind==="entrata")setRic(editing.ricorrente?"fissa":"variabile");
+  setProgMesi(progMesiMode);
+  aggiornaDataField();apri("ovVoce");
 }
-function setRic(v){ricSel=v;document.getElementById("ricSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.ric===v));document.getElementById("fissaGiornoField").style.display=(modKind==="spesa"&&v==="fissa")?"block":"none";aggiornaDataField();}
+function setRic(v){ricSel=v;document.getElementById("ricSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.ric===v));aggiornaDataField();}
 function setPag(v){pagSel=v;document.getElementById("pagSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.pag===v));}
 function salvaVoce(){
   const nome=document.getElementById("mNome").value.trim(),imp=+document.getElementById("mImporto").value||0;
@@ -2305,18 +2353,20 @@ function salvaVoce(){
       if(ricorrente){delete editing.mese;delete editing.data;}
       else{editing.data=dataIn;editing.mese=dataIn.slice(0,7);}}
     else{const obj={id:id(),nome,importo:imp,ricorrente};if(!ricorrente){obj.data=dataIn;obj.mese=dataIn.slice(0,7);}state.entrate.push(obj);}}
-  else{const cat=document.getElementById("mCat").value,pers=document.getElementById("mPers").value,icona=iconaDi("voceIconaBtn")||"🧾",pagamento=pagSel,giorno=+document.getElementById("mGiorno").value||0;
-    if(editing){editing.nome=nome;editing.importo=imp;editing.cat=cat;editing.tipo=ricSel;editing.icona=icona;editing.pagamento=pagamento;
-      if(pers)editing.persona=pers;else delete editing.persona;
-      if(ricSel==="variabile"){editing.data=dataIn;editing.mese=dataIn.slice(0,7);delete editing.giorno;}
-      else{delete editing.mese;delete editing.data;if(giorno)editing.giorno=giorno;else delete editing.giorno;}}
-    else if(spesaMode==="programmata"){
-      const base={nome,importo:imp,cat,tipo:"variabile",icona,pagamento};if(pers)base.persona=pers;
-      if(progMesiMode==="piu"){const n=Math.max(2,Math.min(24,+document.getElementById("mProgN").value||2)),serie=id();
-        for(let k=0;k<n;k++){const d=isoPiuMese(dataIn,k);state.spese.push({id:id(),...base,data:d,mese:d.slice(0,7),serie});}}
-      else state.spese.push({id:id(),...base,data:dataIn,mese:dataIn.slice(0,7)});}
-    else{const d=(ricSel==="variabile")?oggiISO():null,obj={id:id(),nome,importo:imp,cat,tipo:ricSel,icona,pagamento};
-      if(pers)obj.persona=pers;if(ricSel==="variabile"){obj.data=d;obj.mese=d.slice(0,7);}else if(giorno)obj.giorno=giorno;state.spese.push(obj);}}
+  else{const cat=document.getElementById("mCat").value,icona=iconaDi("voceIconaBtn")||"🧾",pagamento=pagSel,persone=spesaPersoneSel.slice();
+    const prog=(spesaMode==="programmata");
+    function campiTempo(){
+      if(!prog)return {data:oggiISO(),mese:oggiISO().slice(0,7)};                       // diretta = affrontata oggi
+      if(progMesiMode==="piu"){const g=(+dataIn.slice(8,10))||1,inizio=dataIn.slice(0,7),n=+document.getElementById("mProgN").value||0;
+        const o={ricorrente:true,giorno:g,inizio};if(n>=1)o.fine=spostaMese(inizio,n-1);return o;}   // abbonamento ricorrente
+      return {data:dataIn,mese:dataIn.slice(0,7)};                                       // programmata una tantum
+    }
+    if(editing){editing.nome=nome;editing.importo=imp;editing.cat=cat;editing.tipo="variabile";editing.icona=icona;editing.pagamento=pagamento;
+      if(persone.length)editing.persone=persone;else delete editing.persone;
+      delete editing.data;delete editing.mese;delete editing.ricorrente;delete editing.giorno;delete editing.inizio;delete editing.fine;delete editing.serie;delete editing.persona;
+      Object.assign(editing,campiTempo());}
+    else{const obj={id:id(),nome,importo:imp,cat,tipo:"variabile",icona,pagamento};if(persone.length)obj.persone=persone;
+      Object.assign(obj,campiTempo());state.spese.push(obj);}}
   if(modKind==="spesa"&&noteOrigine){const nn=state.note.find(x=>x.id===noteOrigine);if(nn)nn.fatto=true;noteOrigine=null;}
   chiudi("ovVoce");render();
 }
