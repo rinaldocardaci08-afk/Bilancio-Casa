@@ -1053,7 +1053,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 42;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 43;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -1239,9 +1239,9 @@ function renderGauge(ent,sp,ris){
 }
 function render(){
   document.getElementById("meseLabel").textContent=meseLabel(meseSel);
-  const ent=totEntrateDi(meseSel),sp=totSpeseDi(meseSel),ris=risparmioMensile(),disp=ent-sp-ris;
+  const ent=totEntrateDi(meseSel),sp=totSpeseDi(meseSel),ris=risparmioMensile(),disp=saldoRealeMese(meseSel);
   const dEl=document.getElementById("hDisp");dEl.textContent=euro(disp);dEl.classList.toggle("neg",disp<0);
-  document.getElementById("hHint").textContent=disp>=0?"dopo spese e risparmio":"stai spendendo più di quanto entra";
+  document.getElementById("hHint").textContent=disp>=0?"saldo reale · quello che hai ora":"sei sotto zero sul reale";
   document.getElementById("hEntrate").textContent=euro(ent);
   document.getElementById("hSpese").textContent=euro(sp);
   document.getElementById("hRis").textContent=euro(ris);
