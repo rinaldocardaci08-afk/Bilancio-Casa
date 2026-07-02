@@ -599,7 +599,7 @@
       <div class="row2">
         <div><div class="k2">Entrate</div><div class="v2 num" id="hEntrate">€0</div></div>
         <div><div class="k2">Spese</div><div class="v2 num" id="hSpese">€0</div></div>
-        <div><div class="k2">Salvadanaio</div><div class="v2 num" id="hRis">€0</div></div>
+        <div><div class="k2">Risparmio</div><div class="v2 num" id="hRis">€0</div></div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.22)">
         <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;opacity:.85">Saldo contabile</div>
@@ -608,10 +608,6 @@
           <button onclick="apri('ovQuestoMese')" aria-label="Dettaglio questo mese" style="background:rgba(255,255,255,.18);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:1rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center">ⓘ</button>
         </div>
       </div>
-    </div>
-    <div class="card" id="cardSalvadanaio">
-      <div class="card-head" style="justify-content:space-between"><h2><span class="ic">🐷</span> Salvadanaio</h2></div>
-      <div id="salvadanaioBody"></div>
     </div>
     <div class="card">
       <div class="card-head"><h2><span class="ic">📝</span> Elenco promemoria</h2></div>
@@ -720,6 +716,10 @@
   <!-- RISPARMIO -->
   <section id="sec-risparmio" class="screen">
     <div class="sectitle">Risparmio</div>
+    <div class="card" id="cardSalvadanaio">
+      <div class="card-head"><h2><span class="ic">🐷</span> Salvadanaio</h2></div>
+      <div id="salvadanaioBody"></div>
+    </div>
     <div class="card">
       <div class="card-head"><h2><span class="ic">🎯</span> Obiettivi</h2>
         <button class="btn btn-ghost btn-sm" onclick="apriObiettivo()">+ Aggiungi</button></div>
@@ -1074,7 +1074,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 45;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 46;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -1309,7 +1309,7 @@ function render(){
   document.getElementById("hHint").textContent=disp>=0?"saldo reale · quello che hai ora":"sei sotto zero sul reale";
   document.getElementById("hEntrate").textContent=euro(ent);
   document.getElementById("hSpese").textContent=euro(sp);
-  document.getElementById("hRis").textContent=euro(salvadanaioSaldo());
+  document.getElementById("hRis").textContent=euro(ris);
   document.getElementById("hContabile").textContent=euro(saldoContabileMese(meseSel));
   renderGauge(ent,sp,ris);
   renderSaldoMese();renderSalvadanaio();renderSaldoIniziale();renderAffrontate();renderDaAffrontare();renderNote();renderAppuntamenti();renderBachecaObiettivi();
