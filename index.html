@@ -659,6 +659,13 @@
     <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovSalv')">Annulla</button><button class="btn" id="salvOk" onclick="salvaSalv()">Conferma</button></div>
   </div></div>
 
+  <!-- POPUP RIEPILOGO SALVADANAIO -->
+  <div class="overlay" id="ovSalvInfo"><div class="modal">
+    <h3>🐷 Riepilogo salvadanaio</h3>
+    <div id="salvInfoBody"></div>
+    <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovSalvInfo')">Chiudi</button></div>
+  </div></div>
+
   <!-- SPESE -->
   <section id="sec-spese" class="screen">
     <div class="sectitle">Spese</div>
@@ -717,7 +724,7 @@
   <section id="sec-risparmio" class="screen">
     <div class="sectitle">Risparmio</div>
     <div class="card" id="cardSalvadanaio">
-      <div class="card-head"><h2><span class="ic">🐷</span> Salvadanaio</h2></div>
+      <div class="card-head" style="justify-content:space-between"><h2><span class="ic">🐷</span> Salvadanaio</h2><button class="btn btn-ghost btn-sm" onclick="apriSalvInfo()">ⓘ Riepilogo</button></div>
       <div id="salvadanaioBody"></div>
     </div>
     <div class="card">
@@ -1031,12 +1038,12 @@
 </div></div>
 
 <div class="overlay" id="ovVers"><div class="modal">
-  <h3>Aggiungi versamento</h3>
-  <p style="color:var(--ink-soft);font-size:.9rem;margin:-8px 0 16px;">Una somma messa da parte oggi per questo obiettivo, oltre al risparmio mensile.</p>
+  <h3 id="versTitle">Metti da parte</h3>
+  <p id="versSub" style="color:var(--ink-soft);font-size:.9rem;margin:-8px 0 16px;">Una somma messa da parte oggi per questo obiettivo.</p>
   <div class="field"><label>Importo (€)</label><input type="number" id="vImporto" inputmode="decimal" placeholder="0" onkeydown="if(event.key==='Enter')salvaVersamento()"></div>
   <div class="modal-actions">
     <button class="btn btn-cancel" onclick="chiudi('ovVers')">Annulla</button>
-    <button class="btn btn-primary" onclick="salvaVersamento()">Aggiungi</button>
+    <button class="btn btn-primary" id="versOk" onclick="salvaVersamento()">Conferma</button>
   </div>
 </div></div>
 
@@ -1074,7 +1081,7 @@
 const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
 const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 46;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 48;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
 
 const KEY="bilancio-casa-v3";
@@ -1111,6 +1118,7 @@ function meseCorrente(){const d=new Date();return d.getFullYear()+"-"+String(d.g
 function datiEsempio(){return{
   saldoIniziale:{valore:3000,mese:oggiISO().slice(0,7)},
   movimentiSalvadanaio:[],
+  _v48reset:true,
   entrate:[{id:id(),nome:"Stipendio",importo:1800,ricorrente:true,giorno:27},{id:id(),nome:"Assegno INPS",importo:180,ricorrente:true,giorno:16}],
   spese:[
     {id:id(),nome:"Affitto",importo:650,cat:"Casa",tipo:"variabile",ricorrente:true,giorno:5},
@@ -1124,7 +1132,7 @@ function datiEsempio(){return{
   categorie:DEFAULT_CATS.map(c=>({...c})),
   persone:DEFAULT_PERSONE.map(p=>({...p})),
   rate:[],
-  obiettivi:[{id:id(),nome:"Vacanza in famiglia",target:3000,saved:600,mensile:200}],
+  obiettivi:[{id:id(),nome:"Vacanza in famiglia",target:3000,mensile:200,saved:400,versamenti:[{id:id(),data:oggiISO().slice(0,7)+"-05",importo:400}]}],
   note:[{id:id(),testo:"Comprare il latte",fatto:false},{id:id(),testo:"Pagare bolletta luce",fatto:false}],
   appuntamenti:datiAppuntamentiEsempio(),
   lotteria:datiLotteriaEsempio()
@@ -1142,6 +1150,7 @@ function migrate(){
   if(!state.rate) state.rate=[];
   if(!state.movimentiSalvadanaio) state.movimentiSalvadanaio=[];
   if(!state.saldoIniziale) state.saldoIniziale={valore:0,mese:oggiISO().slice(0,7)};
+  if(!state._v48reset){state.movimentiSalvadanaio=[];(state.obiettivi||[]).forEach(o=>{if(o.tipo!=="sfida"){o.versamenti=[];o.saved=0;}});state._v48reset=true;}
   if(state.risparmio && !state.obiettivi){const r=state.risparmio;state.obiettivi=[{id:id(),nome:r.nome||"Obiettivo",target:r.target||0,saved:r.saved||0,mensile:r.mensile||0}];delete state.risparmio;}
   if(!state.obiettivi) state.obiettivi=[];
   state.obiettivi.forEach(o=>{if(!o.versamenti)o.versamenti=[];});
@@ -1224,10 +1233,14 @@ function rateScaduteMese(m){const o=oggiISO();return rateAttiveDi(m).filter(r=>d
 function rateFutureMese(m){const o=oggiISO();return rateAttiveDi(m).filter(r=>dataScadenzaRata(r,meseDiff(r.inizio,m))>o);}
 function _sum(arr,k){return arr.reduce((a,x)=>a+(+x[k]||0),0);}
 /* ===== SALVADANAIO (cassa risparmi, movimenti manuali datati) ===== */
-function salvadanaioMovMese(m){return (state.movimentiSalvadanaio||[]).filter(mv=>(mv.data||"").slice(0,7)===m);}
-function salvadanaioSaldo(){const o=oggiISO();return (state.movimentiSalvadanaio||[]).reduce((a,mv)=>a+(((mv.data||"")<=o)?(mv.tipo==="metti"?(+mv.importo||0):-(+mv.importo||0)):0),0);}
-function _salvNettoAffrontato(m){const o=oggiISO();return salvadanaioMovMese(m).filter(mv=>(mv.data||"")<=o).reduce((a,mv)=>a+(mv.tipo==="metti"?(+mv.importo||0):-(+mv.importo||0)),0);}
-function _salvNettoMese(m){return salvadanaioMovMese(m).reduce((a,mv)=>a+(mv.tipo==="metti"?(+mv.importo||0):-(+mv.importo||0)),0);}
+function _freeMovNet(pred){return (state.movimentiSalvadanaio||[]).reduce((a,mv)=>a+((pred(mv))?((mv.tipo==="metti"?1:-1)*(+mv.importo||0)):0),0);}
+function _objMovNet(pred){let t=0;(state.obiettivi||[]).forEach(o=>(o.versamenti||[]).forEach(v=>{if(pred(v))t+=(+v.importo||0);}));return t;}
+function salvadanaioSaldo(){const o=oggiISO();const p=x=>(x.data||"")<=o;return _freeMovNet(p)+_objMovNet(p);}
+function _salvNettoAffrontato(m){const o=oggiISO();const p=x=>(x.data||"").slice(0,7)===m&&(x.data||"")<=o;return _freeMovNet(p)+_objMovNet(p);}
+function _salvNettoMese(m){const p=x=>(x.data||"").slice(0,7)===m;return _freeMovNet(p)+_objMovNet(p);}
+function liberoNettoMese(m){return _freeMovNet(x=>(x.data||"").slice(0,7)===m);}
+function obiettiviNettoMese(m){return _objMovNet(x=>(x.data||"").slice(0,7)===m);}
+function obiettivoSaldo(o){return (o.versamenti||[]).reduce((a,v)=>a+(+v.importo||0),0);}
 
 /* ===== SALDO con RIPORTO (credito ponte) ===== */
 function _ancoraMese(){return (state.saldoIniziale&&state.saldoIniziale.mese)||oggiISO().slice(0,7);}
@@ -1262,6 +1275,20 @@ function salvaSalv(){const imp=+document.getElementById("salvImporto").value||0,
 }
 function renderSaldoIniziale(){const si=state.saldoIniziale||{valore:0,mese:oggiISO().slice(0,7)};const a=document.getElementById("setSaldoIniz"),b=document.getElementById("setSaldoMese");if(a&&document.activeElement!==a)a.value=si.valore||"";if(b&&document.activeElement!==b)b.value=si.mese||oggiISO().slice(0,7);}
 function salvaSaldoIniziale(){const v=+document.getElementById("setSaldoIniz").value||0,m=document.getElementById("setSaldoMese").value||oggiISO().slice(0,7);state.saldoIniziale={valore:v,mese:m};render();}
+function apriSalvInfo(){const m=meseSel;const ob=obiettiviNettoMese(m),lib=liberoNettoMese(m),tot=ob+lib,saldo=salvadanaioSaldo();
+  document.getElementById("salvInfoBody").innerHTML=`
+   <div style="font-size:.75rem;color:var(--ink-soft);margin:-4px 0 12px">${meseLabel(m)}</div>
+   <div style="background:#f3f6f4;border-radius:12px;padding:12px;margin-bottom:10px">
+     <div style="font-size:.8rem;color:var(--ink-soft);margin-bottom:6px">Risparmio del mese</div>
+     ${_saldoLine('· in obiettivi',ob,'#0f7a55')}
+     ${_saldoLine('· nel salvadanaio libero',lib,'#185fa5')}
+     <div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:6px;padding-top:6px"><b>Totale del mese</b><b class="num">${euro(tot)}</b></div>
+   </div>
+   <div style="display:flex;justify-content:space-between;align-items:center;background:#fbf1e6;border-radius:12px;padding:12px">
+     <span style="color:#8a5a2b;font-weight:600">Saldo totale salvadanaio</span><b class="num" style="color:#8a5a2b;font-size:1.15rem">${euro(saldo)}</b>
+   </div>`;
+  apri("ovSalvInfo");
+}
 // rate
 function rataFine(r){return spostaMese(r.inizio,(+r.nRate||1)-1);}
 function rataAttivaIn(r,m){return m>=r.inizio && m<=rataFine(r);}
@@ -1309,7 +1336,7 @@ function render(){
   document.getElementById("hHint").textContent=disp>=0?"saldo reale · quello che hai ora":"sei sotto zero sul reale";
   document.getElementById("hEntrate").textContent=euro(ent);
   document.getElementById("hSpese").textContent=euro(sp);
-  document.getElementById("hRis").textContent=euro(ris);
+  document.getElementById("hRis").textContent=euro(_salvNettoMese(meseSel));
   document.getElementById("hContabile").textContent=euro(saldoContabileMese(meseSel));
   renderGauge(ent,sp,ris);
   renderSaldoMese();renderSalvadanaio();renderSaldoIniziale();renderAffrontate();renderDaAffrontare();renderNote();renderAppuntamenti();renderBachecaObiettivi();
@@ -1706,7 +1733,7 @@ function renderSaldoMese(){
   const reale=saldoRealeMese(m),cont=saldoContabileMese(m);
   const entAtt=_sum(entrateAtteseMese(m),"importo"),prog=_sum(speseProgrammateMese(m),"importo"),rateFut=_sum(rateFutureMese(m),"rata");
   const impegni=entAtt+prog+rateFut,cNeg=cont<0;
-  const apertura=aperturaMese(m),salvNet=_salvNettoMese(m);
+  const apertura=aperturaMese(m),salvNet=_salvNettoMese(m),salvBal=salvadanaioSaldo();
   el.innerHTML=`
    <div style="display:flex;justify-content:space-between;align-items:center;background:#eef3f6;border-radius:12px;padding:9px 12px;margin-bottom:12px;font-size:.85rem">
      <span style="color:var(--ink-soft)">Riporto dal mese scorso</span><b class="num">${euro(apertura)}</b>
@@ -1723,6 +1750,9 @@ function renderSaldoMese(){
        <div style="font-size:.72rem;color:${cNeg?'#a3312e':'#0f6e56'}">saldo contabile</div>
      </div>
    </div>
+   ${salvBal>0?`<div style="display:flex;justify-content:space-between;align-items:center;background:#fbf1e6;border-radius:12px;padding:9px 12px;margin-bottom:12px;font-size:.85rem">
+     <span style="color:#8a5a2b">🐷 Nel salvadanaio · tuoi, messi da parte</span><b class="num" style="color:#8a5a2b">${euro(salvBal)}</b>
+   </div>`:''}
    <div style="border-top:1px solid var(--line);padding-top:8px">
      <div style="font-size:.72rem;color:var(--ink-soft);margin-bottom:2px">dal reale al contabile</div>
      ${_saldoLine('+ entrate attese',entAtt,'#0f6e56')}
@@ -1775,14 +1805,15 @@ function renderObiettivi(){
   if(!state.obiettivi.length){el.innerHTML='<div class="empty">Nessun obiettivo. Aggiungi il primo (es. vacanza, scuola, emergenze).</div>';return;}
   el.innerHTML=state.obiettivi.map(o=>{
     if(o.tipo==="sfida")return renderCardSfida(o);
-    const pct=o.target>0?Math.min(100,o.saved/o.target*100):0;const rim=Math.max(0,(o.target||0)-(o.saved||0));
+    const sal=obiettivoSaldo(o);
+    const pct=o.target>0?Math.min(100,Math.max(0,sal)/o.target*100):0;const rim=Math.max(0,(o.target||0)-sal);
     let eta=rim<=0?"🎉 Raggiunto!":(o.mensile>0?("mancano ~"+Math.ceil(rim/o.mensile)+(Math.ceil(rim/o.mensile)===1?" mese":" mesi")):"imposta un mensile");
-    const vers=(o.versamenti||[]).slice().reverse().map(v=>`<div class="vers"><span class="vd">${formatData(v.data)}</span><span class="va">+${euro(v.importo)}</span><button class="vx" onclick="event.stopPropagation();chiediEliminaVersamento('${o.id}','${v.id}')">🗑</button></div>`).join("");
+    const vers=(o.versamenti||[]).slice().reverse().map(v=>{const neg=(+v.importo)<0;return `<div class="vers"><span class="vd">${formatData(v.data)}</span><span class="va" style="${neg?'color:#b06a12':''}">${neg?'−':'+'}${euro(Math.abs(+v.importo||0))}</span><button class="vx" onclick="event.stopPropagation();chiediEliminaVersamento('${o.id}','${v.id}')">🗑</button></div>`;}).join("");
     return `<div class="goal" onclick="modificaObiettivo('${o.id}')">
-      <div class="goal-top"><span class="goal-name">${o.icona?esc(o.icona)+' ':''}${esc(o.nome)}</span><span class="goal-monthly">da parte <b class="num">${euro(o.mensile)}</b>/mese</span></div>
+      <div class="goal-top"><span class="goal-name">${o.icona?esc(o.icona)+' ':''}${esc(o.nome)}</span><span class="goal-monthly">nel salvadanaio</span></div>
       <div class="progress"><i style="width:${pct}%"></i></div>
-      <div class="goal-meta"><span>Obiettivo <b class="num">${euro(o.target)}</b></span><span>Messo da parte <b class="num">${euro(o.saved)}</b></span><span>Manca <b class="num">${euro(rim)}</b></span></div>
-      <div class="goal-act"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();apriVersamento('${o.id}')">+ Versamento</button><span class="eta">${eta} · ${Math.round(pct)}%</span></div>
+      <div class="goal-meta"><span>Obiettivo <b class="num">${euro(o.target)}</b></span><span>Da parte <b class="num">${euro(sal)}</b></span><span>Manca <b class="num">${euro(rim)}</b></span></div>
+      <div class="goal-act"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();apriVersamento('${o.id}','metti')">＋ Metti</button><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();apriVersamento('${o.id}','togli')" ${sal<=0?'disabled':''}>− Togli</button><span class="eta">${eta} · ${Math.round(pct)}%</span></div>
       ${vers?'<div class="vers-list">'+vers+'</div>':''}
     </div>`;}).join("");
 }
@@ -2555,13 +2586,20 @@ function confermaSi(){const f=pendingConfirm;pendingConfirm=null;chiudi("ovConfi
 
 function formatData(iso){if(!iso)return"";const[y,m,d]=iso.split("-");return d+"/"+m+"/"+y;}
 function oggiISO(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
-function apriVersamento(gid){editVersGoal=state.obiettivi.find(o=>o.id===gid);if(!editVersGoal)return;document.getElementById("vImporto").value="";apri("ovVers");setTimeout(()=>document.getElementById("vImporto").focus(),100);}
+let versTipo="metti";
+function apriVersamento(gid,tipo){editVersGoal=state.obiettivi.find(o=>o.id===gid);if(!editVersGoal)return;versTipo=tipo||"metti";
+  const sal=obiettivoSaldo(editVersGoal);
+  document.getElementById("versTitle").textContent=versTipo==="metti"?("🐷 Metti da parte · "+editVersGoal.nome):("🐷 Togli · "+editVersGoal.nome);
+  document.getElementById("versSub").textContent=versTipo==="metti"?"Esce dal conto reale ed entra nel salvadanaio per questo obiettivo.":("Rientra nel conto reale. Da parte su questo obiettivo: "+euro(sal));
+  document.getElementById("vImporto").value="";apri("ovVers");setTimeout(()=>document.getElementById("vImporto").focus(),100);}
 function salvaVersamento(){
   if(!editVersGoal)return;const imp=+document.getElementById("vImporto").value||0;
   if(imp<=0){document.getElementById("vImporto").focus();return;}
   if(!editVersGoal.versamenti)editVersGoal.versamenti=[];
-  editVersGoal.versamenti.push({id:id(),data:oggiISO(),importo:imp});
-  editVersGoal.saved=(+editVersGoal.saved||0)+imp;
+  if(versTipo==="togli"&&imp>obiettivoSaldo(editVersGoal)){alert("Non puoi togliere più di quanto c'è su questo obiettivo ("+euro(obiettivoSaldo(editVersGoal))+").");return;}
+  const firmato=versTipo==="togli"?-imp:imp;
+  editVersGoal.versamenti.push({id:id(),data:oggiISO(),importo:firmato});
+  editVersGoal.saved=(+editVersGoal.saved||0)+firmato;
   chiudi("ovVers");render();
 }
 function chiediEliminaVersamento(gid,vid){
