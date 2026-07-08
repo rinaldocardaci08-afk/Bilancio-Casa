@@ -560,10 +560,21 @@
   <div class="lockbox">
     <div class="li">🏡</div>
     <h2>Bilancio di Casa</h2>
-    <p>Inserisci la password per entrare</p>
-    <input type="password" id="pwInput" placeholder="Password" onkeydown="if(event.key==='Enter')sblocca()">
-    <button class="btn btn-primary" onclick="sblocca()">Entra</button>
-    <div class="pwerr" id="pwErr"></div>
+    <div id="authLoginBox">
+      <p>Accedi con la tua email</p>
+      <input type="email" id="authEmail" placeholder="Email" autocomplete="username">
+      <input type="password" id="authPw" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')authLogin()">
+      <button class="btn btn-primary" onclick="authLogin()">Entra</button>
+      <div style="margin-top:12px;font-size:.85rem"><a href="#" onclick="authResetChiedi();return false;">Password dimenticata?</a></div>
+    </div>
+    <div id="authSetpwBox" style="display:none">
+      <p>Imposta la tua password per il primo accesso</p>
+      <input type="password" id="authNewPw" placeholder="Nuova password (min 6)" autocomplete="new-password" onkeydown="if(event.key==='Enter')authSetPw()">
+      <button class="btn btn-primary" onclick="authSetPw()">Imposta password ed entra</button>
+    </div>
+    <div class="pwerr" id="authErr"></div>
+    <div id="authMsg" style="margin-top:10px;font-size:.85rem;color:var(--ink-soft)"></div>
+    <div style="margin-top:16px;font-size:.75rem;color:var(--ink-soft)">Beta a inviti · l'accesso lo abilita l'amministratore</div>
   </div>
 </div>
 
@@ -802,6 +813,15 @@
       <div class="field"><label>Importo di partenza</label><input type="number" id="setSaldoIniz" inputmode="decimal" placeholder="0,00"></div>
       <div class="field"><label>Mese di partenza</label><input type="month" id="setSaldoMese"></div>
       <button class="btn" onclick="salvaSaldoIniziale()">Salva saldo iniziale</button>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2><span class="ic">👤</span> Account e backup</h2></div>
+      <div style="font-size:.82rem;color:var(--ink-soft);margin-bottom:10px">Scarica un backup dei tuoi dati quando vuoi; se qualcosa va storto, lo reimporti.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="esportaBackup()">⬇ Esporta backup</button>
+        <label class="btn btn-ghost btn-sm" style="cursor:pointer">⬆ Importa backup<input type="file" accept="application/json" onchange="importaBackup(event)" style="display:none"></label>
+        <button class="btn btn-ghost btn-sm" onclick="esci()">🚪 Esci</button>
+      </div>
     </div>
     <div class="card">
       <div class="card-head"><h2><span class="ic">👨‍👩‍👧‍👦</span> Componenti della famiglia</h2>
@@ -1078,11 +1098,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL  = "https://jpugeakgpitbxdswbucj.supabase.co";
-const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwdWdlYWtncGl0Ynhkc3didWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODc4MDIsImV4cCI6MjA4OTE2MzgwMn0.UsiUKxnLOmhWZgTzvLbA_nFzHvRiVH4TKa-3hgsmneI";
-const FAMIGLIA_ID   = "famiglia";
-const APP_VERSION   = 49;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
-const APP_PASSWORD  = "Baiasamuele";   // password d'ingresso (si chiede una sola volta per dispositivo)
+const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
+const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
+const TBL           = "bilanci";
+const APP_VERSION   = 51;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1110,7 +1129,7 @@ function datiLotteriaEsempio(){const l=nuovaLotteria(),o=oggiISO();
   return l;}
 let state, meseSel, sezione="bacheca", periodoPersona="mese", persExpand=null, noteOrigine=null, lotPeriodo="mese", lotEroeSel=null, lotExpand=null, rataExpand=null, ganttStart=null;
 let editing=null, modKind=null, ricSel="fissa", pagSel="carta", spesaMode="diretta", progMesiMode="uno", editGoal=null, editCat=null, editRata=null, editVersGoal=null, pendingConfirm=null, catColorSel=PALETTE[0];
-let sb=null, cloudOn=false, applicandoRemoto=false, pendingRemote=null, saveTimer=null, lastLocalWrite=0;
+let sb=null, cloudOn=false, applicandoRemoto=false, pendingRemote=null, saveTimer=null, lastLocalWrite=0, authUser=null;
 
 function id(){return Math.random().toString(36).slice(2,9);}
 function meseCorrente(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
@@ -1173,19 +1192,54 @@ function loadLocal(){
 }
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
 function save(){if(!applicandoRemoto)lastLocalWrite=Date.now();saveLocal();if(cloudOn&&!applicandoRemoto){clearTimeout(saveTimer);saveTimer=setTimeout(saveCloud,500);}}
-async function saveCloud(){if(!sb)return;try{setSync("syncing");lastLocalWrite=Date.now();const ts=new Date(lastLocalWrite).toISOString();const{error}=await sb.from("bilancio_casa").upsert({id:FAMIGLIA_ID,dati:state,updated_at:ts});setSync(error?"off":"ok");}catch(e){setSync("off");}}
-async function initCloud(){
-  if(!SUPABASE_URL||!SUPABASE_ANON||!window.supabase){setSync("local");return;}
-  try{
-    sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
-    const{data,error}=await sb.from("bilancio_casa").select("dati").eq("id",FAMIGLIA_ID).maybeSingle();
-    if(error)throw error;cloudOn=true;
-    if(data&&data.dati){applicaRemoto(data.dati,null);}
-    else{await sb.from("bilancio_casa").upsert({id:FAMIGLIA_ID,dati:state,updated_at:new Date().toISOString()});}
-    sb.channel("bilancio-"+FAMIGLIA_ID).on("postgres_changes",{event:"*",schema:"public",table:"bilancio_casa",filter:"id=eq."+FAMIGLIA_ID},p=>{if(p.new&&p.new.dati)applicaRemoto(p.new.dati,p.new.updated_at);}).subscribe(st=>{setSync(st==="SUBSCRIBED"?"ok":"syncing");});
-    setSync("ok");
-  }catch(e){cloudOn=false;setSync("off");}
+async function saveCloud(){if(!sb||!authUser)return;try{setSync("syncing");lastLocalWrite=Date.now();const ts=new Date(lastLocalWrite).toISOString();const{error}=await sb.from(TBL).upsert({user_id:authUser.id,dati:state,updated_at:ts});setSync(error?"off":"ok");}catch(e){setSync("off");}}
+async function caricaDatiUtente(){
+  const{data,error}=await sb.from(TBL).select("dati,updated_at").eq("user_id",authUser.id).maybeSingle();
+  if(error)throw error;cloudOn=true;
+  if(data&&data.dati&&Object.keys(data.dati).length){applicaRemoto(data.dati,null);}
+  else{await sb.from(TBL).upsert({user_id:authUser.id,dati:state,updated_at:new Date().toISOString()});}   // primo accesso: migra lo stato locale corrente
+  sb.channel("bil-"+authUser.id).on("postgres_changes",{event:"*",schema:"public",table:TBL,filter:"user_id=eq."+authUser.id},p=>{if(p.new&&p.new.dati)applicaRemoto(p.new.dati,p.new.updated_at);}).subscribe(st=>{setSync(st==="SUBSCRIBED"?"ok":"syncing");});
+  setSync("ok");
 }
+function mostraLogin(){document.getElementById("lock").style.display="flex";}
+function setAuthMode(m){document.getElementById("authLoginBox").style.display=m==="setpw"?"none":"block";document.getElementById("authSetpwBox").style.display=m==="setpw"?"block":"none";}
+async function entraApp(){document.getElementById("lock").style.display="none";try{await caricaDatiUtente();}catch(e){setSync("off");}render();}
+async function initCloud(){
+  if(!SUPABASE_URL||!SUPABASE_ANON||!window.supabase){setSync("local");mostraLogin();return;}
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
+  const daLink=/type=(recovery|invite)/.test(location.hash||"");
+  sb.auth.onAuthStateChange((evt,session)=>{if(evt==="PASSWORD_RECOVERY"){authUser=session?session.user:null;setAuthMode("setpw");mostraLogin();}});
+  try{const{data:{session}}=await sb.auth.getSession();
+    if(session&&session.user){authUser=session.user;if(daLink){setAuthMode("setpw");mostraLogin();}else{await entraApp();}}
+    else{mostraLogin();}
+  }catch(e){setSync("off");mostraLogin();}
+}
+async function authLogin(){
+  const email=(document.getElementById("authEmail").value||"").trim(),pw=document.getElementById("authPw").value||"";
+  const err=document.getElementById("authErr"),msg=document.getElementById("authMsg");err.textContent="";
+  if(!email||!pw){err.textContent="Inserisci email e password.";return;}
+  msg.textContent="Accesso in corso…";
+  const{data,error}=await sb.auth.signInWithPassword({email,password:pw});
+  if(error){msg.textContent="";err.textContent=(/confirm/i.test(error.message||"")?"Devi prima confermare l'email dal link ricevuto.":"Email o password non corretti.");return;}
+  authUser=data.user;msg.textContent="";await entraApp();
+}
+async function authSetPw(){
+  const pw=document.getElementById("authNewPw").value||"";const err=document.getElementById("authErr");err.textContent="";
+  if(pw.length<6){err.textContent="La password deve avere almeno 6 caratteri.";return;}
+  const{error}=await sb.auth.updateUser({password:pw});
+  if(error){err.textContent="Errore: "+error.message;return;}
+  try{const{data:{session}}=await sb.auth.getSession();if(session)authUser=session.user;}catch(e){}
+  setAuthMode("login");await entraApp();
+}
+async function authResetChiedi(){
+  const email=(document.getElementById("authEmail").value||"").trim();const err=document.getElementById("authErr"),msg=document.getElementById("authMsg");err.textContent="";
+  if(!email){err.textContent="Scrivi prima la tua email qui sopra.";return;}
+  const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+  msg.textContent=error?("Errore: "+error.message):"Ti ho mandato una mail per reimpostare la password.";
+}
+async function esci(){chiediConferma("Vuoi uscire dal tuo account su questo dispositivo?",async()=>{try{await sb.auth.signOut();}catch(e){}try{localStorage.removeItem(KEY);}catch(e){}location.reload();});}
+function esportaBackup(){try{const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="bilancio-backup-"+oggiISO()+".json";document.body.appendChild(a);a.click();a.remove();}catch(e){alert("Backup non riuscito.");}}
+function importaBackup(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);chiediConferma("Importare questo backup? Sostituisce TUTTI i dati attuali.",()=>{state=d;migrate();render();});}catch(e){alert("File di backup non valido.");}ev.target.value="";};r.readAsText(f);}
 function applicaRemoto(dati,remoteTs){
   if(JSON.stringify(dati)===JSON.stringify(state))return;
   if(remoteTs&&Date.parse(remoteTs)<=lastLocalWrite)return;   // stato remoto più vecchio delle mie modifiche locali: non sovrascrivo
@@ -2575,13 +2629,6 @@ function azzeraMeseCorrente(){
 }
 function azzeraTutto(){chiudi("ovAzzera");resetTutto();}
 function esportaBackup(){const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="bilancio-casa-"+meseCorrente()+".json";a.click();}
-function appSbloccata(){try{return localStorage.getItem("bc-unlocked")==="1";}catch(e){return false;}}
-function sblocca(){
-  const v=document.getElementById("pwInput").value;
-  if(v===APP_PASSWORD){try{localStorage.setItem("bc-unlocked","1");}catch(e){}document.getElementById("lock").style.display="none";}
-  else{document.getElementById("pwErr").textContent="Password errata, riprova.";document.getElementById("pwInput").value="";}
-}
-
 function chiediConferma(msg,onOk){pendingConfirm=onOk;document.getElementById("confMsg").textContent=msg;apri("ovConfirm");}
 function confermaSi(){const f=pendingConfirm;pendingConfirm=null;chiudi("ovConfirm");if(f)f();}
 
@@ -2615,9 +2662,8 @@ async function checkUpdate(){
 }
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkUpdate();});
 
-if(appSbloccata())document.getElementById("lock").style.display="none";
-else setTimeout(()=>document.getElementById("pwInput").focus(),200);
-meseSel=meseCorrente();loadLocal();render();initCloud();checkUpdate();
+setTimeout(()=>{const e=document.getElementById("authEmail");if(e)e.focus();},200);
+meseSel=meseCorrente();loadLocal();initCloud();checkUpdate();
 </script>
 </body>
 </html>
