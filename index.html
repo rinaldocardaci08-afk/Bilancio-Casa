@@ -572,6 +572,13 @@
       <input type="password" id="authNewPw" placeholder="Nuova password (min 6)" autocomplete="new-password" onkeydown="if(event.key==='Enter')authSetPw()">
       <button class="btn btn-primary" onclick="authSetPw()">Imposta password ed entra</button>
     </div>
+    <div id="authFamigliaBox" style="display:none">
+      <p>Crea la tua famiglia o unisciti a una esistente</p>
+      <button class="btn btn-primary" onclick="creaFamiglia()">Crea la tua famiglia</button>
+      <div style="margin:12px 0;font-size:.8rem;color:var(--ink-soft)">— oppure —</div>
+      <input type="text" id="famCodice" placeholder="Codice (es. CASA-7K2P)" autocomplete="off" onkeydown="if(event.key==='Enter')unisciti()">
+      <button class="btn" onclick="unisciti()">Unisciti con il codice</button>
+    </div>
     <div class="pwerr" id="authErr"></div>
     <div id="authMsg" style="margin-top:10px;font-size:.85rem;color:var(--ink-soft)"></div>
     <div style="margin-top:16px;font-size:.75rem;color:var(--ink-soft)">Beta a inviti · l'accesso lo abilita l'amministratore</div>
@@ -593,6 +600,11 @@
     </div>
   </div>
 </header>
+
+<div id="pwBanner" style="display:none;background:#fdf3e0;border-bottom:1px solid #f0d9a8;color:#8a5a2b;padding:10px 14px;font-size:.85rem;display:none;align-items:center;justify-content:space-between;gap:10px">
+  <span>🔑 Stai usando la password iniziale. Cambiala per sicurezza.</span>
+  <button class="btn btn-sm" style="flex:none" onclick="apriCambiaPw()">Cambia ora</button>
+</div>
 
 <div class="wrap">
 
@@ -675,6 +687,14 @@
     <h3>🐷 Riepilogo salvadanaio</h3>
     <div id="salvInfoBody"></div>
     <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovSalvInfo')">Chiudi</button></div>
+  </div></div>
+
+  <div class="overlay" id="ovCambiaPw"><div class="modal">
+    <h3>🔑 Cambia password</h3>
+    <div class="field"><label>Nuova password (min 6)</label><input type="password" id="cpNew" autocomplete="new-password" placeholder="Nuova password"></div>
+    <div class="field"><label>Ripeti la nuova password</label><input type="password" id="cpNew2" autocomplete="new-password" placeholder="Ripeti" onkeydown="if(event.key==='Enter')cambiaPassword()"></div>
+    <div class="pwerr" id="cpErr"></div>
+    <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovCambiaPw')">Annulla</button><button class="btn btn-primary" onclick="cambiaPassword()">Salva password</button></div>
   </div></div>
 
   <!-- SPESE -->
@@ -820,8 +840,13 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" onclick="esportaBackup()">⬇ Esporta backup</button>
         <label class="btn btn-ghost btn-sm" style="cursor:pointer">⬆ Importa backup<input type="file" accept="application/json" onchange="importaBackup(event)" style="display:none"></label>
+        <button class="btn btn-ghost btn-sm" onclick="apriCambiaPw()">🔑 Cambia password</button>
         <button class="btn btn-ghost btn-sm" onclick="esci()">🚪 Esci</button>
       </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2><span class="ic">👪</span> La tua famiglia</h2></div>
+      <div id="famigliaBody"></div>
     </div>
     <div class="card">
       <div class="card-head"><h2><span class="ic">👨‍👩‍👧‍👦</span> Componenti della famiglia</h2>
@@ -1101,7 +1126,7 @@
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 51;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 53;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1129,7 +1154,7 @@ function datiLotteriaEsempio(){const l=nuovaLotteria(),o=oggiISO();
   return l;}
 let state, meseSel, sezione="bacheca", periodoPersona="mese", persExpand=null, noteOrigine=null, lotPeriodo="mese", lotEroeSel=null, lotExpand=null, rataExpand=null, ganttStart=null;
 let editing=null, modKind=null, ricSel="fissa", pagSel="carta", spesaMode="diretta", progMesiMode="uno", editGoal=null, editCat=null, editRata=null, editVersGoal=null, pendingConfirm=null, catColorSel=PALETTE[0];
-let sb=null, cloudOn=false, applicandoRemoto=false, pendingRemote=null, saveTimer=null, lastLocalWrite=0, authUser=null;
+let sb=null, cloudOn=false, applicandoRemoto=false, pendingRemote=null, saveTimer=null, lastLocalWrite=0, authUser=null, famigliaId=null, famigliaCodice=null;
 
 function id(){return Math.random().toString(36).slice(2,9);}
 function meseCorrente(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
@@ -1192,18 +1217,38 @@ function loadLocal(){
 }
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
 function save(){if(!applicandoRemoto)lastLocalWrite=Date.now();saveLocal();if(cloudOn&&!applicandoRemoto){clearTimeout(saveTimer);saveTimer=setTimeout(saveCloud,500);}}
-async function saveCloud(){if(!sb||!authUser)return;try{setSync("syncing");lastLocalWrite=Date.now();const ts=new Date(lastLocalWrite).toISOString();const{error}=await sb.from(TBL).upsert({user_id:authUser.id,dati:state,updated_at:ts});setSync(error?"off":"ok");}catch(e){setSync("off");}}
-async function caricaDatiUtente(){
-  const{data,error}=await sb.from(TBL).select("dati,updated_at").eq("user_id",authUser.id).maybeSingle();
+async function saveCloud(){if(!sb||!famigliaId)return;try{setSync("syncing");lastLocalWrite=Date.now();const ts=new Date(lastLocalWrite).toISOString();const{error}=await sb.from("famiglie").update({dati:state,updated_at:ts}).eq("id",famigliaId);setSync(error?"off":"ok");}catch(e){setSync("off");}}
+async function caricaFamiglia(){
+  const{data,error}=await sb.from("famiglie").select("codice,dati,updated_at").eq("id",famigliaId).maybeSingle();
   if(error)throw error;cloudOn=true;
-  if(data&&data.dati&&Object.keys(data.dati).length){applicaRemoto(data.dati,null);}
-  else{await sb.from(TBL).upsert({user_id:authUser.id,dati:state,updated_at:new Date().toISOString()});}   // primo accesso: migra lo stato locale corrente
-  sb.channel("bil-"+authUser.id).on("postgres_changes",{event:"*",schema:"public",table:TBL,filter:"user_id=eq."+authUser.id},p=>{if(p.new&&p.new.dati)applicaRemoto(p.new.dati,p.new.updated_at);}).subscribe(st=>{setSync(st==="SUBSCRIBED"?"ok":"syncing");});
+  if(data){famigliaCodice=data.codice;if(data.dati&&Object.keys(data.dati).length){applicaRemoto(data.dati,null);}}
+  sb.channel("fam-"+famigliaId).on("postgres_changes",{event:"*",schema:"public",table:"famiglie",filter:"id=eq."+famigliaId},p=>{if(p.new&&p.new.dati)applicaRemoto(p.new.dati,p.new.updated_at);}).subscribe(st=>{setSync(st==="SUBSCRIBED"?"ok":"syncing");});
   setSync("ok");
 }
 function mostraLogin(){document.getElementById("lock").style.display="flex";}
-function setAuthMode(m){document.getElementById("authLoginBox").style.display=m==="setpw"?"none":"block";document.getElementById("authSetpwBox").style.display=m==="setpw"?"block":"none";}
-async function entraApp(){document.getElementById("lock").style.display="none";try{await caricaDatiUtente();}catch(e){setSync("off");}render();}
+function setAuthMode(m){document.getElementById("authLoginBox").style.display=(m==="login")?"block":"none";document.getElementById("authSetpwBox").style.display=(m==="setpw")?"block":"none";document.getElementById("authFamigliaBox").style.display=(m==="famiglia")?"block":"none";}
+function mostraSceltaFamiglia(){setAuthMode("famiglia");document.getElementById("authErr").textContent="";document.getElementById("authMsg").textContent="";document.getElementById("lock").style.display="flex";}
+async function entraApp(){
+  document.getElementById("lock").style.display="none";
+  let fam=null;try{const{data,error}=await sb.rpc("mia_famiglia");if(!error)fam=data;}catch(e){}
+  if(fam){famigliaId=fam;try{await caricaFamiglia();}catch(e){setSync("off");}aggiornaPwBanner();render();}
+  else{mostraSceltaFamiglia();}
+}
+async function creaFamiglia(){
+  const err=document.getElementById("authErr"),msg=document.getElementById("authMsg");err.textContent="";msg.textContent="Creazione…";
+  try{const{data,error}=await sb.rpc("crea_famiglia",{dati_iniziali:state});if(error)throw error;
+    const row=Array.isArray(data)?data[0]:data;famigliaId=row.id;famigliaCodice=row.codice;msg.textContent="";
+    document.getElementById("lock").style.display="none";try{await caricaFamiglia();}catch(e){setSync("off");}aggiornaPwBanner();render();
+    alert("Famiglia creata ✅\n\nIl codice per far entrare l'altro genitore è:\n\n"+row.codice+"\n\nLo ritrovi sempre in Impostazioni → La tua famiglia.");
+  }catch(e){msg.textContent="";err.textContent="Errore: "+(e.message||e);}
+}
+async function unisciti(){
+  const code=(document.getElementById("famCodice").value||"").trim(),err=document.getElementById("authErr"),msg=document.getElementById("authMsg");err.textContent="";
+  if(!code){err.textContent="Inserisci il codice.";return;}msg.textContent="Accesso…";
+  try{const{data,error}=await sb.rpc("unisciti_famiglia",{codice_in:code});if(error)throw error;
+    famigliaId=data;msg.textContent="";document.getElementById("lock").style.display="none";try{await caricaFamiglia();}catch(e){setSync("off");}aggiornaPwBanner();render();
+  }catch(e){msg.textContent="";err.textContent="Errore: "+(e.message||e);}
+}
 async function initCloud(){
   if(!SUPABASE_URL||!SUPABASE_ANON||!window.supabase){setSync("local");mostraLogin();return;}
   sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON);
@@ -1226,7 +1271,7 @@ async function authLogin(){
 async function authSetPw(){
   const pw=document.getElementById("authNewPw").value||"";const err=document.getElementById("authErr");err.textContent="";
   if(pw.length<6){err.textContent="La password deve avere almeno 6 caratteri.";return;}
-  const{error}=await sb.auth.updateUser({password:pw});
+  const{error}=await sb.auth.updateUser({password:pw,data:{pw_changed:true}});
   if(error){err.textContent="Errore: "+error.message;return;}
   try{const{data:{session}}=await sb.auth.getSession();if(session)authUser=session.user;}catch(e){}
   setAuthMode("login");await entraApp();
@@ -1238,6 +1283,18 @@ async function authResetChiedi(){
   msg.textContent=error?("Errore: "+error.message):"Ti ho mandato una mail per reimpostare la password.";
 }
 async function esci(){chiediConferma("Vuoi uscire dal tuo account su questo dispositivo?",async()=>{try{await sb.auth.signOut();}catch(e){}try{localStorage.removeItem(KEY);}catch(e){}location.reload();});}
+function pwCambiata(){return !!(authUser&&authUser.user_metadata&&authUser.user_metadata.pw_changed);}
+function aggiornaPwBanner(){const b=document.getElementById("pwBanner");if(!b)return;b.style.display=(authUser&&!pwCambiata())?"flex":"none";}
+function apriCambiaPw(){document.getElementById("cpNew").value="";document.getElementById("cpNew2").value="";document.getElementById("cpErr").textContent="";apri("ovCambiaPw");setTimeout(()=>document.getElementById("cpNew").focus(),100);}
+async function cambiaPassword(){
+  const p1=document.getElementById("cpNew").value||"",p2=document.getElementById("cpNew2").value||"",err=document.getElementById("cpErr");err.textContent="";
+  if(p1.length<6){err.textContent="La password deve avere almeno 6 caratteri.";return;}
+  if(p1!==p2){err.textContent="Le due password non coincidono.";return;}
+  const{data,error}=await sb.auth.updateUser({password:p1,data:{pw_changed:true}});
+  if(error){err.textContent="Errore: "+error.message;return;}
+  if(data&&data.user)authUser=data.user;
+  chiudi("ovCambiaPw");aggiornaPwBanner();alert("Password aggiornata. ✅");
+}
 function esportaBackup(){try{const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="bilancio-backup-"+oggiISO()+".json";document.body.appendChild(a);a.click();a.remove();}catch(e){alert("Backup non riuscito.");}}
 function importaBackup(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);chiediConferma("Importare questo backup? Sostituisce TUTTI i dati attuali.",()=>{state=d;migrate();render();});}catch(e){alert("File di backup non valido.");}ev.target.value="";};r.readAsText(f);}
 function applicaRemoto(dati,remoteTs){
@@ -1328,6 +1385,9 @@ function salvaSalv(){const imp=+document.getElementById("salvImporto").value||0,
   state.movimentiSalvadanaio.push({id:id(),tipo:salvTipo,importo:imp,data});
   chiudi("ovSalv");render();
 }
+function renderFamiglia(){const el=document.getElementById("famigliaBody");if(!el)return;
+  el.innerHTML=famigliaCodice?`<div style="font-size:.85rem;color:var(--ink-soft);margin-bottom:6px">Codice per far entrare l'altro genitore (max 2 membri):</div><div class="num" style="font-size:1.5rem;font-weight:800;letter-spacing:.06em">${famigliaCodice}</div>`:'<div style="color:var(--ink-soft);font-size:.85rem">—</div>';
+}
 function renderSaldoIniziale(){const si=state.saldoIniziale||{valore:0,mese:oggiISO().slice(0,7)};const a=document.getElementById("setSaldoIniz"),b=document.getElementById("setSaldoMese");if(a&&document.activeElement!==a)a.value=si.valore||"";if(b&&document.activeElement!==b)b.value=si.mese||oggiISO().slice(0,7);}
 function salvaSaldoIniziale(){const v=+document.getElementById("setSaldoIniz").value||0,m=document.getElementById("setSaldoMese").value||oggiISO().slice(0,7);state.saldoIniziale={valore:v,mese:m};render();}
 function apriSalvInfo(){const m=meseSel;const ob=obiettiviNettoMese(m),lib=liberoNettoMese(m),tot=ob+lib,saldo=salvadanaioSaldo();
@@ -1394,7 +1454,7 @@ function render(){
   document.getElementById("hRis").textContent=euro(_salvNettoMese(meseSel));
   document.getElementById("hContabile").textContent=euro(saldoContabileMese(meseSel));
   renderGauge(ent,sp,ris);
-  renderSaldoMese();renderSalvadanaio();renderSaldoIniziale();renderAffrontate();renderDaAffrontare();renderNote();renderAppuntamenti();renderBachecaObiettivi();
+  renderSaldoMese();renderSalvadanaio();renderSaldoIniziale();renderFamiglia();renderAffrontate();renderDaAffrontare();renderNote();renderAppuntamenti();renderBachecaObiettivi();
   renderGrafico();renderPersone();renderRate();renderGantt();renderListe();renderObiettivi();renderTrend();renderCategorie();renderReport();renderLotteria();popolaQsCat();renderComponenti();
   if(calOpen)renderCalendario();
   save();
