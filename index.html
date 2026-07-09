@@ -937,7 +937,14 @@
 <!-- MODALE COMPONENTE FAMIGLIA -->
 <div class="overlay" id="ovComp"><div class="modal">
   <h3 id="compTitle">Nuovo componente</h3>
-  <div class="field"><label>Nome</label><input type="text" id="cpNome" placeholder="Es. Nonna"></div>
+  <div class="field"><label>Nome</label><input type="text" id="cpNome" placeholder="Es. Papà, Genitore, o un nome">
+    <div class="who" style="margin-top:8px">
+      <span class="wp" onclick="suggComp('Papà')">Papà</span>
+      <span class="wp" onclick="suggComp('Mamma')">Mamma</span>
+      <span class="wp" onclick="suggComp('Genitore')">Genitore</span>
+      <span class="wp" onclick="suggComp('Genitore 2')">Genitore 2</span>
+    </div>
+  </div>
   <div class="field"><label>Avatar</label><div class="emojis" id="cpEmojis"></div></div>
   <div class="field"><label>Colore</label><div class="swatches" id="cpSwatches"></div></div>
   <div class="field"><label>Genere</label>
@@ -1131,7 +1138,7 @@
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 56;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 57;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1191,6 +1198,8 @@ function datiAppuntamentiEsempio(){const o=oggiISO();return[
   {id:id(),testo:"Equitazione",data:isoPiu(o,1),ora:"16:00",icona:"🐎",persone:["giulia","leo"],fatto:false}
 ];}
 function statoVuoto(){return{entrate:[],spese:[],categorie:DEFAULT_CATS.map(c=>({...c})),persone:DEFAULT_PERSONE.map(p=>({...p})),rate:[],obiettivi:[],note:[],appuntamenti:[],movimentiSalvadanaio:[],saldoIniziale:{valore:0,mese:oggiISO().slice(0,7)},lotteria:nuovaLotteria()};}
+function statoNuovaFamiglia(){const s=statoVuoto();s.persone=[];return s;}
+function suggComp(n){const el=document.getElementById("cpNome");el.value=n;el.focus();}
 
 function migrate(){
   if(!state.categorie||!state.categorie.length) state.categorie=DEFAULT_CATS.map(c=>({...c}));
@@ -1228,7 +1237,7 @@ async function caricaFamiglia(){
   if(error)throw error;cloudOn=true;
   if(data){famigliaCodice=data.codice;
     if(data.dati&&Object.keys(data.dati).length){applicaRemoto(data.dati,null);}
-    else{state=statoVuoto();migrate();}
+    else{state=statoNuovaFamiglia();migrate();}
   }
   try{const{data:mm}=await sb.from("membri").select("user_id,ruolo").eq("famiglia_id",famigliaId);famigliaMembri=mm||[];}catch(e){famigliaMembri=[];}
   sb.channel("fam-"+famigliaId).on("postgres_changes",{event:"*",schema:"public",table:"famiglie",filter:"id=eq."+famigliaId},p=>{if(p.new&&p.new.dati)applicaRemoto(p.new.dati,p.new.updated_at);}).subscribe(st=>{setSync(st==="SUBSCRIBED"?"ok":"syncing");});
@@ -1248,9 +1257,9 @@ async function creaFamiglia(){
   const err=document.getElementById("authErr"),msg=document.getElementById("authMsg");err.textContent="";msg.textContent="Creazione…";
   try{const{data,error}=await sb.rpc("crea_famiglia",{dati_iniziali:{}});if(error)throw error;
     const row=Array.isArray(data)?data[0]:data;famigliaId=row.id;famigliaCodice=row.codice;msg.textContent="";
-    state=statoVuoto();migrate();
+    state=statoNuovaFamiglia();migrate();
     document.getElementById("lock").style.display="none";try{await caricaFamiglia();}catch(e){setSync("off");}aggiornaPwBanner();render();save();
-    alert("Famiglia creata ✅\n\nCodice per far entrare l'altro genitore:\n\n"+row.codice+"\n\nParti da zero. Se hai un backup dei tuoi dati, vai in Impostazioni → Importa backup. Il codice lo ritrovi sempre in Impostazioni → La tua famiglia.");
+    alert("Famiglia creata ✅\n\nCodice per far entrare l'altro genitore:\n\n"+row.codice+"\n\nParti da zero. Aggiungi i componenti della famiglia da Impostazioni → Componenti (Papà, Mamma, Genitore o i nomi che preferisci). Se hai un backup, Impostazioni → Importa backup.");
   }catch(e){msg.textContent="";err.textContent="Errore: "+(e.message||e);}
 }
 async function unisciti(){
@@ -2518,6 +2527,7 @@ const COMP_EMOJI=["👦","👧","🧒","👨","👩","👴","👵","🧑","👶"
 let editComp=null, compEmojiSel="🧒", compColorSel="#5B8DEF", compGenere="M", compEroe=false;
 function renderComponenti(){
   const el=document.getElementById("listaComponenti");if(!el)return;
+  if(!state.persone.length){el.innerHTML='<div class="empty">Nessun componente. Aggiungi chi fa parte della famiglia (Papà, Mamma, Genitore o i loro nomi) con il pulsante ＋ qui sopra.</div>';return;}
   el.innerHTML=state.persone.map(p=>{
     const eroe=state.lotteria&&state.lotteria.eroi&&state.lotteria.eroi.includes(p.id);
     return `<div class="comp" onclick="modificaComponente('${p.id}')"><div class="comp-av" style="${avBg(p)};background-color:${p.colore||'#999'}">${(p.avatar&&p.avatar.endsWith('.png'))?'':esc(p.emoji||'🧑')}</div><div class="comp-info"><div class="comp-nome">${esc(p.nome)}</div></div>${eroe?'<span class="comp-eroe">🏆 Eroe</span>':''}<span class="comp-edit">›</span></div>`;
