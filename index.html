@@ -555,6 +555,9 @@
 .segwrap{display:flex;flex-wrap:wrap;gap:6px}
 .seg-b{padding:7px 12px;border-radius:20px;border:1px solid var(--line);background:#fff;font-size:.82rem;cursor:pointer;color:var(--ink)}
 .seg-b.on{background:#16808F;color:#fff;border-color:#16808F}
+.avgrid{display:flex;flex-wrap:wrap;gap:8px}
+.avc{width:52px;height:52px;border-radius:50%;background-size:cover;background-position:center;background-color:#f0eee7;cursor:pointer;border:3px solid transparent;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.avc.on{border-color:#16808F}
 </style>
 </head>
 <body>
@@ -984,6 +987,7 @@
     </div>
   </div>
   <div class="field"><label>Avatar</label><div class="emojis" id="cpEmojis"></div></div>
+  <div class="field"><label>Oppure scegli un'immagine</label><div class="avgrid" id="cpAvatars"></div></div>
   <div class="field"><label>Colore</label><div class="swatches" id="cpSwatches"></div></div>
   <div class="field"><label>Genere</label>
     <div class="seg"><button type="button" id="cpGenM" class="on" onclick="setCompGenere('M')">Maschile</button><button type="button" id="cpGenF" onclick="setCompGenere('F')">Femminile</button></div>
@@ -1176,7 +1180,7 @@
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 59;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 60;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -2267,7 +2271,7 @@ function renderRepProiezione(){
     <div class="prow big"><span>A questo ritmo, da qui a dicembre</span><b class="num">${euro(proiezione)}</b></div>`;
 }
 function avBg(p){return p&&p.avatar?`background-image:url('${p.avatar}');background-color:${p.colore};`:`background-color:${p?p.colore:'#9AA8A2'};`;}
-function avEmoji(p){return (p&&p.emoji&&!(p.avatar&&String(p.avatar).endsWith('.png')))?p.emoji:'';}
+function avEmoji(p){return (p&&p.emoji&&!p.avatar)?p.emoji:'';}
 function setLotPeriodo(p){lotPeriodo=p;renderLotteria();}
 function dataNelPeriodoLot(data){return lotPeriodo==="mese"?(data||"").startsWith(meseSel):(data||"").startsWith(meseSel.split("-")[0]+"-");}
 function moneteEroe(pid){return state.lotteria.movimenti.filter(m=>m.persona===pid&&dataNelPeriodoLot(m.data)).reduce((a,m)=>a+(+m.monete||0),0);}
@@ -2710,13 +2714,20 @@ function scegliIcona(e){
 function iconaDi(btnId){const b=document.getElementById(btnId);return b?b.querySelector(".pick-em").textContent.trim():"";}
 function setIconaBtn(btnId,e){const b=document.getElementById(btnId);if(b)b.querySelector(".pick-em").textContent=e;}
 const COMP_EMOJI=["👦","👧","🧒","👨","👩","👴","👵","🧑","👶","🐶"];
-let editComp=null, compEmojiSel="🧒", compColorSel="#5B8DEF", compGenere="M", compEroe=false;
+let editComp=null, compEmojiSel="🧒", compColorSel="#5B8DEF", compGenere="M", compEroe=false, compAvatarSel="";
+const AVATAR_BASE="https://nzieluslmxmyeobemzsl.supabase.co/storage/v1/object/public/Avatar/";
+const AVATARS=["papa-2.jpeg","mamma-2.jpeg","figlia-2.jpeg","figlio-2.jpeg","figlio-3.jpeg","figlio-4.jpeg"];
+function avatarUrl(f){return f?(/^https?:/.test(f)?f:(AVATAR_BASE+f)):"";}
+function popolaCompAvatar(){const el=document.getElementById("cpAvatars");if(!el)return;
+  el.innerHTML=`<span class="avc ${!compAvatarSel?'on':''}" onclick="setCompAvatar('')" title="Nessuno (usa emoji)">🚫</span>`+
+    AVATARS.map(f=>{const u=AVATAR_BASE+f;return `<span class="avc ${compAvatarSel===u?'on':''}" style="background-image:url('${u}')" onclick="setCompAvatar('${u}')"></span>`;}).join("");}
+function setCompAvatar(u){compAvatarSel=u;popolaCompAvatar();}
 function renderComponenti(){
   const el=document.getElementById("listaComponenti");if(!el)return;
   if(!state.persone.length){el.innerHTML='<div class="empty">Nessun componente. Aggiungi chi fa parte della famiglia (Papà, Mamma, Genitore o i loro nomi) con il pulsante ＋ qui sopra.</div>';return;}
   el.innerHTML=state.persone.map(p=>{
     const eroe=state.lotteria&&state.lotteria.eroi&&state.lotteria.eroi.includes(p.id);
-    return `<div class="comp" onclick="modificaComponente('${p.id}')"><div class="comp-av" style="${avBg(p)};background-color:${p.colore||'#999'}">${(p.avatar&&p.avatar.endsWith('.png'))?'':esc(p.emoji||'🧑')}</div><div class="comp-info"><div class="comp-nome">${esc(p.nome)}</div></div>${eroe?'<span class="comp-eroe">🏆 Eroe</span>':''}<span class="comp-edit">›</span></div>`;
+    return `<div class="comp" onclick="modificaComponente('${p.id}')"><div class="comp-av" style="${avBg(p)};background-color:${p.colore||'#999'}">${p.avatar?'':esc(p.emoji||'🧑')}</div><div class="comp-info"><div class="comp-nome">${esc(p.nome)}</div></div>${eroe?'<span class="comp-eroe">🏆 Eroe</span>':''}<span class="comp-edit">›</span></div>`;
   }).join("");
 }
 function popolaCompEmoji(){document.getElementById("cpEmojis").innerHTML=COMP_EMOJI.map(e=>`<span class="em ${e===compEmojiSel?'on':''}" onclick="setCompEmoji('${e}')">${e}</span>`).join("");}
@@ -2726,20 +2737,20 @@ function setCompColor(c){compColorSel=c;popolaCompSwatch();}
 function setCompGenere(g){compGenere=g;document.getElementById("cpGenM").classList.toggle("on",g==="M");document.getElementById("cpGenF").classList.toggle("on",g==="F");}
 function toggleCompEroe(){compEroe=!compEroe;document.getElementById("cpSwitch").classList.toggle("on",compEroe);}
 function apriComponente(){editComp=null;document.getElementById("compTitle").textContent="Nuovo componente";
-  document.getElementById("cpNome").value="";compEmojiSel="🧒";compColorSel=PALETTE[0];compEroe=false;
-  popolaCompEmoji();popolaCompSwatch();setCompGenere("M");document.getElementById("cpSwitch").classList.remove("on");
+  document.getElementById("cpNome").value="";compEmojiSel="🧒";compColorSel=PALETTE[0];compEroe=false;compAvatarSel="";
+  popolaCompEmoji();popolaCompSwatch();popolaCompAvatar();setCompGenere("M");document.getElementById("cpSwitch").classList.remove("on");
   apri("ovComp");setTimeout(()=>document.getElementById("cpNome").focus(),100);}
 function modificaComponente(pid){editComp=persona(pid);if(!editComp)return;
   document.getElementById("compTitle").textContent="Modifica componente";
   document.getElementById("cpNome").value=editComp.nome;
-  compEmojiSel=editComp.emoji||"🧒";compColorSel=editComp.colore||PALETTE[0];
+  compEmojiSel=editComp.emoji||"🧒";compColorSel=editComp.colore||PALETTE[0];compAvatarSel=editComp.avatar||"";
   compEroe=!!(state.lotteria&&state.lotteria.eroi&&state.lotteria.eroi.includes(pid));
-  popolaCompEmoji();popolaCompSwatch();setCompGenere(editComp.genere||"M");
+  popolaCompEmoji();popolaCompSwatch();popolaCompAvatar();setCompGenere(editComp.genere||"M");
   document.getElementById("cpSwitch").classList.toggle("on",compEroe);
   apri("ovComp");}
 function salvaComponente(){const nome=document.getElementById("cpNome").value.trim();if(!nome){document.getElementById("cpNome").focus();return;}
-  if(editComp){editComp.nome=nome;editComp.emoji=compEmojiSel;editComp.colore=compColorSel;editComp.genere=compGenere;}
-  else{const pid="p"+id();state.persone.push({id:pid,nome,emoji:compEmojiSel,colore:compColorSel,genere:compGenere});editComp=persona(pid);}
+  if(editComp){editComp.nome=nome;editComp.emoji=compEmojiSel;editComp.colore=compColorSel;editComp.genere=compGenere;if(compAvatarSel)editComp.avatar=compAvatarSel;else delete editComp.avatar;}
+  else{const pid="p"+id();const np={id:pid,nome,emoji:compEmojiSel,colore:compColorSel,genere:compGenere};if(compAvatarSel)np.avatar=compAvatarSel;state.persone.push(np);editComp=persona(pid);}
   const pid=editComp.id;
   const eroi=state.lotteria.eroi;const giaEroe=eroi.includes(pid);
   if(compEroe&&!giaEroe)eroi.push(pid);
