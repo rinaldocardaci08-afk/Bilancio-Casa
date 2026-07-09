@@ -634,6 +634,7 @@
     </div>
     <div class="card">
       <div class="card-head"><h2><span class="ic">📝</span> Elenco promemoria</h2></div>
+      <div id="noteLabelPick" class="who" style="margin-bottom:8px"></div>
       <div class="note-add">
         <button type="button" id="noteIconaBtn" class="pick-btn pick-mini" onclick="apriIconPicker('noteIconaBtn')"><span class="pick-em">📝</span></button>
         <input id="noteInput" placeholder="Aggiungi un promemoria…" onkeydown="if(event.key==='Enter')aggiungiNota()">
@@ -799,6 +800,10 @@
     <div class="card">
       <div class="card-head"><h2><span class="ic">📊</span> Il mese in sintesi</h2></div>
       <div id="repKpi"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2><span class="ic">⏱️</span> Ritmo di spesa</h2></div>
+      <div id="repRitmo"></div>
     </div>
     <div class="card">
       <div class="card-head"><h2><span class="ic">📈</span> Andamento ultimi 6 mesi</h2></div>
@@ -1126,7 +1131,7 @@
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 53;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 56;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1154,7 +1159,7 @@ function datiLotteriaEsempio(){const l=nuovaLotteria(),o=oggiISO();
   return l;}
 let state, meseSel, sezione="bacheca", periodoPersona="mese", persExpand=null, noteOrigine=null, lotPeriodo="mese", lotEroeSel=null, lotExpand=null, rataExpand=null, ganttStart=null;
 let editing=null, modKind=null, ricSel="fissa", pagSel="carta", spesaMode="diretta", progMesiMode="uno", editGoal=null, editCat=null, editRata=null, editVersGoal=null, pendingConfirm=null, catColorSel=PALETTE[0];
-let sb=null, cloudOn=false, applicandoRemoto=false, pendingRemote=null, saveTimer=null, lastLocalWrite=0, authUser=null, famigliaId=null, famigliaCodice=null;
+let sb=null, cloudOn=false, applicandoRemoto=false, pendingRemote=null, saveTimer=null, lastLocalWrite=0, authUser=null, famigliaId=null, famigliaCodice=null, famigliaMembri=[];
 
 function id(){return Math.random().toString(36).slice(2,9);}
 function meseCorrente(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
@@ -1221,7 +1226,11 @@ async function saveCloud(){if(!sb||!famigliaId)return;try{setSync("syncing");las
 async function caricaFamiglia(){
   const{data,error}=await sb.from("famiglie").select("codice,dati,updated_at").eq("id",famigliaId).maybeSingle();
   if(error)throw error;cloudOn=true;
-  if(data){famigliaCodice=data.codice;if(data.dati&&Object.keys(data.dati).length){applicaRemoto(data.dati,null);}}
+  if(data){famigliaCodice=data.codice;
+    if(data.dati&&Object.keys(data.dati).length){applicaRemoto(data.dati,null);}
+    else{state=statoVuoto();migrate();}
+  }
+  try{const{data:mm}=await sb.from("membri").select("user_id,ruolo").eq("famiglia_id",famigliaId);famigliaMembri=mm||[];}catch(e){famigliaMembri=[];}
   sb.channel("fam-"+famigliaId).on("postgres_changes",{event:"*",schema:"public",table:"famiglie",filter:"id=eq."+famigliaId},p=>{if(p.new&&p.new.dati)applicaRemoto(p.new.dati,p.new.updated_at);}).subscribe(st=>{setSync(st==="SUBSCRIBED"?"ok":"syncing");});
   setSync("ok");
 }
@@ -1230,16 +1239,18 @@ function setAuthMode(m){document.getElementById("authLoginBox").style.display=(m
 function mostraSceltaFamiglia(){setAuthMode("famiglia");document.getElementById("authErr").textContent="";document.getElementById("authMsg").textContent="";document.getElementById("lock").style.display="flex";}
 async function entraApp(){
   document.getElementById("lock").style.display="none";
-  let fam=null;try{const{data,error}=await sb.rpc("mia_famiglia");if(!error)fam=data;}catch(e){}
+  let fam=null,errore=false;try{const{data,error}=await sb.rpc("mia_famiglia");if(error)errore=true;else fam=data;}catch(e){errore=true;}
+  if(errore){setSync("off");mostraLogin();return;}
   if(fam){famigliaId=fam;try{await caricaFamiglia();}catch(e){setSync("off");}aggiornaPwBanner();render();}
   else{mostraSceltaFamiglia();}
 }
 async function creaFamiglia(){
   const err=document.getElementById("authErr"),msg=document.getElementById("authMsg");err.textContent="";msg.textContent="Creazione…";
-  try{const{data,error}=await sb.rpc("crea_famiglia",{dati_iniziali:state});if(error)throw error;
+  try{const{data,error}=await sb.rpc("crea_famiglia",{dati_iniziali:{}});if(error)throw error;
     const row=Array.isArray(data)?data[0]:data;famigliaId=row.id;famigliaCodice=row.codice;msg.textContent="";
-    document.getElementById("lock").style.display="none";try{await caricaFamiglia();}catch(e){setSync("off");}aggiornaPwBanner();render();
-    alert("Famiglia creata ✅\n\nIl codice per far entrare l'altro genitore è:\n\n"+row.codice+"\n\nLo ritrovi sempre in Impostazioni → La tua famiglia.");
+    state=statoVuoto();migrate();
+    document.getElementById("lock").style.display="none";try{await caricaFamiglia();}catch(e){setSync("off");}aggiornaPwBanner();render();save();
+    alert("Famiglia creata ✅\n\nCodice per far entrare l'altro genitore:\n\n"+row.codice+"\n\nParti da zero. Se hai un backup dei tuoi dati, vai in Impostazioni → Importa backup. Il codice lo ritrovi sempre in Impostazioni → La tua famiglia.");
   }catch(e){msg.textContent="";err.textContent="Errore: "+(e.message||e);}
 }
 async function unisciti(){
@@ -1386,8 +1397,24 @@ function salvaSalv(){const imp=+document.getElementById("salvImporto").value||0,
   chiudi("ovSalv");render();
 }
 function renderFamiglia(){const el=document.getElementById("famigliaBody");if(!el)return;
-  el.innerHTML=famigliaCodice?`<div style="font-size:.85rem;color:var(--ink-soft);margin-bottom:6px">Codice per far entrare l'altro genitore (max 2 membri):</div><div class="num" style="font-size:1.5rem;font-weight:800;letter-spacing:.06em">${famigliaCodice}</div>`:'<div style="color:var(--ink-soft);font-size:.85rem">—</div>';
+  if(!famigliaId){el.innerHTML='<div style="color:var(--ink-soft);font-size:.85rem">—</div>';return;}
+  const mieiId=authUser?authUser.id:"";
+  const altri=famigliaMembri.filter(m=>m.user_id!==mieiId);
+  let membriHtml=`<div style="font-size:.75rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin:12px 0 6px">Membri (${famigliaMembri.length}/2)</div>`;
+  membriHtml+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0"><span style="font-size:.9rem">👤 Tu</span><span style="font-size:.75rem;color:var(--ink-soft)">questo account</span></div>`;
+  altri.forEach(m=>{membriHtml+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:.9rem">👤 Altro membro</span><button class="btn btn-ghost btn-sm" onclick="rimuoviMembro('${m.user_id}')">Rimuovi</button></div>`;});
+  el.innerHTML=`<div style="font-size:.85rem;color:var(--ink-soft);margin-bottom:6px">Codice per far entrare l'altro genitore (max 2):</div>
+    <div class="num" style="font-size:1.5rem;font-weight:800;letter-spacing:.06em">${famigliaCodice||"—"}</div>
+    ${membriHtml}
+    <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="lasciaFamiglia()">🚪 Lascia la famiglia</button>`;
 }
+async function rimuoviMembro(uid){chiediConferma("Rimuovere questo membro dalla famiglia? Perderà l'accesso a questi dati.",async()=>{
+  try{const{error}=await sb.rpc("rimuovi_membro",{target:uid});if(error)throw error;const{data:mm}=await sb.from("membri").select("user_id,ruolo").eq("famiglia_id",famigliaId);famigliaMembri=mm||[];render();alert("Membro rimosso.");}catch(e){alert("Errore: "+(e.message||e));}
+});}
+async function lasciaFamiglia(){chiediConferma("Vuoi lasciare questa famiglia? Su questo account non vedrai più questi dati (potrai crearne una nuova o unirti con un codice).",async()=>{
+  try{const{error}=await sb.rpc("lascia_famiglia");if(error)throw error;}catch(e){alert("Errore: "+(e.message||e));return;}
+  famigliaId=null;famigliaCodice=null;famigliaMembri=[];try{localStorage.removeItem(KEY);}catch(e){}location.reload();
+});}
 function renderSaldoIniziale(){const si=state.saldoIniziale||{valore:0,mese:oggiISO().slice(0,7)};const a=document.getElementById("setSaldoIniz"),b=document.getElementById("setSaldoMese");if(a&&document.activeElement!==a)a.value=si.valore||"";if(b&&document.activeElement!==b)b.value=si.mese||oggiISO().slice(0,7);}
 function salvaSaldoIniziale(){const v=+document.getElementById("setSaldoIniz").value||0,m=document.getElementById("setSaldoMese").value||oggiISO().slice(0,7);state.saldoIniziale={valore:v,mese:m};render();}
 function apriSalvInfo(){const m=meseSel;const ob=obiettiviNettoMese(m),lib=liberoNettoMese(m),tot=ob+lib,saldo=salvadanaioSaldo();
@@ -1468,17 +1495,22 @@ function aggiungiSpesaRapida(){
   el.value="";document.getElementById("qsDesc").value="";setIconaBtn("qsIconaBtn","🧾");render();
 }
 
+let notaLabelSel="";
+function popolaNoteLabel(){const el=document.getElementById("noteLabelPick");if(!el)return;
+  el.innerHTML=`<span class="wp ${!notaLabelSel?'on':''}" onclick="setNotaLabel('')">Nessuno</span>`+state.persone.map(p=>`<span class="wp ${notaLabelSel===p.id?'on':''}" onclick="setNotaLabel('${p.id}')"><span class="wp-dot" style="background:${p.colore}"></span>${esc(p.nome)}</span>`).join("");}
+function setNotaLabel(pid){notaLabelSel=pid;popolaNoteLabel();}
 function renderNote(){
-  const el=document.getElementById("listaNote");
+  const el=document.getElementById("listaNote");popolaNoteLabel();
   if(!state.note.length){el.innerHTML='<div class="empty">Nessun promemoria. Scrivine uno qui sopra.</div>';return;}
-  el.innerHTML=state.note.map(n=>`<div class="note ${n.fatto?'done':''}">
+  el.innerHTML=state.note.map(n=>{const p=n.label?persona(n.label):null;const pill=p?`<span style="font-size:.68rem;padding:2px 8px;border-radius:20px;background:${p.colore}22;color:${p.colore};font-weight:600;margin-top:3px;display:inline-block">${esc(p.nome)}</span>`:'';
+  return `<div class="note ${n.fatto?'done':''}">
     <div class="check" onclick="toggleNota('${n.id}')">${n.fatto?'✓':''}</div>
     <span class="note-ic">${esc(n.icona||'📝')}</span>
-    <div class="txt">${esc(n.testo)}</div>
+    <div class="txt">${esc(n.testo)}${pill?'<br>'+pill:''}</div>
     <button class="eur" title="Registra come spesa" onclick="promemoriaInSpesa('${n.id}')">€</button>
-    <button class="del" onclick="eliminaNota('${n.id}')">🗑</button></div>`).join("");
+    <button class="del" onclick="eliminaNota('${n.id}')">🗑</button></div>`;}).join("");
 }
-function aggiungiNota(){const inp=document.getElementById("noteInput"),t=inp.value.trim();if(!t)return;const icona=iconaDi("noteIconaBtn")||"📝";state.note.unshift({id:id(),testo:t,fatto:false,icona});inp.value="";setIconaBtn("noteIconaBtn","📝");render();}
+function aggiungiNota(){const inp=document.getElementById("noteInput"),t=inp.value.trim();if(!t)return;const icona=iconaDi("noteIconaBtn")||"📝";const nota={id:id(),testo:t,fatto:false,icona};if(notaLabelSel)nota.label=notaLabelSel;state.note.unshift(nota);inp.value="";setIconaBtn("noteIconaBtn","📝");render();}
 function toggleNota(nid){const n=state.note.find(x=>x.id===nid);if(n){n.fatto=!n.fatto;render();}}
 function eliminaNota(nid){state.note=state.note.filter(x=>x.id!==nid);render();}
 function promemoriaInSpesa(nid){
@@ -1961,7 +1993,27 @@ function renderTrend(){
 function totCatAnno(cat,anno){
   return mesiAnno(anno).reduce((tot,m)=>tot+speseDi(m).filter(s=>s.cat===cat).reduce((a,s)=>a+(+s.importo||0),0),0);
 }
-function renderReport(){renderRepKpi();renderRepClassifica();renderRepAnnuale();renderRepPersone();renderRepProiezione();}
+function renderReport(){renderRepKpi();renderRepRitmo();renderRepClassifica();renderRepAnnuale();renderRepPersone();renderRepProiezione();}
+function renderRepRitmo(){
+  const el=document.getElementById("repRitmo");if(!el)return;const m=meseSel;
+  const gMese=ultimoGiornoMese(m),ent=totEntrateDi(m),budgetG=gMese?ent/gMese:0;
+  const meseAtt=oggiISO().slice(0,7);
+  let gTrasc=(m===meseAtt)?(+oggiISO().slice(8,10)):((m<meseAtt)?gMese:0);
+  if(gTrasc<=0){el.innerHTML='<div class="empty">Mese non ancora iniziato.</div>';return;}
+  if(ent<=0){el.innerHTML='<div class="empty">Imposta le entrate del mese per vedere il ritmo.</div>';return;}
+  const speso=_sum(speseSostenuteMese(m),"importo");
+  const atteso=budgetG*gTrasc,sfor=speso-atteso,perc=atteso>0?Math.round(sfor/atteso*100):0,sopra=sfor>0;
+  const passo=(speso/gTrasc)*gMese,rientro=speso+Math.max(0,gMese-gTrasc)*budgetG;
+  const col=v=>v>ent?'#c0392b':(v>ent*0.95?'#a5771f':'#1f9d6a');
+  el.innerHTML=`
+   <div style="font-size:.8rem;color:var(--ink-soft);margin-bottom:10px">Budget ${euro(ent)} ÷ ${gMese} giorni = <b>${euro(budgetG)}/giorno</b> · giorno ${gTrasc}</div>
+   <div style="display:flex;justify-content:space-between;font-size:.74rem;color:var(--ink-soft);margin-bottom:4px"><span>Atteso: ${euro(atteso)}</span><span>Speso: ${euro(speso)}</span></div>
+   <div style="height:14px;background:var(--line);border-radius:7px;overflow:hidden"><div style="height:100%;width:${Math.min(100,speso/ent*100)}%;background:${sopra?'#e0653a':'#1f9d6a'}"></div></div>
+   <div style="margin-top:10px;padding:9px 12px;border-radius:10px;background:${sopra?'#fdece6':'#eaf7ef'};color:${sopra?'#b0432a':'#1f7a4d'};font-size:.85rem;font-weight:600">${sopra?('⚠️ +'+euro(sfor)+' sopra il ritmo (+'+perc+'%)'):('✓ '+euro(-sfor)+' sotto il ritmo')}</div>
+   <div style="font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin:14px 0 6px">Proiezione a fine mese</div>
+   <div class="prow"><span>Di questo passo</span><b class="num" style="color:${col(passo)}">${euro(passo)}</b></div>
+   <div class="prow"><span>Se rientri nel ritmo</span><b class="num" style="color:${col(rientro)}">${euro(rientro)}</b></div>`;
+}
 function renderRepKpi(){
   const ent=totEntrateDi(meseSel),sp=totSpeseDi(meseSel);
   const tasso=ent>0?Math.round((ent-sp)/ent*100):0;
