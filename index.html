@@ -552,6 +552,9 @@
   @media(max-width:560px){
     .chart-wrap{grid-template-columns:1fr;justify-items:center;} .legend{width:100%;} .trend{gap:5px;} .tb{width:9px;}
   }
+.segwrap{display:flex;flex-wrap:wrap;gap:6px}
+.seg-b{padding:7px 12px;border-radius:20px;border:1px solid var(--line);background:#fff;font-size:.82rem;cursor:pointer;color:var(--ink)}
+.seg-b.on{background:#16808F;color:#fff;border-color:#16808F}
 </style>
 </head>
 <body>
@@ -674,6 +677,36 @@
     <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovListaFull')">Chiudi</button></div>
   </div></div>
 
+  <!-- BOLLETTE: pagina intera -->
+  <div class="overlay" id="ovBollette"><div class="modal">
+    <h3 id="bolletteTitle">🧾 Bollette</h3>
+    <div id="bolletteBody" style="overflow:auto;max-height:70vh"></div>
+    <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovBollette')">Chiudi</button></div>
+  </div></div>
+  <div class="overlay" id="ovImmobile"><div class="modal">
+    <h3>Nuovo immobile</h3>
+    <div class="field"><label>Nome</label><input type="text" id="immNome" placeholder="Es. Casa Via Pertini, Casa al mare" onkeydown="if(event.key==='Enter')salvaImmobile()"></div>
+    <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovImmobile')">Annulla</button><button class="btn btn-primary" onclick="salvaImmobile()">Salva</button></div>
+  </div></div>
+  <div class="overlay" id="ovUtenza"><div class="modal">
+    <h3>Nuova utenza</h3>
+    <div class="field"><label>Tipo</label><div class="segwrap" id="utTipoRow"></div></div>
+    <div class="field"><label>Operatore (facoltativo)</label><input type="text" id="utOperatore" placeholder="Es. Enel, Edison, A2A"></div>
+    <div class="field"><label>Cadenza</label><div class="segwrap" id="utCadRow"></div></div>
+    <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovUtenza')">Annulla</button><button class="btn btn-primary" onclick="salvaUtenza()">Salva</button></div>
+  </div></div>
+  <div class="overlay" id="ovBolletta"><div class="modal">
+    <h3>Bolletta</h3>
+    <div class="field"><label>Importo (€)</label><input type="number" id="blImporto" inputmode="decimal" placeholder="0"></div>
+    <div class="field"><label>Consumo (<span id="blUnita">kWh</span>)</label><input type="number" id="blConsumo" inputmode="decimal" placeholder="0"></div>
+    <div class="field"><label>Periodo (dal mese)</label><input type="month" id="blPerInizio"></div>
+    <div class="field"><label>Periodo (al mese)</label><input type="month" id="blPerFine"></div>
+    <div class="field"><label>Scadenza pagamento</label><input type="date" id="blScad"></div>
+    <div class="field"><label>N° bolletta (facoltativo)</label><input type="text" id="blNum" placeholder=""></div>
+    <div class="field"><div class="toggle-row" onclick="document.getElementById('blPagata').checked=!document.getElementById('blPagata').checked"><div class="t-txt">Già pagata</div><input type="checkbox" id="blPagata"></div></div>
+    <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovBolletta')">Annulla</button><button class="btn btn-primary" onclick="salvaBolletta()">Salva</button></div>
+  </div></div>
+
   <!-- POPUP SALVADANAIO -->
   <div class="overlay" id="ovSalv"><div class="modal">
     <h3 id="salvTitle">Salvadanaio</h3>
@@ -705,6 +738,7 @@
       <button class="add-spesa-riga" style="flex:1;margin:0" onclick="apriModale('spesa','diretta')">➕ Spesa diretta</button>
       <button class="add-spesa-riga" style="flex:1;margin:0" onclick="apriModale('spesa','programmata')">📅 Spesa programmata</button>
     </div>
+    <button class="add-spesa-riga" style="width:100%;margin-bottom:10px" onclick="apriBollette()">🧾 Bollette</button>
     <div class="card">
       <div class="card-head"><h2><span class="ic">📊</span> Dove vanno i soldi</h2></div>
       <div class="chart-wrap"><div id="donut"></div><div class="legend" id="legend"></div></div>
@@ -739,6 +773,10 @@
         <button class="btn btn-primary btn-sm" onclick="apriModale('spesa','diretta')">+ Aggiungi</button>
       </div>
       <div id="listaSpese"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2><span class="ic">🧾</span> Le tue utenze</h2></div>
+      <div id="utenzeQuickBody"></div>
     </div>
   </section>
 
@@ -1138,7 +1176,7 @@
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 57;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 59;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1197,7 +1235,7 @@ function datiAppuntamentiEsempio(){const o=oggiISO();return[
   {id:id(),testo:"Dentista",data:o,ora:"15:00",icona:"🦷",persone:["giulia"],fatto:false},
   {id:id(),testo:"Equitazione",data:isoPiu(o,1),ora:"16:00",icona:"🐎",persone:["giulia","leo"],fatto:false}
 ];}
-function statoVuoto(){return{entrate:[],spese:[],categorie:DEFAULT_CATS.map(c=>({...c})),persone:DEFAULT_PERSONE.map(p=>({...p})),rate:[],obiettivi:[],note:[],appuntamenti:[],movimentiSalvadanaio:[],saldoIniziale:{valore:0,mese:oggiISO().slice(0,7)},lotteria:nuovaLotteria()};}
+function statoVuoto(){return{entrate:[],spese:[],categorie:DEFAULT_CATS.map(c=>({...c})),persone:DEFAULT_PERSONE.map(p=>({...p})),rate:[],obiettivi:[],note:[],appuntamenti:[],movimentiSalvadanaio:[],immobili:[],saldoIniziale:{valore:0,mese:oggiISO().slice(0,7)},lotteria:nuovaLotteria()};}
 function statoNuovaFamiglia(){const s=statoVuoto();s.persone=[];return s;}
 function suggComp(n){const el=document.getElementById("cpNome");el.value=n;el.focus();}
 
@@ -1207,6 +1245,8 @@ function migrate(){
   state.persone.forEach(p=>{if(!p.genere&&GENERE_NOTO[p.id])p.genere=GENERE_NOTO[p.id];});
   if(!state.rate) state.rate=[];
   if(!state.movimentiSalvadanaio) state.movimentiSalvadanaio=[];
+  if(!state.immobili) state.immobili=[];
+  state.immobili.forEach(im=>{if(!im.utenze)im.utenze=[];im.utenze.forEach(u=>{if(!u.bollette)u.bollette=[];});});
   if(!state.saldoIniziale) state.saldoIniziale={valore:0,mese:oggiISO().slice(0,7)};
   if(!state._v48reset){state.movimentiSalvadanaio=[];(state.obiettivi||[]).forEach(o=>{if(o.tipo!=="sfida"){o.versamenti=[];o.saved=0;}});state._v48reset=true;}
   if(!state._v49reg){(state.obiettivi||[]).forEach(o=>{(o.versamenti||[]).forEach(v=>{const imp=+v.importo||0;state.movimentiSalvadanaio.push({id:v.id||id(),tipo:imp>=0?"metti":"togli",importo:Math.abs(imp),data:v.data||oggiISO(),obiettivo:o.id});});delete o.versamenti;delete o.saved;});state._v49reg=true;}
@@ -1379,7 +1419,7 @@ function _ancoraMese(){return (state.saldoIniziale&&state.saldoIniziale.mese)||o
 function _saldoInizialeValore(){return +(state.saldoIniziale&&state.saldoIniziale.valore)||0;}
 function aperturaMese(m){const anc=_ancoraMese();if(m<=anc)return (m===anc)?_saldoInizialeValore():0;return chiusuraMese(spostaMese(m,-1));}
 function _movRealiMese(m){return _sum(entrateIncassateMese(m),"importo")-_sum(speseSostenuteMese(m),"importo")-_sum(rateScaduteMese(m),"rata")-_salvNettoAffrontato(m);}
-function _movContabiliMese(m){return _sum(entrateIncassateMese(m),"importo")+_sum(entrateAtteseMese(m),"importo")-_sum(speseSostenuteMese(m),"importo")-_sum(speseProgrammateMese(m),"importo")-_sum(rateScaduteMese(m),"rata")-_sum(rateFutureMese(m),"rata")-_salvNettoMese(m);}
+function _movContabiliMese(m){return _sum(entrateIncassateMese(m),"importo")+_sum(entrateAtteseMese(m),"importo")-_sum(speseSostenuteMese(m),"importo")-_sum(speseProgrammateMese(m),"importo")-_sum(rateScaduteMese(m),"rata")-_sum(rateFutureMese(m),"rata")-_salvNettoMese(m)-_sumPrevisionali(m);}
 function saldoRealeMese(m){return aperturaMese(m)+_movRealiMese(m);}
 function chiusuraMese(m){return aperturaMese(m)+_movContabiliMese(m);}
 function saldoContabileMese(m){return chiusuraMese(m);}
@@ -1490,7 +1530,7 @@ function render(){
   document.getElementById("hRis").textContent=euro(_salvNettoMese(meseSel));
   document.getElementById("hContabile").textContent=euro(saldoContabileMese(meseSel));
   renderGauge(ent,sp,ris);
-  renderSaldoMese();renderSalvadanaio();renderSaldoIniziale();renderFamiglia();renderAffrontate();renderDaAffrontare();renderNote();renderAppuntamenti();renderBachecaObiettivi();
+  renderSaldoMese();renderSalvadanaio();renderSaldoIniziale();renderFamiglia();renderAffrontate();renderDaAffrontare();renderNote();renderAppuntamenti();renderBachecaObiettivi();renderBollettePanel();
   renderGrafico();renderPersone();renderRate();renderGantt();renderListe();renderObiettivi();renderTrend();renderCategorie();renderReport();renderLotteria();popolaQsCat();renderComponenti();
   if(calOpen)renderCalendario();
   save();
@@ -1887,8 +1927,8 @@ function _saldoLine(lbl,val,col){return val>0?`<div style="display:flex;justify-
 function renderSaldoMese(){
   const el=document.getElementById("saldoMese");if(!el)return;const m=meseSel;
   const reale=saldoRealeMese(m),cont=saldoContabileMese(m);
-  const entAtt=_sum(entrateAtteseMese(m),"importo"),prog=_sum(speseProgrammateMese(m),"importo"),rateFut=_sum(rateFutureMese(m),"rata");
-  const impegni=entAtt+prog+rateFut,cNeg=cont<0;
+  const entAtt=_sum(entrateAtteseMese(m),"importo"),prog=_sum(speseProgrammateMese(m),"importo"),rateFut=_sum(rateFutureMese(m),"rata"),prevB=_sumPrevisionali(m);
+  const impegni=entAtt+prog+rateFut+prevB,cNeg=cont<0;
   const apertura=aperturaMese(m),salvNet=_salvNettoMese(m),salvBal=salvadanaioSaldo();
   el.innerHTML=`
    <div style="display:flex;justify-content:space-between;align-items:center;background:#eef3f6;border-radius:12px;padding:9px 12px;margin-bottom:12px;font-size:.85rem">
@@ -1914,10 +1954,19 @@ function renderSaldoMese(){
      ${_saldoLine('+ entrate attese',entAtt,'#0f6e56')}
      ${_saldoLine('− spese programmate',prog,'#185fa5')}
      ${_saldoLine('− rate da pagare',rateFut,'#b06a12')}
+     ${prevB>0?_saldoLine('− bollette previste',prevB,'#a5771f'):''}
      ${impegni===0?'<div style="font-size:.82rem;color:var(--ink-soft)">Nessun impegno futuro: reale e contabile coincidono.</div>':''}
    </div>`;
 }
 function rigaImpegno(v,daFare){
+  if(v.prev){const col={"anno scorso":"#1f9d6a","orientativa":"#a5771f","molto incerta":"#c0392b"}[v.affid]||"#a5771f";
+    return `<div class="row" style="background:#fbf1e6;border:1px dashed #e6c98f;border-radius:12px">
+      <span class="sp-ic" style="background:#f0d9a8">🧾</span>
+      <div style="flex:1;min-width:0"><div class="name">${esc(v.nome)} <span style="font-size:.6rem;padding:1px 6px;border-radius:10px;background:#f0d9a8;color:#8a5a2b;white-space:nowrap">da confermare</span></div>
+      <div class="cat">${v.consumo?'≈ '+v.consumo+' '+v.unita+' · ':''}scad. ${formatData(v.data)} · <span style="color:${col}">${v.affid}</span></div></div>
+      <span class="amt num">~${euro(v.importo)}</span>
+      <button class="btn btn-ghost btn-sm" style="margin-left:6px" onclick="confermaPrevisionale('${v.immId}','${v.utId}')" title="Registra la bolletta">Registra</button></div>`;
+  }
   const isRata=v.tipo==="rata";
   const ic=isRata?`<span class="sp-ic" style="background:#7A6FB022">💳</span>`:(v.icona?`<span class="sp-ic" style="background:${catColor(v.cat)}22">${esc(v.icona)}</span>`:`<span class="dot" style="background:${catColor(v.cat)}"></span>`);
   const ps=isRata?[]:v.persone.map(persona).filter(Boolean);
@@ -1930,7 +1979,144 @@ function rigaImpegno(v,daFare){
 function _dataAddebitoSpesa(s,m){return s.ricorrente?dataAddebitoRic(s,m):dataDiSpesa(s);}
 function _vociSpesa(arr,m){return arr.map(s=>({tipo:"spesa",nome:s.nome,cat:s.cat,icona:s.icona,importo:+s.importo||0,data:_dataAddebitoSpesa(s,m),id:s.id,persone:personeSpesa(s),pagamento:s.pagamento,ric:!!s.ricorrente}));}
 function _vociRata(arr,m){return arr.map(r=>({tipo:"rata",nome:r.nome,cat:"Mutui e prestiti",importo:+r.rata||0,data:dataScadenzaRata(r,meseDiff(r.inizio,m)),id:r.id}));}
-function vociDaAffrontare(m){return _vociSpesa(speseProgrammateMese(m),m).concat(_vociRata(rateFutureMese(m),m)).sort((a,b)=>(a.data||"").localeCompare(b.data||""));}
+/* ===== BOLLETTE ===== */
+const GAS_FACTOR=[0,2.0,1.9,1.5,0.9,0.4,0.25,0.2,0.2,0.3,0.7,1.4,1.9];
+function _fattStag(tipo,mese){if(tipo!=="gas")return 1;return GAS_FACTOR[+(mese||"").split("-")[1]]||1;}
+function _mediaB(arr,k){return arr.length?arr.reduce((a,x)=>a+(+x[k]||0),0)/arr.length:0;}
+function tipoUtenzaLabel(t){return {luce:"Luce",gas:"Gas",acqua:"Acqua",telefono:"Telefono/Internet",altro:"Altro"}[t]||"Utenza";}
+function tipoUtenzaIcon(t){return {luce:"💡",gas:"🔥",acqua:"💧",telefono:"📶",altro:"🧾"}[t]||"🧾";}
+function unitaUtenza(u){return u.unita||(u.tipo==="gas"?"Smc":u.tipo==="acqua"?"mc":"kWh");}
+function stimaBolletta(u){
+  const bs=(u.bollette||[]).slice().sort((a,b)=>(a.periodoFine||"").localeCompare(b.periodoFine||""));
+  if(!bs.length)return null;
+  const last=bs[bs.length-1],cad=+u.cadenzaMesi||1;
+  const nextPF=spostaMese(last.periodoFine,cad);
+  const nextScad=last.scadenza?isoPiuMese(last.scadenza,cad):(nextPF+"-15");
+  const nextMese=nextScad.slice(0,7);
+  const mm=+nextPF.split("-")[1],yy=+nextPF.split("-")[0];
+  const annoScorso=bs.filter(b=>{const p=(b.periodoFine||"").split("-");return +p[1]===mm&&+p[0]===yy-1;});
+  let importo,consumo,affid;
+  if(annoScorso.length){importo=_mediaB(annoScorso,"importo");consumo=_mediaB(annoScorso,"consumo");affid="anno scorso";}
+  else{const ult=bs.slice(-3),mImp=_mediaB(ult,"importo"),mCons=_mediaB(ult,"consumo");
+    if(u.tipo==="gas"){const fT=_fattStag("gas",nextPF),fS=ult.reduce((a,b)=>a+_fattStag("gas",b.periodoFine),0)/ult.length,corr=fS>0?fT/fS:1;importo=mImp*corr;consumo=mCons*corr;}
+    else{importo=mImp;consumo=mCons;}
+    affid=(bs.length>=2)?"orientativa":"molto incerta";
+  }
+  return {nextMese,nextPeriodoFine:nextPF,nextScadenza:nextScad,importo:Math.round(importo),consumo:Math.round(consumo),affid};
+}
+function previsionaliMese(m){const out=[];(state.immobili||[]).forEach(im=>(im.utenze||[]).forEach(u=>{
+  const s=stimaBolletta(u);if(!s||s.nextMese!==m)return;
+  if((u.bollette||[]).some(b=>b.periodoFine===s.nextPeriodoFine))return;
+  out.push({tipo:"previsionale",prev:true,nome:tipoUtenzaLabel(u.tipo)+" · "+im.nome,cat:"Bollette",importo:s.importo,consumo:s.consumo,unita:unitaUtenza(u),data:s.nextScadenza,affid:s.affid,immId:im.id,utId:u.id,periodoFine:s.nextPeriodoFine});
+}));return out;}
+function _sumPrevisionali(m){return previsionaliMese(m).reduce((a,p)=>a+(+p.importo||0),0);}
+
+let bollImmSel=null,bollUtSel=null,editImm=null,editUt=null,editBoll=null,bollUtTipoSel="luce",bollCadSel=2;
+function renderBollettePanel(){const el=document.getElementById("utenzeQuickBody");if(!el)return;
+  const ims=(state.immobili||[]);
+  if(!ims.length){el.innerHTML='<div class="empty">Nessuna utenza. Usa il pulsante 🧾 Bollette qui sopra per aggiungere immobili e utenze.</div>';return;}
+  el.innerHTML=ims.map(im=>{
+    const uts=(im.utenze||[]);
+    const cards=uts.length?uts.map(u=>{const s=stimaBolletta(u);const attesa=s&&s.nextMese===meseSel;return `<div class="row" onclick="bollVaiUtenza('${im.id}','${u.id}')">
+      <span class="sp-ic" style="background:#f6f0e6">${tipoUtenzaIcon(u.tipo)}</span>
+      <div style="flex:1;min-width:0"><div class="name">${tipoUtenzaLabel(u.tipo)}${u.operatore?' · '+esc(u.operatore):''}</div><div class="cat">${s?('prossima '+meseLabel(s.nextMese)+' · ~'+euro(s.importo)):((u.bollette||[]).length+' bollette')}${attesa?' · <span style="color:#a5771f">attesa</span>':''}</div></div>
+      <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();bollNuovaBolletta('${im.id}','${u.id}')">＋ bolletta</button></div>`;}).join(""):'<div class="cat" style="padding:4px 2px;color:var(--ink-soft)">Nessuna utenza in questo immobile.</div>';
+    return `<div style="margin-bottom:10px"><div style="font-size:.78rem;font-weight:700;color:var(--ink-soft);margin:6px 2px">🏠 ${esc(im.nome)}</div>${cards}</div>`;
+  }).join("");
+}
+function bollVaiUtenza(iid,uid){bollImmSel=iid;bollUtSel=uid;renderBollette();apri("ovBollette");}
+function bollNuovaBolletta(iid,uid){bollImmSel=iid;bollUtSel=uid;apriBolletta();}
+function apriBollette(){bollImmSel=null;bollUtSel=null;renderBollette();apri("ovBollette");}
+function renderBollette(){
+  const body=document.getElementById("bolletteBody"),tit=document.getElementById("bolletteTitle");if(!body)return;
+  if(!bollImmSel){
+    tit.innerHTML='🧾 Bollette';
+    const ims=(state.immobili||[]);
+    body.innerHTML=(ims.length?ims.map(im=>{const nu=(im.utenze||[]).length;return `<div class="row" onclick="bollApriImmobile('${im.id}')"><span class="sp-ic" style="background:#eef2fb">🏠</span><div style="flex:1"><div class="name">${esc(im.nome)}</div><div class="cat">${nu} utenz${nu===1?'a':'e'}</div></div><span class="amt">›</span></div>`;}).join(""):'<div class="empty">Nessun immobile. Aggiungine uno (Casa, Casa al mare…).</div>')
+      +`<button class="btn btn-primary" style="margin-top:12px;width:100%" onclick="apriImmobile()">＋ Aggiungi immobile</button>`;
+    return;
+  }
+  const im=(state.immobili||[]).find(x=>x.id===bollImmSel);if(!im){bollImmSel=null;return renderBollette();}
+  if(!bollUtSel){
+    tit.innerHTML=`<span onclick="bollHome()" style="cursor:pointer;color:var(--ink-soft)">🧾</span> › ${esc(im.nome)}`;
+    body.innerHTML=(im.utenze||[]).map(u=>{const s=stimaBolletta(u);return `<div class="row" onclick="bollApriUtenza('${u.id}')"><span class="sp-ic" style="background:#f6f0e6">${tipoUtenzaIcon(u.tipo)}</span><div style="flex:1"><div class="name">${tipoUtenzaLabel(u.tipo)}${u.operatore?' · '+esc(u.operatore):''}</div><div class="cat">${(u.bollette||[]).length} bollette · ${u.cadenzaMesi===1?'mensile':u.cadenzaMesi===3?'trimestrale':'bimestrale'}${s?' · prossima '+meseLabel(s.nextMese):''}</div></div><span class="amt">›</span></div>`;}).join("")
+      +`<div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary" style="flex:1" onclick="apriUtenza()">＋ Utenza</button><button class="btn btn-ghost btn-sm" onclick="eliminaImmobile('${im.id}')">🗑 Immobile</button></div>`;
+    return;
+  }
+  const u=(im.utenze||[]).find(x=>x.id===bollUtSel);if(!u){bollUtSel=null;return renderBollette();}
+  tit.innerHTML=`<span onclick="bollHome()" style="cursor:pointer;color:var(--ink-soft)">🧾</span> › <span onclick="bollApriImmobile('${im.id}')" style="cursor:pointer;color:var(--ink-soft)">${esc(im.nome)}</span> › ${tipoUtenzaLabel(u.tipo)}`;
+  body.innerHTML=renderUtenzaDettaglio(im,u);
+}
+function renderUtenzaDettaglio(im,u){
+  const bs=(u.bollette||[]).slice().sort((a,b)=>(b.periodoFine||"").localeCompare(a.periodoFine||""));
+  const s=stimaBolletta(u);
+  let prevBox='';
+  if(s){const col={"anno scorso":"#1f9d6a","orientativa":"#a5771f","molto incerta":"#c0392b"}[s.affid]||"#a5771f";
+    prevBox=`<div style="background:#fbf1e6;border:1px dashed #e6c98f;border-radius:12px;padding:12px;margin-bottom:12px">
+      <div style="font-size:.72rem;color:#8a5a2b;text-transform:uppercase;letter-spacing:.04em">Prossima bolletta attesa · ${meseLabel(s.nextMese)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><b style="font-size:1.2rem">~${euro(s.importo)}</b><span style="font-size:.8rem;color:var(--ink-soft)">≈ ${s.consumo} ${unitaUtenza(u)}</span></div>
+      <div style="font-size:.72rem;margin-top:2px;color:${col}">affidabilità: ${s.affid}</div></div>`;
+  }
+  const andamento=renderAndamentoBollette(u);
+  const storico=bs.length?bs.map(b=>`<div class="row"><span class="sp-ic" style="background:${b.pagata?'#eaf7ef':'#fdece6'}">${b.pagata?'✓':'⏳'}</span><div style="flex:1" onclick="apriBolletta('${b.id}')"><div class="name">${euro(b.importo)} · ${b.consumo||0} ${unitaUtenza(u)}</div><div class="cat">${meseLabel(b.periodoInizio||b.periodoFine)}${b.periodoFine&&b.periodoFine!==b.periodoInizio?'–'+meseLabel(b.periodoFine):''} · scad. ${b.scadenza?formatData(b.scadenza):'—'} · ${b.pagata?'pagata':'da pagare'}</div></div><button class="del" onclick="eliminaBolletta('${b.id}')">🗑</button></div>`).join(""):'<div class="empty">Nessuna bolletta registrata.</div>';
+  return `${prevBox}${andamento}
+    <div style="font-size:.75rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin:14px 0 6px">Storico</div>${storico}
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary" style="flex:1" onclick="apriBolletta()">＋ Bolletta</button><button class="btn btn-ghost btn-sm" onclick="eliminaUtenza('${u.id}')">🗑 Utenza</button></div>`;
+}
+function renderAndamentoBollette(u){
+  const bs=(u.bollette||[]).slice().sort((a,b)=>(a.periodoFine||"").localeCompare(b.periodoFine||"")).slice(-12);
+  if(bs.length<2)return '';
+  const maxI=Math.max(...bs.map(b=>+b.importo||0),1),maxC=Math.max(...bs.map(b=>+b.consumo||0),1);
+  const barre=bs.map(b=>{const hi=Math.round((+b.importo||0)/maxI*46)+4,hc=Math.round((+b.consumo||0)/maxC*46)+4;
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:0">
+      <div style="display:flex;align-items:flex-end;gap:2px;height:56px"><div style="width:9px;height:${hi}px;background:#16808F;border-radius:3px" title="${euro(b.importo)}"></div><div style="width:9px;height:${hc}px;background:#E0A03A;border-radius:3px" title="${b.consumo} ${unitaUtenza(u)}"></div></div>
+      <div style="font-size:.6rem;color:var(--ink-soft);white-space:nowrap">${(b.periodoFine||"").slice(5)}</div></div>`;}).join("");
+  const annoScorso=confrontoAnnoBollette(u);
+  return `<div style="font-size:.75rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin:4px 0 6px">Andamento · <span style="color:#16808F">importo</span> / <span style="color:#E0A03A">consumo</span></div>
+    <div style="display:flex;gap:3px;align-items:flex-end">${barre}</div>${annoScorso}`;
+}
+function confrontoAnnoBollette(u){
+  const bs=(u.bollette||[]);const now=oggiISO().slice(0,7);
+  const perMese=b=>b.periodoFine||"";
+  const oggiY=+now.split("-")[0];
+  const quest=bs.filter(b=>+(perMese(b).split("-")[0])===oggiY).reduce((a,b)=>a+(+b.importo||0),0);
+  const scorso=bs.filter(b=>+(perMese(b).split("-")[0])===oggiY-1).reduce((a,b)=>a+(+b.importo||0),0);
+  if(!scorso)return '';
+  const diff=quest-scorso,pct=Math.round(diff/scorso*100);
+  return `<div style="display:flex;justify-content:space-between;font-size:.78rem;background:#f3f6f4;border-radius:10px;padding:8px 12px;margin-top:10px"><span>Quest'anno vs ${oggiY-1}</span><b style="color:${diff>0?'#c0392b':'#1f9d6a'}">${diff>0?'+':''}${euro(diff)} (${pct>0?'+':''}${pct}%)</b></div>`;
+}
+function bollHome(){bollImmSel=null;bollUtSel=null;renderBollette();}
+function bollApriImmobile(iid){bollImmSel=iid;bollUtSel=null;renderBollette();}
+function bollApriUtenza(uid){bollUtSel=uid;renderBollette();}
+function apriImmobile(){editImm=null;document.getElementById("immNome").value="";apri("ovImmobile");setTimeout(()=>document.getElementById("immNome").focus(),100);}
+function salvaImmobile(){const n=document.getElementById("immNome").value.trim();if(!n)return;if(!state.immobili)state.immobili=[];state.immobili.push({id:id(),nome:n,utenze:[]});chiudi("ovImmobile");render();renderBollette();}
+function eliminaImmobile(iid){chiediConferma("Eliminare questo immobile e tutte le sue utenze/bollette?",()=>{state.immobili=state.immobili.filter(x=>x.id!==iid);bollImmSel=null;bollUtSel=null;render();renderBollette();});}
+function apriUtenza(){editUt=null;bollUtTipoSel="luce";bollCadSel=2;document.getElementById("utOperatore").value="";popolaUtTipo();popolaUtCad();apri("ovUtenza");}
+function popolaUtTipo(){document.getElementById("utTipoRow").innerHTML=["luce","gas","acqua","telefono","altro"].map(t=>`<button type="button" class="seg-b ${t===bollUtTipoSel?'on':''}" onclick="setUtTipo('${t}')">${tipoUtenzaIcon(t)} ${tipoUtenzaLabel(t)}</button>`).join("");}
+function setUtTipo(t){bollUtTipoSel=t;popolaUtTipo();}
+function popolaUtCad(){document.getElementById("utCadRow").innerHTML=[[1,"Mensile"],[2,"Bimestrale"],[3,"Trimestrale"]].map(([v,l])=>`<button type="button" class="seg-b ${v===bollCadSel?'on':''}" onclick="setUtCad(${v})">${l}</button>`).join("");}
+function setUtCad(v){bollCadSel=v;popolaUtCad();}
+function salvaUtenza(){const im=(state.immobili||[]).find(x=>x.id===bollImmSel);if(!im)return;im.utenze.push({id:id(),tipo:bollUtTipoSel,operatore:document.getElementById("utOperatore").value.trim(),cadenzaMesi:bollCadSel,bollette:[]});chiudi("ovUtenza");render();renderBollette();}
+function eliminaUtenza(uid){chiediConferma("Eliminare questa utenza e le sue bollette?",()=>{const im=(state.immobili||[]).find(x=>x.id===bollImmSel);if(im)im.utenze=im.utenze.filter(x=>x.id!==uid);bollUtSel=null;render();renderBollette();});}
+function apriBolletta(bid,pre){editBoll=null;const u=curUtenza();if(!u)return;
+  let d={importo:"",consumo:"",periodoInizio:oggiISO().slice(0,7),periodoFine:oggiISO().slice(0,7),scadenza:oggiISO(),numero:"",pagata:false};
+  if(bid){const b=(u.bollette||[]).find(x=>x.id===bid);if(b){editBoll=b;d={...b};}}
+  else if(pre){d={...d,...pre};}
+  document.getElementById("blImporto").value=d.importo||"";document.getElementById("blConsumo").value=d.consumo||"";
+  document.getElementById("blPerInizio").value=d.periodoInizio||"";document.getElementById("blPerFine").value=d.periodoFine||"";
+  document.getElementById("blScad").value=d.scadenza||"";document.getElementById("blNum").value=d.numero||"";
+  document.getElementById("blPagata").checked=!!d.pagata;document.getElementById("blUnita").textContent=unitaUtenza(u);
+  apri("ovBolletta");}
+function curUtenza(){const im=(state.immobili||[]).find(x=>x.id===bollImmSel);if(!im)return null;return (im.utenze||[]).find(x=>x.id===bollUtSel);}
+function salvaBolletta(){const u=curUtenza();if(!u)return;const imp=+document.getElementById("blImporto").value||0;if(imp<=0){document.getElementById("blImporto").focus();return;}
+  const b={id:editBoll?editBoll.id:id(),importo:imp,consumo:+document.getElementById("blConsumo").value||0,periodoInizio:document.getElementById("blPerInizio").value,periodoFine:document.getElementById("blPerFine").value||document.getElementById("blPerInizio").value,scadenza:document.getElementById("blScad").value,numero:document.getElementById("blNum").value.trim(),pagata:document.getElementById("blPagata").checked};
+  if(editBoll)Object.assign(editBoll,b);else{if(!u.bollette)u.bollette=[];u.bollette.push(b);}
+  chiudi("ovBolletta");render();renderBollette();}
+function eliminaBolletta(bid){const u=curUtenza();if(!u)return;chiediConferma("Eliminare questa bolletta?",()=>{u.bollette=u.bollette.filter(x=>x.id!==bid);render();renderBollette();});}
+function confermaPrevisionale(iid,uid){bollImmSel=iid;bollUtSel=uid;const u=curUtenza();if(!u){apriBollette();return;}const s=stimaBolletta(u);
+  apriBolletta(null,s?{importo:s.importo,consumo:s.consumo,periodoInizio:s.nextPeriodoFine,periodoFine:s.nextPeriodoFine,scadenza:s.nextScadenza,pagata:false}:null);}
+
+function vociDaAffrontare(m){return _vociSpesa(speseProgrammateMese(m),m).concat(_vociRata(rateFutureMese(m),m)).concat(previsionaliMese(m)).sort((a,b)=>(a.data||"").localeCompare(b.data||""));}
 function vociAffrontate(m){return _vociSpesa(speseSostenuteMese(m),m).concat(_vociRata(rateScaduteMese(m),m)).sort((a,b)=>(b.data||"").localeCompare(a.data||""));}
 function _totRiga(lbl,tot){return `<div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:8px;padding-top:8px;font-size:.9rem"><span style="color:var(--ink-soft)">${lbl}</span><b class="num">${euro(tot)}</b></div>`;}
 function renderDaAffrontare(){
