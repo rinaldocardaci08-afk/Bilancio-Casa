@@ -711,9 +711,10 @@ input,select,textarea{font-size:16px !important}
     <div class="field"><label>Consumo (<span id="blUnita">kWh</span>)</label><input type="number" id="blConsumo" inputmode="decimal" placeholder="0"></div>
     <div class="field"><label>Periodo (dal mese)</label><input type="month" id="blPerInizio"></div>
     <div class="field"><label>Periodo (al mese)</label><input type="month" id="blPerFine"></div>
+    <div class="field"><label>Data di notifica (quando arriva)</label><input type="date" id="blNotifica"></div>
     <div class="field"><label>Scadenza pagamento</label><input type="date" id="blScad"></div>
     <div class="field"><label>N° bolletta (facoltativo)</label><input type="text" id="blNum" placeholder=""></div>
-    <div class="field"><div class="toggle-row" onclick="document.getElementById('blPagata').checked=!document.getElementById('blPagata').checked"><div class="t-txt">Già pagata</div><input type="checkbox" id="blPagata"></div></div>
+    <div class="field"><div class="toggle-row" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 14px;background:#f4f2ec;border-radius:12px" onclick="document.getElementById('blPagata').checked=!document.getElementById('blPagata').checked"><div class="t-txt">Già pagata</div><input type="checkbox" id="blPagata"></div></div>
     <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovBolletta')">Annulla</button><button class="btn btn-primary" onclick="salvaBolletta()">Salva</button></div>
   </div></div>
 
@@ -1187,7 +1188,7 @@ input,select,textarea{font-size:16px !important}
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 64;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 65;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -2007,8 +2008,10 @@ function stimaBolletta(u){
   if(!bs.length)return null;
   const last=bs[bs.length-1],cad=+u.cadenzaMesi||1;
   const nextPF=spostaMese(last.periodoFine,cad);
-  const nextScad=last.scadenza?isoPiuMese(last.scadenza,cad):(nextPF+"-15");
-  const nextMese=nextScad.slice(0,7);
+  const refNotifica=last.dataNotifica||last.scadenza||(last.periodoFine+"-15");
+  const nextNotifica=isoPiuMese(refNotifica,cad);
+  const nextScad=last.scadenza?isoPiuMese(last.scadenza,cad):nextNotifica;
+  const nextMese=nextNotifica.slice(0,7);
   const mm=+nextPF.split("-")[1],yy=+nextPF.split("-")[0];
   const annoScorso=bs.filter(b=>{const p=(b.periodoFine||"").split("-");return +p[1]===mm&&+p[0]===yy-1;});
   let importo,consumo,affid;
@@ -2132,17 +2135,18 @@ function setUtCad(v){bollCadSel=v;popolaUtCad();}
 function salvaUtenza(){const im=(state.immobili||[]).find(x=>x.id===bollImmSel);if(!im)return;im.utenze.push({id:id(),tipo:bollUtTipoSel,operatore:document.getElementById("utOperatore").value.trim(),cadenzaMesi:bollCadSel,bollette:[]});chiudi("ovUtenza");render();renderBollette();}
 function eliminaUtenza(uid){chiediConferma("Eliminare questa utenza e le sue bollette?",()=>{const im=(state.immobili||[]).find(x=>x.id===bollImmSel);if(im)im.utenze=im.utenze.filter(x=>x.id!==uid);bollUtSel=null;render();renderBollette();});}
 function apriBolletta(bid,pre){editBoll=null;const u=curUtenza();if(!u)return;
-  let d={importo:"",consumo:"",periodoInizio:oggiISO().slice(0,7),periodoFine:oggiISO().slice(0,7),scadenza:oggiISO(),numero:"",pagata:false};
+  let d={importo:"",consumo:"",periodoInizio:oggiISO().slice(0,7),periodoFine:oggiISO().slice(0,7),dataNotifica:oggiISO(),scadenza:oggiISO(),numero:"",pagata:false};
   if(bid){const b=(u.bollette||[]).find(x=>x.id===bid);if(b){editBoll=b;d={...b};}}
   else if(pre){d={...d,...pre};}
   document.getElementById("blImporto").value=d.importo||"";document.getElementById("blConsumo").value=d.consumo||"";
   document.getElementById("blPerInizio").value=d.periodoInizio||"";document.getElementById("blPerFine").value=d.periodoFine||"";
+  document.getElementById("blNotifica").value=d.dataNotifica||"";
   document.getElementById("blScad").value=d.scadenza||"";document.getElementById("blNum").value=d.numero||"";
   document.getElementById("blPagata").checked=!!d.pagata;document.getElementById("blUnita").textContent=unitaUtenza(u);
   apri("ovBolletta");}
 function curUtenza(){const im=(state.immobili||[]).find(x=>x.id===bollImmSel);if(!im)return null;return (im.utenze||[]).find(x=>x.id===bollUtSel);}
 function salvaBolletta(){const u=curUtenza();if(!u)return;const imp=+document.getElementById("blImporto").value||0;if(imp<=0){document.getElementById("blImporto").focus();return;}
-  const b={id:editBoll?editBoll.id:id(),importo:imp,consumo:+document.getElementById("blConsumo").value||0,periodoInizio:document.getElementById("blPerInizio").value,periodoFine:document.getElementById("blPerFine").value||document.getElementById("blPerInizio").value,scadenza:document.getElementById("blScad").value,numero:document.getElementById("blNum").value.trim(),pagata:document.getElementById("blPagata").checked};
+  const b={id:editBoll?editBoll.id:id(),importo:imp,consumo:+document.getElementById("blConsumo").value||0,periodoInizio:document.getElementById("blPerInizio").value,periodoFine:document.getElementById("blPerFine").value||document.getElementById("blPerInizio").value,dataNotifica:document.getElementById("blNotifica").value,scadenza:document.getElementById("blScad").value,numero:document.getElementById("blNum").value.trim(),pagata:document.getElementById("blPagata").checked};
   if(editBoll)Object.assign(editBoll,b);else{if(!u.bollette)u.bollette=[];u.bollette.push(b);}
   chiudi("ovBolletta");render();renderBollette();}
 function eliminaBolletta(bid){const u=curUtenza();if(!u)return;chiediConferma("Eliminare questa bolletta?",()=>{u.bollette=u.bollette.filter(x=>x.id!==bid);render();renderBollette();});}
