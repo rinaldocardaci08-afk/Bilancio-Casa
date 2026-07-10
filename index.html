@@ -1187,7 +1187,7 @@ input,select,textarea{font-size:16px !important}
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 62;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 63;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1809,9 +1809,10 @@ function renderScadenze(){
 }
 function renderBachecaObiettivi(){
   const el=document.getElementById("bachecaObiettivi");
-  if(!state.obiettivi.length){el.innerHTML='<div class="empty">Nessun obiettivo. Aggiungine uno nella sezione Risparmio.</div>';return;}
-  el.innerHTML=state.obiettivi.map(o=>{const pct=o.target>0?Math.min(100,o.saved/o.target*100):0;
-    return `<div class="mini-goal"><div class="t"><span>${esc(o.nome)}</span><span class="num">${euro(o.saved)} / ${euro(o.target)}</span></div><div class="progress"><i style="width:${pct}%"></i></div></div>`;}).join("");
+  const obs=(state.obiettivi||[]).filter(o=>o.tipo!=="sfida");
+  if(!obs.length){el.innerHTML='<div class="empty">Nessun obiettivo. Aggiungine uno nella sezione Risparmio.</div>';return;}
+  el.innerHTML=obs.map(o=>{const sal=obiettivoSaldo(o);const pct=o.target>0?Math.min(100,Math.max(0,sal)/o.target*100):0;
+    return `<div class="mini-goal"><div class="t"><span>${esc(o.nome)}</span><span class="num">${euro(sal)} / ${euro(o.target)}</span></div><div class="progress"><i style="width:${pct}%"></i></div></div>`;}).join("");
 }
 
 function renderGrafico(){
@@ -2223,23 +2224,25 @@ function totCatAnno(cat,anno){
 function renderReport(){renderRepKpi();renderRepRitmo();renderRepClassifica();renderRepAnnuale();renderRepPersone();renderRepProiezione();}
 function renderRepRitmo(){
   const el=document.getElementById("repRitmo");if(!el)return;const m=meseSel;
-  const gMese=ultimoGiornoMese(m),ent=totEntrateDi(m),budgetG=gMese?ent/gMese:0;
-  const meseAtt=oggiISO().slice(0,7);
-  let gTrasc=(m===meseAtt)?(+oggiISO().slice(8,10)):((m<meseAtt)?gMese:0);
-  if(gTrasc<=0){el.innerHTML='<div class="empty">Mese non ancora iniziato.</div>';return;}
+  const gMese=ultimoGiornoMese(m),ent=totEntrateDi(m);
   if(ent<=0){el.innerHTML='<div class="empty">Imposta le entrate del mese per vedere il ritmo.</div>';return;}
-  const speso=_sum(speseSostenuteMese(m),"importo");
-  const atteso=budgetG*gTrasc,sfor=speso-atteso,perc=atteso>0?Math.round(sfor/atteso*100):0,sopra=sfor>0;
-  const passo=(speso/gTrasc)*gMese,rientro=speso+Math.max(0,gMese-gTrasc)*budgetG;
-  const col=v=>v>ent?'#c0392b':(v>ent*0.95?'#a5771f':'#1f9d6a');
+  const affront=_sum(speseSostenuteMese(m),"importo")+_sum(rateScaduteMese(m),"rata")+_sumBollAffrontate(m);
+  const previste=_sum(speseProgrammateMese(m),"importo")+_sum(rateFutureMese(m),"rata")+(_sumBollMese(m)-_sumBollAffrontate(m))+_sumPrevisionali(m);
+  const budgetG=ent/gMese, affrG=affront/gMese, prevG=previste/gMese, uscitaG=affrG+prevG, margineG=budgetG-uscitaG;
+  const spesaFine=affront+previste, saldoFine=ent-spesaFine, sopra=margineG<0;
+  const pctBar=budgetG>0?Math.min(100,uscitaG/budgetG*100):0;
   el.innerHTML=`
-   <div style="font-size:.8rem;color:var(--ink-soft);margin-bottom:10px">Budget ${euro(ent)} ÷ ${gMese} giorni = <b>${euro(budgetG)}/giorno</b> · giorno ${gTrasc}</div>
-   <div style="display:flex;justify-content:space-between;font-size:.74rem;color:var(--ink-soft);margin-bottom:4px"><span>Atteso: ${euro(atteso)}</span><span>Speso: ${euro(speso)}</span></div>
-   <div style="height:14px;background:var(--line);border-radius:7px;overflow:hidden"><div style="height:100%;width:${Math.min(100,speso/ent*100)}%;background:${sopra?'#e0653a':'#1f9d6a'}"></div></div>
-   <div style="margin-top:10px;padding:9px 12px;border-radius:10px;background:${sopra?'#fdece6':'#eaf7ef'};color:${sopra?'#b0432a':'#1f7a4d'};font-size:.85rem;font-weight:600">${sopra?('⚠️ +'+euro(sfor)+' sopra il ritmo (+'+perc+'%)'):('✓ '+euro(-sfor)+' sotto il ritmo')}</div>
-   <div style="font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin:14px 0 6px">Proiezione a fine mese</div>
-   <div class="prow"><span>Di questo passo</span><b class="num" style="color:${col(passo)}">${euro(passo)}</b></div>
-   <div class="prow"><span>Se rientri nel ritmo</span><b class="num" style="color:${col(rientro)}">${euro(rientro)}</b></div>`;
+   <div style="font-size:.78rem;color:var(--ink-soft);margin-bottom:10px">Budget ${euro(ent)} ÷ ${gMese} giorni</div>
+   <div style="display:flex;gap:8px;margin-bottom:10px">
+     <div style="flex:1;background:#eaf7ef;border-radius:12px;padding:10px;text-align:center"><div style="font-size:.64rem;color:#1f7a4d;text-transform:uppercase;letter-spacing:.03em">Budget / giorno</div><b class="num" style="color:#1f9d6a;font-size:1.15rem">${euro(budgetG)}</b></div>
+     <div style="flex:1;background:#fdf3ec;border-radius:12px;padding:10px;text-align:center"><div style="font-size:.64rem;color:#a5771f;text-transform:uppercase;letter-spacing:.03em">Uscite / giorno</div><b class="num" style="color:#c47f1a;font-size:1.15rem">${euro(uscitaG)}</b></div>
+   </div>
+   <div style="font-size:.74rem;color:var(--ink-soft);margin-bottom:8px">Uscite = <span style="color:#c47f1a">speso ${euro(affrG)}/g</span> + <span style="color:#c47f1a">previsto ${euro(prevG)}/g</span></div>
+   <div style="height:14px;background:var(--line);border-radius:7px;overflow:hidden"><div style="height:100%;width:${pctBar}%;background:${sopra?'#e0653a':'#1f9d6a'}"></div></div>
+   <div style="margin-top:10px;padding:9px 12px;border-radius:10px;background:${sopra?'#fdece6':'#eaf7ef'};color:${sopra?'#b0432a':'#1f7a4d'};font-size:.85rem;font-weight:600">${sopra?('⚠️ '+euro(-margineG)+'/giorno sopra la soglia'):('✓ '+euro(margineG)+'/giorno sotto la soglia — vai bene')}</div>
+   <div style="font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin:14px 0 6px">A fine mese, di questo passo</div>
+   <div class="prow"><span>Spesa prevista</span><b class="num">${euro(spesaFine)}</b></div>
+   <div class="prow"><span>Saldo a fine mese</span><b class="num" style="color:${saldoFine<0?'#c0392b':'#1f9d6a'}">${euro(saldoFine)}</b></div>`;
 }
 function renderRepKpi(){
   const ent=totEntrateDi(meseSel),sp=totSpeseDi(meseSel);
