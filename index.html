@@ -594,13 +594,14 @@ input,select,textarea{font-size:16px !important}
 
 <header>
   <div class="wrap">
-    <div class="head-top" style="position:relative;justify-content:center;padding:6px 0">
-      <div class="month-nav">
-        <button onclick="cambiaMese(-1)" aria-label="Mese precedente">‹</button>
-        <span class="label" id="meseLabel">—</span>
-        <button onclick="cambiaMese(1)" aria-label="Mese successivo">›</button>
+    <div class="head-top" style="display:flex;align-items:center;justify-content:space-between;padding:7px 4px;gap:8px">
+      <span id="headFamiglia" style="font-weight:700;font-size:.82rem;max-width:32%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff">La mia famiglia</span>
+      <div class="month-nav" style="background:rgba(255,255,255,.96);border-radius:22px;padding:4px 8px">
+        <button onclick="cambiaMese(-1)" aria-label="Mese precedente" style="color:#16808F">‹</button>
+        <span class="label" id="meseLabel" style="color:#155E8C;font-weight:800">—</span>
+        <button onclick="cambiaMese(1)" aria-label="Mese successivo" style="color:#16808F">›</button>
       </div>
-      <div class="sync" id="sync" style="position:absolute;right:2px;top:50%;transform:translateY(-50%);font-size:.56rem;gap:3px"><span class="led"></span><span id="syncText"></span></div>
+      <div class="sync" id="sync" style="font-size:.58rem;gap:3px;max-width:32%;justify-content:flex-end"><span id="syncText"></span><span class="led"></span></div>
     </div>
   </div>
 </header>
@@ -1185,7 +1186,7 @@ input,select,textarea{font-size:16px !important}
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 67;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 68;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1454,18 +1455,22 @@ function salvaSalv(){const imp=+document.getElementById("salvImporto").value||0,
   state.movimentiSalvadanaio.push({id:id(),tipo:salvTipo,importo:imp,data});
   chiudi("ovSalv");render();
 }
-function renderFamiglia(){const el=document.getElementById("famigliaBody");if(!el)return;
+function renderFamiglia(){const el=document.getElementById("famigliaBody");
+  const hf=document.getElementById("headFamiglia");if(hf)hf.textContent=state.nomeFamiglia||"La mia famiglia";
+  if(!el)return;
   if(!famigliaId){el.innerHTML='<div style="color:var(--ink-soft);font-size:.85rem">—</div>';return;}
   const mieiId=authUser?authUser.id:"";
   const altri=famigliaMembri.filter(m=>m.user_id!==mieiId);
   let membriHtml=`<div style="font-size:.75rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin:12px 0 6px">Membri (${famigliaMembri.length}/2)</div>`;
   membriHtml+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0"><span style="font-size:.9rem">👤 Tu</span><span style="font-size:.75rem;color:var(--ink-soft)">questo account</span></div>`;
   altri.forEach(m=>{membriHtml+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line)"><span style="font-size:.9rem">👤 Altro membro</span><button class="btn btn-ghost btn-sm" onclick="rimuoviMembro('${m.user_id}')">Rimuovi</button></div>`;});
-  el.innerHTML=`<div style="font-size:.85rem;color:var(--ink-soft);margin-bottom:6px">Codice per far entrare l'altro genitore (max 2):</div>
+  const nomeField=`<div style="margin-bottom:14px"><label style="font-size:.75rem;color:var(--ink-soft)">Nome famiglia (max 20)</label><div style="display:flex;gap:8px;margin-top:4px"><input id="nomeFamigliaInput" maxlength="20" value="${esc(state.nomeFamiglia||'')}" placeholder="Es. Cardaciotto" style="flex:1"><button class="btn btn-ghost btn-sm" onclick="salvaNomeFamiglia()">Salva</button></div></div>`;
+  el.innerHTML=nomeField+`<div style="font-size:.85rem;color:var(--ink-soft);margin-bottom:6px">Codice per far entrare l'altro genitore (max 2):</div>
     <div class="num" style="font-size:1.5rem;font-weight:800;letter-spacing:.06em">${famigliaCodice||"—"}</div>
     ${membriHtml}
     <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="lasciaFamiglia()">🚪 Lascia la famiglia</button>`;
 }
+function salvaNomeFamiglia(){const v=(document.getElementById("nomeFamigliaInput").value||"").trim().slice(0,20);state.nomeFamiglia=v;render();}
 async function rimuoviMembro(uid){chiediConferma("Rimuovere questo membro dalla famiglia? Perderà l'accesso a questi dati.",async()=>{
   try{const{error}=await sb.rpc("rimuovi_membro",{target:uid});if(error)throw error;const{data:mm}=await sb.from("membri").select("user_id,ruolo").eq("famiglia_id",famigliaId);famigliaMembri=mm||[];render();alert("Membro rimosso.");}catch(e){alert("Errore: "+(e.message||e));}
 });}
