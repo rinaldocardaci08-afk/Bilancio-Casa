@@ -594,14 +594,16 @@ input,select,textarea{font-size:16px !important}
 
 <header>
   <div class="wrap">
-    <div class="head-top" style="display:flex;align-items:center;justify-content:space-between;padding:7px 4px;gap:8px">
-      <span id="headFamiglia" style="font-weight:700;font-size:.82rem;max-width:32%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff">La mia famiglia</span>
-      <div class="month-nav" style="background:rgba(255,255,255,.96);border-radius:22px;padding:4px 8px">
+    <div style="padding:8px 4px 10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px">
+        <span id="headFamiglia" style="color:#fff;font-weight:700;font-size:.85rem;max-width:66%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🏡 La mia famiglia</span>
+        <span class="sync" id="sync" style="font-size:.58rem;gap:4px;flex:none"><span id="syncText"></span><span class="led"></span></span>
+      </div>
+      <div class="month-nav" style="background:#fff;border-radius:22px;padding:6px 14px;display:flex;align-items:center;justify-content:space-between">
         <button onclick="cambiaMese(-1)" aria-label="Mese precedente" style="color:#16808F">‹</button>
         <span class="label" id="meseLabel" style="color:#155E8C;font-weight:800">—</span>
         <button onclick="cambiaMese(1)" aria-label="Mese successivo" style="color:#16808F">›</button>
       </div>
-      <div class="sync" id="sync" style="font-size:.58rem;gap:3px;max-width:32%;justify-content:flex-end"><span id="syncText"></span><span class="led"></span></div>
     </div>
   </div>
 </header>
@@ -1186,7 +1188,7 @@ input,select,textarea{font-size:16px !important}
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 68;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 69;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1456,7 +1458,7 @@ function salvaSalv(){const imp=+document.getElementById("salvImporto").value||0,
   chiudi("ovSalv");render();
 }
 function renderFamiglia(){const el=document.getElementById("famigliaBody");
-  const hf=document.getElementById("headFamiglia");if(hf)hf.textContent=state.nomeFamiglia||"La mia famiglia";
+  const hf=document.getElementById("headFamiglia");if(hf)hf.textContent="🏡 "+(state.nomeFamiglia||"La mia famiglia");
   if(!el)return;
   if(!famigliaId){el.innerHTML='<div style="color:var(--ink-soft);font-size:.85rem">—</div>';return;}
   const mieiId=authUser?authUser.id:"";
