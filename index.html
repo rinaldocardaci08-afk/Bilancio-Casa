@@ -1162,11 +1162,11 @@ input,select,textarea{font-size:16px !important}
 
 <!-- MODALE CONFERMA -->
 <div class="overlay" id="ovConfirm"><div class="modal">
-  <h3>Confermi l'eliminazione?</h3>
+  <h3 id="confTitle">Confermi l'eliminazione?</h3>
   <p id="confMsg" style="color:var(--ink-soft);font-size:.95rem;margin:-8px 0 4px;"></p>
   <div class="modal-actions">
     <button class="btn btn-cancel" onclick="chiudi('ovConfirm')">Annulla</button>
-    <button class="btn btn-danger" onclick="confermaSi()">Elimina</button>
+    <button class="btn btn-danger" id="confOk" onclick="confermaSi()">Elimina</button>
   </div>
 </div></div>
 
@@ -1212,7 +1212,7 @@ input,select,textarea{font-size:16px !important}
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 71;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 72;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -2285,20 +2285,22 @@ function renderRepRitmo(){
    <div class="prow" style="background:${saldoFine<0?'#fdece6':'#eaf7ef'};border-radius:10px;padding:10px 12px"><span><b>Saldo a fine mese</b></span><b class="num" style="color:${saldoFine<0?'#c0392b':'#1f9d6a'};font-size:1.05rem">${euro(saldoFine)}</b></div>`;
   const giorniTrasc=(m===meseCorrente())?Math.min(gMese,new Date().getDate()):gMese;
   const mediaOggi=giorniTrasc>0?affront/giorniTrasc:0, soglia=budgetG, proiez=mediaOggi*gMese, over=mediaOggi>soglia;
-  const scal=Math.max(soglia*1.6,mediaOggi*1.05,1), gW=Math.min(100,soglia/scal*100), rW=Math.min(100-gW,(soglia*0.3)/scal*100), dW=Math.max(0,100-gW-rW), mL=Math.min(98,mediaOggi/scal*100);
+  const mScale=Math.max(soglia*1.4,mediaOggi*1.05,1), mBar=Math.min(100,mediaOggi/mScale*100), mTick=Math.min(98,soglia/mScale*100);
   el.innerHTML+=`
    <div style="border-top:1px dashed var(--line);margin:16px 0 12px"></div>
    <div style="font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em">Media su giorno ad oggi</div>
-   <div style="font-size:.72rem;color:var(--ink-soft);margin-bottom:22px">${euro(affront)} spesi ÷ ${giorniTrasc} giorni trascorsi</div>
-   <div style="position:relative;margin:0 2px 6px">
-     <div style="position:absolute;left:${gW}%;top:-20px;transform:translateX(-50%);font-size:.72rem;font-weight:600;white-space:nowrap">soglia ${euro(soglia)}</div>
-     <div style="position:absolute;left:${gW}%;top:-6px;bottom:-6px;width:2px;background:#1c1c1a;z-index:2"></div>
-     <div style="display:flex;height:22px;border-radius:11px;overflow:hidden">
-       <div style="width:${gW}%;background:#2e9d5b"></div><div style="width:${rW}%;background:#e23b2e"></div><div style="width:${dW}%;background:#8b1a1a"></div>
-     </div>
-     <div style="position:absolute;left:${mL}%;top:18px;transform:translateX(-50%);color:${over?'#c0392b':'#1f7a4d'};font-size:.85rem;font-weight:700;white-space:nowrap">▲ ${euro(mediaOggi)}/g</div>
+   <div style="font-size:.72rem;color:var(--ink-soft);margin-bottom:10px">${euro(affront)} spesi ÷ ${giorniTrasc} giorni trascorsi</div>
+   <div style="display:flex;gap:8px;margin-bottom:10px">
+     <div style="flex:1;background:${over?'#fdece6':'#eaf7ef'};border-radius:12px;padding:10px;text-align:center"><div style="font-size:.64rem;color:${over?'#a5771f':'#1f7a4d'};text-transform:uppercase;letter-spacing:.03em">Media / giorno</div><b class="num" style="color:${over?'#c47f1a':'#1f9d6a'};font-size:1.15rem">${euro(mediaOggi)}</b></div>
+     <div style="flex:1;background:#eaf7ef;border-radius:12px;padding:10px;text-align:center"><div style="font-size:.64rem;color:#1f7a4d;text-transform:uppercase;letter-spacing:.03em">Soglia / giorno</div><b class="num" style="color:#1f9d6a;font-size:1.15rem">${euro(soglia)}</b></div>
    </div>
-   <div class="prow" style="border:1.5px solid ${over?'#e0b4ab':'#bfe0cc'};background:${over?'#fdece6':'#eaf7ef'};border-radius:10px;padding:11px 12px;margin-top:32px"><span style="color:${over?'#b0432a':'#1f7a4d'};font-weight:600">Di questo passo spenderai</span><b class="num" style="color:${over?'#c0392b':'#1f9d6a'};font-size:1.05rem">${euro(proiez)}</b></div>`;
+   <div style="position:relative;height:16px;background:var(--line);border-radius:8px;margin-bottom:2px">
+     <div style="position:absolute;left:0;top:0;height:100%;width:${mBar}%;background:${over?'#e0653a':'#1f9d6a'};border-radius:8px"></div>
+     <div style="position:absolute;top:-3px;height:22px;left:${mTick}%;width:2px;background:#1c1c1a"></div>
+   </div>
+   <div style="text-align:right;font-size:.64rem;color:var(--ink-soft);margin-bottom:8px">▲ la tacca = soglia (${euro(soglia)})</div>
+   <div style="padding:9px 12px;border-radius:10px;background:${over?'#fdece6':'#eaf7ef'};color:${over?'#b0432a':'#1f7a4d'};font-size:.85rem;font-weight:600">${over?('⚠️ '+euro(mediaOggi-soglia)+'/giorno sopra la soglia'):('✓ '+euro(soglia-mediaOggi)+'/giorno sotto la soglia')}</div>
+   <div class="prow" style="border-top:1px solid var(--line);margin-top:10px"><span>Di questo passo, a fine mese</span><b class="num" style="color:${over?'#c0392b':'#1f9d6a'};font-size:1.05rem">${euro(proiez)}</b></div>`;
 }
 function renderRepKpi(){
   const ent=totEntrateDi(meseSel),sp=totSpeseDi(meseSel);
@@ -3048,7 +3050,7 @@ function datiPercorso(m){
     return {p,pid,arr,tot:cum,col:(p&&p.colore)||"#8a978f",ini:(p&&p.nome?p.nome[0]:"?"),em:avEmoji(p)};}).filter(s=>s.p);
   return {giorni:gTot,serie};
 }
-function chiediPercorso(pid){chiediConferma("Vuoi vedere il percorso della gara di "+meseLabel(meseSel)+"?",()=>apriPercorso());}
+function chiediPercorso(pid){chiediConferma("Rivedi come è cresciuta la gara, giorno per giorno.",()=>apriPercorso(),{titolo:"Vuoi vedere il percorso?",ok:"Sì, mostra",danger:false});}
 function apriPercorso(){
   pcData=datiPercorso(meseSel);
   const rot=document.getElementById("pcRot"),portrait=window.innerHeight>window.innerWidth;
@@ -3108,7 +3110,11 @@ function azzeraMeseCorrente(){
 }
 function azzeraTutto(){chiudi("ovAzzera");resetTutto();}
 function esportaBackup(){const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="bilancio-casa-"+meseCorrente()+".json";a.click();}
-function chiediConferma(msg,onOk){pendingConfirm=onOk;document.getElementById("confMsg").textContent=msg;apri("ovConfirm");}
+function chiediConferma(msg,onOk,opts){opts=opts||{};pendingConfirm=onOk;
+  document.getElementById("confTitle").textContent=opts.titolo||"Confermi l'eliminazione?";
+  document.getElementById("confMsg").textContent=msg;
+  const ok=document.getElementById("confOk");ok.textContent=opts.ok||"Elimina";ok.className="btn "+(opts.danger===false?"btn-primary":"btn-danger");
+  apri("ovConfirm");}
 function confermaSi(){const f=pendingConfirm;pendingConfirm=null;chiudi("ovConfirm");if(f)f();}
 
 function formatData(iso){if(!iso)return"";const[y,m,d]=iso.split("-");return d+"/"+m+"/"+y;}
