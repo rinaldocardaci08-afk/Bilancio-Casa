@@ -1257,7 +1257,7 @@ input,select,textarea{font-size:16px !important}
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 77;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 78;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1352,7 +1352,7 @@ function loadLocal(){
 }
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
 function save(){if(!applicandoRemoto)lastLocalWrite=Date.now();saveLocal();if(cloudOn&&!applicandoRemoto){clearTimeout(saveTimer);saveTimer=setTimeout(saveCloud,500);}}
-async function saveCloud(){if(!sb||!famigliaId)return;try{setSync("syncing");lastLocalWrite=Date.now();const ts=new Date(lastLocalWrite).toISOString();const{error}=await sb.from("famiglie").update({dati:state,updated_at:ts}).eq("id",famigliaId);setSync(error?"off":"ok");}catch(e){setSync("off");}}
+async function saveCloud(){if(!sb||!famigliaId)return;try{setSync("syncing");lastLocalWrite=Date.now();const ts=new Date(lastLocalWrite).toISOString();const{error}=await sb.from("famiglie").update({dati:state,updated_at:ts,app_version:APP_VERSION}).eq("id",famigliaId);setSync(error?"off":"ok");}catch(e){setSync("off");}}
 async function caricaFamiglia(){
   const{data,error}=await sb.from("famiglie").select("codice,dati,updated_at").eq("id",famigliaId).maybeSingle();
   if(error)throw error;cloudOn=true;
@@ -1373,24 +1373,40 @@ async function verificaAdmin(){
   const c=document.getElementById("cardAdmin");if(c)c.style.display=isAdmin?"block":"none";
 }
 function toggleAdmin(){const w=document.getElementById("admWrap"),f=document.getElementById("admFreccia");const open=w.style.display==="none";w.style.display=open?"block":"none";f.textContent=open?"▴":"▾";if(open)renderAdminFamiglie();}
+let admFamData=[], admFamOpen={}, admResetMsg={};
 async function renderAdminFamiglie(){const el=document.getElementById("admFamiglie");if(!el)return;el.textContent="Carico…";
   try{const{data,error}=await sb.rpc("admin_lista_famiglie");
     if(error){el.innerHTML='<span style="color:#c0392b">'+esc(error.message)+'</span>';return;}
-    if(!data||!data.length){el.innerHTML='<span style="color:var(--ink-soft)">Nessuna famiglia.</span>';return;}
-    el.innerHTML=data.map(f=>{
-      const aree=[f.n_entrate>0,f.n_spese>0,f.n_eroi>0,f.n_note>0,f.n_appuntamenti>0,(f.n_obiettivi>0||f.n_rate>0)];
-      const usate=aree.filter(Boolean).length,pct=Math.round(usate/6*100);
-      const col=pct<40?"#d84a3a":pct<70?"#e0a63a":"#2e9d5b",coltxt=pct<40?"#a3312e":pct<70?"#a5771f":"#1f7a4d";
-      const gg=f.updated_at?Math.floor((Date.now()-new Date(f.updated_at).getTime())/86400000):null;
-      const ultimo=gg===null?"—":gg<=0?"oggi":gg===1?"ieri":gg+" g fa";
-      const nm=+f.n_membri||0;
-      return `<div style="border:0.5px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px">
-        <div style="display:flex;align-items:baseline;gap:8px"><span style="font-weight:600">${esc(f.nome||f.codice)}</span><span style="font-size:.7rem;color:var(--ink-soft)">${esc(f.codice)}</span><span style="margin-left:auto;font-size:.7rem;color:var(--ink-soft)">ultimo uso ${ultimo}</span></div>
-        <div style="display:flex;align-items:center;gap:8px;margin:7px 0 4px"><div style="flex:1;height:8px;background:#eef1ef;border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${col}"></div></div><span style="font-size:.75rem;font-weight:600;color:${coltxt}">${pct}%</span></div>
-        <div style="font-size:.7rem;color:var(--ink-soft)">usa ${usate} aree su 6 · ${nm} genitor${nm===1?'e':'i'}</div>
-      </div>`;}).join("");
+    admFamData=data||[];drawFamiglie();
   }catch(e){el.innerHTML='<span style="color:#c0392b">Errore: '+esc(String(e&&e.message||e))+'</span>';}
 }
+function toggleFam(id){admFamOpen[id]=!admFamOpen[id];drawFamiglie();}
+function drawFamiglie(){const el=document.getElementById("admFamiglie");if(!el)return;
+  if(!admFamData.length){el.innerHTML='<span style="color:var(--ink-soft)">Nessuna famiglia.</span>';return;}
+  el.innerHTML=admFamData.map(f=>{
+    const aree=[f.n_entrate>0,f.n_spese>0,f.n_eroi>0,f.n_note>0,f.n_appuntamenti>0,(f.n_obiettivi>0||f.n_rate>0)];
+    const usate=aree.filter(Boolean).length,pct=Math.round(usate/6*100);
+    const col=pct<40?"#d84a3a":pct<70?"#e0a63a":"#2e9d5b",coltxt=pct<40?"#a3312e":pct<70?"#a5771f":"#1f7a4d";
+    const gg=f.updated_at?Math.floor((Date.now()-new Date(f.updated_at).getTime())/86400000):null;
+    const ultimo=gg===null?"—":gg<=0?"oggi":gg===1?"ieri":gg+" g fa";
+    const ver=f.app_version?("v"+f.app_version):"—",vecchia=f.app_version&&f.app_version<APP_VERSION;
+    const nm=+f.n_membri||0,open=!!admFamOpen[f.id];
+    const membri=(f.membri||[]).map(m=>{const rm=admResetMsg[m.email];
+      return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0"><span style="flex:1;font-size:.82rem;word-break:break-all">${esc(m.email)}</span><button class="btn btn-sm" style="font-size:.7rem;padding:0 8px;height:26px;flex:none" onclick="resetMembro('${esc(m.email)}')">Reset password</button></div>`
+        +(rm?`<div style="background:#eaf7ef;border-radius:8px;padding:7px 9px;margin:2px 0 6px;font-size:.72rem;color:#1f7a4d">${esc(m.email)} → <b style="font-family:monospace">${esc(rm)}</b></div>`:"");
+    }).join("")||'<div style="font-size:.72rem;color:var(--ink-soft);padding:4px 0">Nessun membro.</div>';
+    return `<div style="border:0.5px solid ${open?'#bcd':'var(--line)'};border-radius:8px;padding:10px 12px;margin-bottom:8px">
+      <div onclick="toggleFam('${f.id}')" style="cursor:pointer;display:flex;align-items:baseline;gap:8px"><span style="color:var(--ink-soft)">${open?'▾':'▸'}</span><span style="font-weight:600">${esc(f.nome||f.codice)}</span><span style="font-size:.68rem;color:var(--ink-soft)">${esc(f.codice)}</span><span style="margin-left:auto;font-size:.68rem;color:${vecchia?'#c0392b':'var(--ink-soft)'}">${ver}${vecchia?' · aggiorna':''}</span></div>
+      <div style="display:flex;align-items:center;gap:8px;margin:7px 0 2px"><div style="flex:1;height:8px;background:#eef1ef;border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${col}"></div></div><span style="font-size:.72rem;font-weight:600;color:${coltxt}">${pct}%</span></div>
+      <div style="font-size:.68rem;color:var(--ink-soft)">usa ${usate}/6 aree · ${nm} genitor${nm===1?'e':'i'} · ultimo uso ${ultimo}</div>
+      ${open?`<div style="border-top:0.5px solid var(--line);margin-top:8px;padding-top:6px">${membri}</div>`:""}
+    </div>`;}).join("");
+}
+async function resetMembro(email){admResetMsg[email]="…";drawFamiglie();
+  try{const{data,error}=await sb.functions.invoke("admin-reset-password",{body:{email}});
+    const err=(error&&error.message)||(data&&data.error);admResetMsg[email]=err?("errore: "+err):data.password;
+  }catch(e){admResetMsg[email]="errore: "+String(e&&e.message||e);}
+  drawFamiglie();}
 async function adminCreaFamiglia(){
   const nome=document.getElementById("admNome").value.trim(),email=document.getElementById("admEmail").value.trim(),email2=document.getElementById("admEmail2").value.trim(),out=document.getElementById("admCreaOut");
   if(!email){out.innerHTML='<span style="color:#c0392b">Inserisci almeno l\'email del primo genitore.</span>';return;}
@@ -1422,7 +1438,7 @@ async function entraApp(){
   document.getElementById("lock").style.display="none";
   let fam=null,errore=false;try{const{data,error}=await sb.rpc("mia_famiglia");if(error)errore=true;else fam=data;}catch(e){errore=true;}
   if(errore){setSync("off");mostraLogin();return;}
-  if(fam){famigliaId=fam;try{await caricaFamiglia();}catch(e){setSync("off");}aggiornaPwBanner();render();verificaAdmin();setTimeout(promemoriaBollette,600);setTimeout(maybeBenvenuto,900);}
+  if(fam){famigliaId=fam;try{await caricaFamiglia();}catch(e){setSync("off");}try{sb.from("famiglie").update({app_version:APP_VERSION}).eq("id",famigliaId);}catch(e){}aggiornaPwBanner();render();verificaAdmin();setTimeout(promemoriaBollette,600);setTimeout(maybeBenvenuto,900);}
   else{mostraSceltaFamiglia();}
 }
 async function creaFamiglia(){
