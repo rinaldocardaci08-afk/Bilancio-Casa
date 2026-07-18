@@ -1252,7 +1252,7 @@ input,select,textarea{font-size:16px !important}
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 79;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 80;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1527,8 +1527,8 @@ async function cambiaPassword(){
 function esportaBackup(){try{const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="bilancio-backup-"+oggiISO()+".json";document.body.appendChild(a);a.click();a.remove();}catch(e){alert("Backup non riuscito.");}}
 function importaBackup(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);chiediConferma("Importare questo backup? Sostituisce TUTTI i dati attuali.",()=>{state=d;migrate();render();});}catch(e){alert("File di backup non valido.");}ev.target.value="";};r.readAsText(f);}
 function applicaRemoto(dati,remoteTs){
+  if(remoteTs&&Date.parse(remoteTs)<=lastLocalWrite)return;   // stato remoto più vecchio delle mie modifiche locali: non sovrascrivo (check leggero prima)
   if(JSON.stringify(dati)===JSON.stringify(state))return;
-  if(remoteTs&&Date.parse(remoteTs)<=lastLocalWrite)return;   // stato remoto più vecchio delle mie modifiche locali: non sovrascrivo
   if(document.querySelector(".overlay.on")){pendingRemote={dati,ts:remoteTs};return;}
   applicandoRemoto=true;state=dati;migrate();saveLocal();render();applicandoRemoto=false;
 }
@@ -1672,7 +1672,12 @@ function risparmioMensile(){return state.obiettivi.reduce((a,o)=>a+(+o.mensile||
 function vai(sec){sezione=sec;
   document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active",s.id==="sec-"+sec));
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.sec===sec));
-  window.scrollTo(0,0);}
+  renderPesantiSezione();window.scrollTo(0,0);}
+function renderPesantiSezione(){
+  if(sezione==="spese")renderGantt();
+  else if(sezione==="eroi")renderLotteria();
+  else if(sezione==="altro"){renderReport();renderTrend();}
+}
 function setPeriodoPersona(p){periodoPersona=p;document.getElementById("segMese").classList.toggle("on",p==="mese");document.getElementById("segAnno").classList.toggle("on",p==="anno");renderPersone();}
 
 function renderGauge(ent,sp,ris){
@@ -1704,7 +1709,7 @@ function render(){
   document.getElementById("hContabile").textContent=euro(saldoContabileMese(meseSel));
   renderGauge(ent,sp,ris);
   renderSaldoMese();renderSalvadanaio();renderSaldoIniziale();renderFamiglia();renderAffrontate();renderDaAffrontare();renderNote();renderAppuntamenti();renderBachecaObiettivi();renderBollettePanel();
-  renderGrafico();renderPersone();renderRate();renderGantt();renderListe();renderObiettivi();renderTrend();renderCategorie();renderReport();renderLotteria();popolaQsCat();renderComponenti();renderGuida();
+  renderGrafico();renderPersone();renderRate();renderListe();renderObiettivi();renderCategorie();popolaQsCat();renderComponenti();renderGuida();renderPesantiSezione();
   if(calOpen)renderCalendario();
   save();
 }
@@ -3342,7 +3347,9 @@ function chiediEliminaVersamento(gid,vid){
 
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 
+let lastUpdateCheck=0;
 async function checkUpdate(){
+  const now=Date.now();if(now-lastUpdateCheck<180000)return;lastUpdateCheck=now;
   try{const base=location.pathname.split("?")[0];const res=await fetch(base+"?_="+Date.now(),{cache:"no-store"});const txt=await res.text();
     const m=txt.match(/APP_VERSION\s*=\s*(\d+)/);if(m){const remote=parseInt(m[1],10);if(remote>APP_VERSION){location.replace(base+"?v="+remote);}}}catch(e){}
 }
