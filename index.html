@@ -937,7 +937,13 @@ input,select,textarea{font-size:16px !important}
   <h3 id="modTitle">Aggiungi</h3>
   <div class="field"><label>Nome</label><input type="text" id="mNome" placeholder="Es. Scarpe"></div>
   <div class="field"><label>Importo (€)</label><input type="number" id="mImporto" inputmode="decimal" placeholder="0"></div>
-  <div class="field" id="dataField" style="display:none"><label id="dataLbl">Data</label><input type="date" id="mData" oninput="aggiornaDataField()"><div id="dataHint" style="font-size:.78rem;color:var(--ink-soft);margin-top:5px"></div></div>
+  <div class="field" id="dataField" style="display:none"><label id="dataLbl">Data</label><input type="date" id="mData" oninput="aggiornaDataField()">
+    <div class="segm" id="dataQuick" style="margin-top:8px">
+      <button type="button" onclick="setDataVoce(0)">Oggi</button>
+      <button type="button" onclick="setDataVoce(-1)">Ieri</button>
+      <button type="button" onclick="setDataVoce(-2)">L'altro ieri</button>
+    </div>
+    <div id="dataHint" style="font-size:.78rem;color:var(--ink-soft);margin-top:5px"></div></div>
   <div class="field" id="progMesiField" style="display:none"><label>Si ripete?</label>
     <div class="segm" id="progMesiSeg">
       <button type="button" data-pm="uno" onclick="setProgMesi('uno')">Una tantum</button>
@@ -1194,12 +1200,19 @@ input,select,textarea{font-size:16px !important}
   </div>
   <div class="modal-actions"><button class="btn btn-ghost" onclick="chiudi('ovDataMon')">Annulla</button><button class="btn btn-primary" onclick="confermaDataMonete()">Assegna 🪙</button></div>
 </div></div>
+<div class="overlay" id="ovPercorso" style="padding:0;align-items:stretch;justify-content:stretch">
+  <div id="pcRot" style="position:absolute;background:#0d1512;overflow:hidden">
+    <canvas id="pcCanvas" style="display:block;width:100%;height:100%"></canvas>
+    <button onclick="chiudi('ovPercorso')" aria-label="Chiudi" style="position:absolute;top:12px;right:14px;width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.16);color:#fff;font-size:16px;cursor:pointer">✕</button>
+    <button onclick="animaPercorso()" style="position:absolute;bottom:12px;right:14px;padding:8px 14px;border-radius:20px;border:none;background:rgba(255,255,255,.16);color:#fff;font-size:13px;cursor:pointer">↻ Rivedi</button>
+  </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 70;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 71;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -2270,6 +2283,22 @@ function renderRepRitmo(){
    <div class="prow" style="border-top:1px solid var(--line)"><span><b>Spese mese totali</b></span><b class="num">${euro(spesaFine)}</b></div>
    <div style="height:8px"></div>
    <div class="prow" style="background:${saldoFine<0?'#fdece6':'#eaf7ef'};border-radius:10px;padding:10px 12px"><span><b>Saldo a fine mese</b></span><b class="num" style="color:${saldoFine<0?'#c0392b':'#1f9d6a'};font-size:1.05rem">${euro(saldoFine)}</b></div>`;
+  const giorniTrasc=(m===meseCorrente())?Math.min(gMese,new Date().getDate()):gMese;
+  const mediaOggi=giorniTrasc>0?affront/giorniTrasc:0, soglia=budgetG, proiez=mediaOggi*gMese, over=mediaOggi>soglia;
+  const scal=Math.max(soglia*1.6,mediaOggi*1.05,1), gW=Math.min(100,soglia/scal*100), rW=Math.min(100-gW,(soglia*0.3)/scal*100), dW=Math.max(0,100-gW-rW), mL=Math.min(98,mediaOggi/scal*100);
+  el.innerHTML+=`
+   <div style="border-top:1px dashed var(--line);margin:16px 0 12px"></div>
+   <div style="font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em">Media su giorno ad oggi</div>
+   <div style="font-size:.72rem;color:var(--ink-soft);margin-bottom:22px">${euro(affront)} spesi ÷ ${giorniTrasc} giorni trascorsi</div>
+   <div style="position:relative;margin:0 2px 6px">
+     <div style="position:absolute;left:${gW}%;top:-20px;transform:translateX(-50%);font-size:.72rem;font-weight:600;white-space:nowrap">soglia ${euro(soglia)}</div>
+     <div style="position:absolute;left:${gW}%;top:-6px;bottom:-6px;width:2px;background:#1c1c1a;z-index:2"></div>
+     <div style="display:flex;height:22px;border-radius:11px;overflow:hidden">
+       <div style="width:${gW}%;background:#2e9d5b"></div><div style="width:${rW}%;background:#e23b2e"></div><div style="width:${dW}%;background:#8b1a1a"></div>
+     </div>
+     <div style="position:absolute;left:${mL}%;top:18px;transform:translateX(-50%);color:${over?'#c0392b':'#1f7a4d'};font-size:.85rem;font-weight:700;white-space:nowrap">▲ ${euro(mediaOggi)}/g</div>
+   </div>
+   <div class="prow" style="border:1.5px solid ${over?'#e0b4ab':'#bfe0cc'};background:${over?'#fdece6':'#eaf7ef'};border-radius:10px;padding:11px 12px;margin-top:32px"><span style="color:${over?'#b0432a':'#1f7a4d'};font-weight:600">Di questo passo spenderai</span><b class="num" style="color:${over?'#c0392b':'#1f9d6a'};font-size:1.05rem">${euro(proiez)}</b></div>`;
 }
 function renderRepKpi(){
   const ent=totEntrateDi(meseSel),sp=totSpeseDi(meseSel);
@@ -2658,7 +2687,7 @@ function renderLotteria(){
   const maxMon=cl.length?cl[0].monete:0;
   document.getElementById("lotPodio").innerHTML='<div class="podio">'+cl.slice(0,2).map((d,i)=>{
     const lead=d.monete>0&&d.monete===maxMon;
-    return `<div class="hcard ${lead?'lead':''}">${lead?'<span class="crown">👑</span>':'<span class="rk">'+(i+1)+'°</span>'}
+    return `<div class="hcard ${lead?'lead':''}" onclick="chiediPercorso('${d.pid}')" style="cursor:pointer">${lead?'<span class="crown">👑</span>':'<span class="rk">'+(i+1)+'°</span>'}
       <div class="av" style="${avBg(d.p)}">${avEmoji(d.p)}</div><div class="nm">${esc(d.p?d.p.nome:'?')}</div>
       <div class="co num">${d.monete} <small>monete</small></div></div>`;}).join("")+'</div>';
   const maxS=maxScalaLot(),premi=L.premi.slice().sort((a,b)=>(a.soglia||0)-(b.soglia||0));
@@ -2858,14 +2887,17 @@ function apriModale(kind,mode){
 function setProgMesi(v){progMesiMode=v;document.getElementById("progMesiSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("sel",b.dataset.pm===v));document.getElementById("mProgN").style.display=v==="piu"?"block":"none";}
 function aggiornaDataField(){
   const prog=(modKind==="spesa"&&spesaMode==="programmata");
+  const diretta=(modKind==="spesa"&&spesaMode==="diretta");
   const entUna=(modKind==="entrata"&&ricSel==="variabile");
-  const show=prog||entUna;
+  const show=prog||diretta||entUna;
   document.getElementById("dataField").style.display=show?"block":"none";
-  document.getElementById("dataLbl").textContent=prog?"Data di addebito":"Quando la ricevo";
+  document.getElementById("dataQuick").style.display=(diretta||entUna)?"flex":"none";
+  document.getElementById("dataLbl").textContent=prog?"Data di addebito":(diretta?"Quando l'hai fatta":"Quando la ricevo");
   const hint=document.getElementById("dataHint");
-  if(show){const d=document.getElementById("mData").value||oggiISO();hint.textContent=d>oggiISO()?"Data futura → pesa sul contabile, non sul reale finché non arriva.":"Data odierna o passata → pesa già sul reale.";}
+  if(prog||entUna){const d=document.getElementById("mData").value||oggiISO();hint.textContent=d>oggiISO()?"Data futura → pesa sul contabile, non sul reale finché non arriva.":"Data odierna o passata → pesa già sul reale.";}
   else hint.textContent="";
 }
+function setDataVoce(off){document.getElementById("mData").value=isoPiu(oggiISO(),off);aggiornaDataField();}
 function modificaVoce(kind,vid){
   modKind=kind;const list=kind==="entrata"?state.entrate:state.spese;
   editing=list.find(x=>x.id===vid);if(!editing)return;
@@ -2906,7 +2938,7 @@ function salvaVoce(){
   else{const cat=document.getElementById("mCat").value,icona=iconaDi("voceIconaBtn")||"🧾",pagamento=pagSel,persone=spesaPersoneSel.slice();
     const prog=(spesaMode==="programmata");
     function campiTempo(){
-      if(!prog)return {data:oggiISO(),mese:oggiISO().slice(0,7)};                       // diretta = affrontata oggi
+      if(!prog)return {data:dataIn,mese:dataIn.slice(0,7)};                              // diretta = affrontata (data scelta, default oggi)
       if(progMesiMode==="piu"){const g=(+dataIn.slice(8,10))||1,inizio=dataIn.slice(0,7),n=+document.getElementById("mProgN").value||0;
         const o={ricorrente:true,giorno:g,inizio};if(n>=1)o.fine=spostaMese(inizio,n-1);return o;}   // abbonamento ricorrente
       return {data:dataIn,mese:dataIn.slice(0,7)};                                       // programmata una tantum
@@ -3006,7 +3038,62 @@ function eliminaCategoria(){
 function apri(ovId){document.getElementById(ovId).classList.add("on");}
 function chiudi(ovId){document.getElementById(ovId).classList.remove("on");editing=null;editGoal=null;editCat=null;editRata=null;noteOrigine=null;
   if(pendingRemote&&!document.querySelector(".overlay.on")){const d=pendingRemote;pendingRemote=null;applicaRemoto(d.dati,d.ts);}}
-["ovVoce","ovRata","ovGoal","ovCat","ovVers","ovConfirm","ovAssegna","ovGestione","ovDataMon"].forEach(ovId=>document.getElementById(ovId).addEventListener("click",e=>{if(e.target.id===ovId)chiudi(ovId);}));
+let pcRAF=null, pcData=null;
+function datiPercorso(m){
+  const eroiIds=(state.lotteria&&state.lotteria.eroi)||[];
+  const gTot=(m===meseCorrente())?Math.min(ultimoGiornoMese(m),new Date().getDate()):ultimoGiornoMese(m);
+  const serie=eroiIds.map(pid=>{const p=persona(pid);const arr=[];let cum=0;
+    for(let g=1;g<=gTot;g++){const gg=m+"-"+String(g).padStart(2,"0");
+      cum+=state.lotteria.movimenti.filter(mv=>mv.persona===pid&&(mv.data||"")===gg).reduce((a,mv)=>a+(+mv.monete||0),0);arr.push(cum);}
+    return {p,pid,arr,tot:cum,col:(p&&p.colore)||"#8a978f",ini:(p&&p.nome?p.nome[0]:"?"),em:avEmoji(p)};}).filter(s=>s.p);
+  return {giorni:gTot,serie};
+}
+function chiediPercorso(pid){chiediConferma("Vuoi vedere il percorso della gara di "+meseLabel(meseSel)+"?",()=>apriPercorso());}
+function apriPercorso(){
+  pcData=datiPercorso(meseSel);
+  const rot=document.getElementById("pcRot"),portrait=window.innerHeight>window.innerWidth;
+  if(portrait){rot.style.width=window.innerHeight+"px";rot.style.height=window.innerWidth+"px";rot.style.top="50%";rot.style.left="50%";rot.style.transform="translate(-50%,-50%) rotate(90deg)";}
+  else{rot.style.width="100%";rot.style.height="100%";rot.style.top="0";rot.style.left="0";rot.style.transform="none";}
+  apri("ovPercorso");setTimeout(animaPercorso,60);
+}
+function animaPercorso(){
+  const cv=document.getElementById("pcCanvas"),rot=document.getElementById("pcRot");
+  const W=rot.clientWidth||window.innerHeight,H=rot.clientHeight||window.innerWidth,dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr;cv.height=H*dpr;const ctx=cv.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);
+  const t0=performance.now(),dur=2200;if(pcRAF)cancelAnimationFrame(pcRAF);
+  function frame(t){if(!document.getElementById("ovPercorso").classList.contains("on"))return;
+    const prog=Math.min(1,(t-t0)/dur);disegnaPercorso(ctx,W,H,prog);if(prog<1)pcRAF=requestAnimationFrame(frame);}
+  pcRAF=requestAnimationFrame(frame);
+}
+function disegnaPercorso(ctx,W,H,prog){
+  ctx.clearRect(0,0,W,H);ctx.fillStyle="#0d1512";ctx.fillRect(0,0,W,H);
+  const d=pcData;if(!d||!d.serie.length||d.giorni<1){ctx.fillStyle="#cfe8de";ctx.font="16px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("Nessuna moneta ancora questo mese",W/2,H/2);return;}
+  const L=54,R=90,T=64,B=42,gior=d.giorni,maxC=Math.max(1,...d.serie.map(s=>s.tot));
+  const nY=maxC<=5?maxC:5,stepY=Math.max(1,Math.ceil(maxC/nY));
+  const x=g=>gior<=1?(L+(W-L-R)/2):L+(g-1)/(gior-1)*(W-L-R),y=v=>H-B-(v/maxC)*(H-T-B);
+  ctx.strokeStyle="rgba(255,255,255,.10)";ctx.lineWidth=1;ctx.font="11px system-ui";ctx.textAlign="right";ctx.textBaseline="middle";
+  for(let v=0;v<=maxC+0.1;v+=stepY){const yy=y(v);ctx.beginPath();ctx.moveTo(L,yy);ctx.lineTo(W-R,yy);ctx.stroke();ctx.fillStyle="rgba(255,255,255,.45)";ctx.fillText(v,L-6,yy);}
+  ctx.fillStyle="rgba(255,255,255,.45)";ctx.textAlign="center";ctx.textBaseline="top";
+  const nx=Math.min(gior,6);for(let i=0;i<nx;i++){const g=Math.round(1+i*(gior-1)/Math.max(1,nx-1));ctx.fillText(g,x(g),H-B+6);}
+  ctx.fillStyle="rgba(255,255,255,.85)";ctx.font="500 16px system-ui";ctx.textAlign="left";ctx.fillText("Percorso · "+meseLabel(meseSel),L,16);
+  const frontier=prog*(gior-1),idx=Math.floor(frontier),frac=frontier-idx,tips=[];
+  d.serie.forEach(s=>{ctx.strokeStyle=s.col;ctx.lineWidth=3;ctx.lineJoin="round";ctx.lineCap="round";ctx.beginPath();
+    for(let i=0;i<=idx;i++){const px=x(i+1),py=y(s.arr[i]);i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);}
+    let tx,ty,tv;
+    if(idx<gior-1){const v=s.arr[idx]+(s.arr[idx+1]-s.arr[idx])*frac;tx=x(idx+1)+(x(idx+2)-x(idx+1))*frac;ty=y(v);tv=Math.round(v);ctx.lineTo(tx,ty);}
+    else{tx=x(gior);ty=y(s.arr[gior-1]);tv=s.arr[gior-1];}
+    ctx.stroke();tips.push({s,tx,ty,tv});});
+  const order=tips.slice().sort((a,b)=>b.tv-a.tv);
+  for(let i=1;i<order.length;i++){if(order[i].ty-order[i-1].ty<34)order[i].ty=order[i-1].ty+34;}
+  order.forEach(tp=>{const ax=Math.min(tp.tx+22,W-R+34),ay=Math.max(22,Math.min(H-22,tp.ty));
+    ctx.strokeStyle=tp.s.col;ctx.lineWidth=1.5;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(tp.tx,tp.ty);ctx.lineTo(ax,ay);ctx.stroke();ctx.setLineDash([]);
+    ctx.beginPath();ctx.arc(ax,ay,15,0,7);ctx.fillStyle=tp.s.col;ctx.fill();
+    ctx.font="15px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(tp.s.em||tp.s.ini,ax,ay+1);
+    ctx.fillStyle="#fff";ctx.font="500 12px system-ui";ctx.textAlign="left";ctx.fillText(tp.tv,ax+19,ay);});
+  const lb=tips.slice().sort((a,b)=>b.tv-a.tv);ctx.textAlign="right";ctx.textBaseline="top";
+  lb.forEach((tp,i)=>{ctx.fillStyle=tp.s.col;ctx.font="500 13px system-ui";ctx.fillText((i+1)+"° "+(tp.s.p.nome)+"  "+tp.tv+" 🪙",W-10,16+i*20);});
+}
+["ovVoce","ovRata","ovGoal","ovCat","ovVers","ovConfirm","ovAssegna","ovGestione","ovDataMon","ovPercorso"].forEach(ovId=>document.getElementById(ovId).addEventListener("click",e=>{if(e.target.id===ovId)chiudi(ovId);}));
 function cambiaMese(d){meseSel=spostaMese(meseSel,d);render();}
 function resetTutto(){chiediConferma("Vuoi cancellare TUTTI i dati (anche quelli di esempio) e partire da zero? Resteranno le categorie e i componenti della famiglia.",()=>{meseSel=meseCorrente();state=statoVuoto();render();});}
 function apriAzzera(){document.getElementById("azzMeseLbl").textContent=meseLabel(meseSel);apri("ovAzzera");}
