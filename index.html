@@ -892,6 +892,20 @@ input,select,textarea{font-size:16px !important}
     </div>
 
     <div class="sectitle">Impostazioni</div>
+    <div class="card" id="cardAdmin" style="display:none">
+      <div class="card-head"><h2><span class="ic">🛡️</span> Amministrazione</h2></div>
+      <p style="color:var(--ink-soft);font-size:.85rem;margin:0 0 12px">Crea nuove famiglie e gestisci gli accessi dei genitori.</p>
+      <div style="font-weight:600;font-size:.9rem;margin-bottom:6px">Nuova famiglia</div>
+      <input id="admNome" placeholder="Nome famiglia (es. Famiglia Rossi)" style="width:100%;margin-bottom:8px">
+      <input id="admEmail" type="email" placeholder="email del primo genitore" style="width:100%;margin-bottom:8px">
+      <button class="btn btn-primary" style="width:100%" onclick="adminCreaFamiglia()">Crea e genera accesso</button>
+      <div id="admCreaOut" style="margin-top:10px;font-size:.85rem"></div>
+      <div style="border-top:1px solid var(--line);margin:16px 0"></div>
+      <div style="font-weight:600;font-size:.9rem;margin-bottom:6px">Reimposta password</div>
+      <input id="admResetEmail" type="email" placeholder="email dell'utente" style="width:100%;margin-bottom:8px">
+      <button class="btn" style="width:100%" onclick="adminResetPassword()">Genera nuova password</button>
+      <div id="admResetOut" style="margin-top:10px;font-size:.85rem"></div>
+    </div>
     <div class="card">
       <div class="card-head"><h2><span class="ic">🏦</span> Saldo iniziale del conto</h2></div>
       <div style="font-size:.82rem;color:var(--ink-soft);margin-bottom:10px">Quanto hai sul conto al mese di partenza. Da qui l'app riporta il saldo di mese in mese (credito ponte).</div>
@@ -1234,7 +1248,7 @@ input,select,textarea{font-size:16px !important}
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 75;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 76;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1344,11 +1358,42 @@ async function caricaFamiglia(){
 function mostraLogin(){document.getElementById("lock").style.display="flex";}
 function setAuthMode(m){document.getElementById("authLoginBox").style.display=(m==="login")?"block":"none";document.getElementById("authSetpwBox").style.display=(m==="setpw")?"block":"none";document.getElementById("authFamigliaBox").style.display=(m==="famiglia")?"block":"none";}
 function mostraSceltaFamiglia(){setAuthMode("famiglia");document.getElementById("authErr").textContent="";document.getElementById("authMsg").textContent="";document.getElementById("lock").style.display="flex";}
+let isAdmin=false;
+async function verificaAdmin(){
+  try{const{data,error}=await sb.rpc("sono_admin");isAdmin=!error&&data===true;}catch(e){isAdmin=false;}
+  const c=document.getElementById("cardAdmin");if(c)c.style.display=isAdmin?"block":"none";
+}
+async function adminCreaFamiglia(){
+  const nome=document.getElementById("admNome").value.trim(),email=document.getElementById("admEmail").value.trim(),out=document.getElementById("admCreaOut");
+  if(!email){out.innerHTML='<span style="color:#c0392b">Inserisci l\'email del genitore.</span>';return;}
+  out.textContent="Creazione in corso…";
+  try{const{data,error}=await sb.functions.invoke("admin-crea-famiglia",{body:{nome,email}});
+    const err=(error&&error.message)||(data&&data.error);
+    if(err){out.innerHTML='<span style="color:#c0392b">'+esc(err)+'</span>';return;}
+    out.innerHTML=`<div style="background:#eaf7ef;border-radius:10px;padding:11px 12px">
+      <div style="font-size:.8rem;color:#1f7a4d;margin-bottom:6px">Famiglia creata · codice <b>${esc(data.codice)}</b></div>
+      <div>Email: ${esc(data.email)}</div>
+      <div>Password: <b style="font-family:monospace">${esc(data.password)}</b></div>
+      <div style="font-size:.75rem;color:#1f7a4d;margin-top:6px">Comunica email e password al genitore. Al primo accesso l'app gli chiede di cambiarla. Il secondo genitore entra con il codice.</div></div>`;
+    document.getElementById("admNome").value="";document.getElementById("admEmail").value="";
+  }catch(e){out.innerHTML='<span style="color:#c0392b">Errore: '+esc(String(e&&e.message||e))+'</span>';}
+}
+async function adminResetPassword(){
+  const email=document.getElementById("admResetEmail").value.trim(),out=document.getElementById("admResetOut");
+  if(!email){out.innerHTML='<span style="color:#c0392b">Inserisci l\'email.</span>';return;}
+  out.textContent="Reimposto…";
+  try{const{data,error}=await sb.functions.invoke("admin-reset-password",{body:{email}});
+    const err=(error&&error.message)||(data&&data.error);
+    if(err){out.innerHTML='<span style="color:#c0392b">'+esc(err)+'</span>';return;}
+    out.innerHTML=`<div style="background:#eaf7ef;border-radius:10px;padding:11px 12px">${esc(data.email)} → nuova password: <b style="font-family:monospace">${esc(data.password)}</b><div style="font-size:.75rem;color:#1f7a4d;margin-top:4px">Al prossimo accesso gli verrà chiesto di cambiarla.</div></div>`;
+    document.getElementById("admResetEmail").value="";
+  }catch(e){out.innerHTML='<span style="color:#c0392b">Errore: '+esc(String(e&&e.message||e))+'</span>';}
+}
 async function entraApp(){
   document.getElementById("lock").style.display="none";
   let fam=null,errore=false;try{const{data,error}=await sb.rpc("mia_famiglia");if(error)errore=true;else fam=data;}catch(e){errore=true;}
   if(errore){setSync("off");mostraLogin();return;}
-  if(fam){famigliaId=fam;try{await caricaFamiglia();}catch(e){setSync("off");}aggiornaPwBanner();render();setTimeout(promemoriaBollette,600);setTimeout(maybeBenvenuto,900);}
+  if(fam){famigliaId=fam;try{await caricaFamiglia();}catch(e){setSync("off");}aggiornaPwBanner();render();verificaAdmin();setTimeout(promemoriaBollette,600);setTimeout(maybeBenvenuto,900);}
   else{mostraSceltaFamiglia();}
 }
 async function creaFamiglia(){
