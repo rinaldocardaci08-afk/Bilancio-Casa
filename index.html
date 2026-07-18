@@ -1183,12 +1183,23 @@ input,select,textarea{font-size:16px !important}
 <div class="overlay" id="ovGiochi"><div class="modal modal-giochi" id="giochiBox"></div></div>
 
 
+<div class="overlay" id="ovDataMon"><div class="modal">
+  <h3>Quando è stato fatto?</h3>
+  <div id="monInfo" style="font-size:.9rem;color:var(--ink-soft);margin-bottom:10px"></div>
+  <div class="field"><label>Data</label><input type="date" id="monData"></div>
+  <div class="segm" style="margin-bottom:12px">
+    <button type="button" onclick="setMonData(0)">Oggi</button>
+    <button type="button" onclick="setMonData(-1)">Ieri</button>
+    <button type="button" onclick="setMonData(-2)">L'altro ieri</button>
+  </div>
+  <div class="modal-actions"><button class="btn btn-ghost" onclick="chiudi('ovDataMon')">Annulla</button><button class="btn btn-primary" onclick="confermaDataMonete()">Assegna 🪙</button></div>
+</div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 69;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 70;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -2668,13 +2679,23 @@ function renderAssegna(){
   const L=state.lotteria;
   document.getElementById("assEroi").innerHTML=L.eroi.map(pid=>{const p=persona(pid);
     return `<div class="ae ${lotEroeSel===pid?'sel':''}" onclick="selEroe('${pid}')"><div class="av" style="${avBg(p)}"></div><div class="nm">${esc(p?p.nome:'?')}</div></div>`;}).join("");
-  document.getElementById("assCompiti").innerHTML=L.compiti.length?L.compiti.map(c=>`<button class="ass-cmp" onclick="assegnaMonete('${c.id}')"><span class="ci">${esc(c.icona||'⭐')}</span><span class="cn">${esc(c.nome)}</span><span class="cv num">+${c.monete} 🪙</span></button>`).join(""):'<div class="empty">Nessun compito. Aggiungili da "Compiti e premi".</div>';
+  document.getElementById("assCompiti").innerHTML=L.compiti.length?L.compiti.map(c=>`<button class="ass-cmp" onclick="chiediDataMonete('${c.id}')"><span class="ci">${esc(c.icona||'⭐')}</span><span class="cn">${esc(c.nome)}</span><span class="cv num">+${c.monete} 🪙</span></button>`).join(""):'<div class="empty">Nessun compito. Aggiungili da "Compiti e premi".</div>';
   const mov=L.movimenti.filter(m=>dataNelPeriodoLot(m.data)).slice().reverse().slice(0,8),box=document.getElementById("assStorico");
   box.innerHTML=mov.length?'<div class="ass-storico"><div class="st">Ultime assegnazioni</div>'+mov.map(m=>{const p=persona(m.persona);return `<div class="strow"><span class="sn">${esc(p?p.nome:'?')} · ${esc(m.compito)}</span><span class="sv">+${m.monete} 🪙</span><button class="sx" onclick="chiediEliminaMov('${m.id}')">🗑</button></div>`;}).join("")+'</div>':"";
 }
 function selEroe(pid){lotEroeSel=pid;renderAssegna();}
 function assegnaMonete(cid){const c=state.lotteria.compiti.find(x=>x.id===cid);if(!c||!lotEroeSel)return;
   state.lotteria.movimenti.push({id:id(),persona:lotEroeSel,compito:c.nome,monete:+c.monete||0,data:oggiISO()});render();renderAssegna();}
+let pendingMonCid=null;
+function chiediDataMonete(cid){const c=state.lotteria.compiti.find(x=>x.id===cid);if(!c||!lotEroeSel)return;
+  pendingMonCid=cid;const p=persona(lotEroeSel);
+  document.getElementById("monInfo").textContent=(p?p.nome:'?')+" · "+c.nome+" · +"+(+c.monete||0)+" 🪙";
+  document.getElementById("monData").value=oggiISO();apri("ovDataMon");}
+function setMonData(off){document.getElementById("monData").value=isoPiu(oggiISO(),off);}
+function confermaDataMonete(){const c=state.lotteria.compiti.find(x=>x.id===pendingMonCid);if(!c||!lotEroeSel){chiudi("ovDataMon");return;}
+  const data=document.getElementById("monData").value||oggiISO();
+  state.lotteria.movimenti.push({id:id(),persona:lotEroeSel,compito:c.nome,monete:+c.monete||0,data});
+  pendingMonCid=null;chiudi("ovDataMon");render();renderAssegna();}
 function chiediEliminaMov(mid){const m=state.lotteria.movimenti.find(x=>x.id===mid);if(!m)return;const p=persona(m.persona);
   chiediConferma("Annullare "+m.monete+" monete a "+(p?p.nome:'?')+" ("+m.compito+")?",()=>{state.lotteria.movimenti=state.lotteria.movimenti.filter(x=>x.id!==mid);render();renderAssegna();});}
 function apriGestione(){renderGestione();apri("ovGestione");}
@@ -2985,7 +3006,7 @@ function eliminaCategoria(){
 function apri(ovId){document.getElementById(ovId).classList.add("on");}
 function chiudi(ovId){document.getElementById(ovId).classList.remove("on");editing=null;editGoal=null;editCat=null;editRata=null;noteOrigine=null;
   if(pendingRemote&&!document.querySelector(".overlay.on")){const d=pendingRemote;pendingRemote=null;applicaRemoto(d.dati,d.ts);}}
-["ovVoce","ovRata","ovGoal","ovCat","ovVers","ovConfirm","ovAssegna","ovGestione"].forEach(ovId=>document.getElementById(ovId).addEventListener("click",e=>{if(e.target.id===ovId)chiudi(ovId);}));
+["ovVoce","ovRata","ovGoal","ovCat","ovVers","ovConfirm","ovAssegna","ovGestione","ovDataMon"].forEach(ovId=>document.getElementById(ovId).addEventListener("click",e=>{if(e.target.id===ovId)chiudi(ovId);}));
 function cambiaMese(d){meseSel=spostaMese(meseSel,d);render();}
 function resetTutto(){chiediConferma("Vuoi cancellare TUTTI i dati (anche quelli di esempio) e partire da zero? Resteranno le categorie e i componenti della famiglia.",()=>{meseSel=meseCorrente();state=statoVuoto();render();});}
 function apriAzzera(){document.getElementById("azzMeseLbl").textContent=meseLabel(meseSel);apri("ovAzzera");}
