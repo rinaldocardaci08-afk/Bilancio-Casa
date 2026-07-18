@@ -906,11 +906,6 @@ input,select,textarea{font-size:16px !important}
         <button class="btn btn-primary" style="width:100%" onclick="adminCreaFamiglia()">Crea e genera accessi</button>
         <div id="admCreaOut" style="margin-top:10px;font-size:.85rem"></div>
         <div style="border-top:1px solid var(--line);margin:16px 0"></div>
-        <div style="font-weight:600;font-size:.9rem;margin-bottom:6px">Reimposta password</div>
-        <input id="admResetEmail" type="email" placeholder="email dell'utente" style="width:100%;margin-bottom:8px">
-        <button class="btn" style="width:100%" onclick="adminResetPassword()">Genera nuova password</button>
-        <div id="admResetOut" style="margin-top:10px;font-size:.85rem"></div>
-        <div style="border-top:1px solid var(--line);margin:16px 0"></div>
         <div style="display:flex;align-items:center;margin-bottom:8px"><span style="font-weight:600;font-size:.9rem">Famiglie gestite</span><button class="btn btn-sm" style="margin-left:auto" onclick="renderAdminFamiglie()">Aggiorna</button></div>
         <div id="admFamiglie" style="font-size:.85rem"></div>
       </div>
@@ -1257,7 +1252,7 @@ input,select,textarea{font-size:16px !important}
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 78;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 79;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1373,7 +1368,7 @@ async function verificaAdmin(){
   const c=document.getElementById("cardAdmin");if(c)c.style.display=isAdmin?"block":"none";
 }
 function toggleAdmin(){const w=document.getElementById("admWrap"),f=document.getElementById("admFreccia");const open=w.style.display==="none";w.style.display=open?"block":"none";f.textContent=open?"▴":"▾";if(open)renderAdminFamiglie();}
-let admFamData=[], admFamOpen={}, admResetMsg={};
+let admFamData=[], admFamOpen={}, admResetMsg={}, admAddOpen={}, admAddMsg={};
 async function renderAdminFamiglie(){const el=document.getElementById("admFamiglie");if(!el)return;el.textContent="Carico…";
   try{const{data,error}=await sb.rpc("admin_lista_famiglie");
     if(error){el.innerHTML='<span style="color:#c0392b">'+esc(error.message)+'</span>';return;}
@@ -1399,7 +1394,7 @@ function drawFamiglie(){const el=document.getElementById("admFamiglie");if(!el)r
       <div onclick="toggleFam('${f.id}')" style="cursor:pointer;display:flex;align-items:baseline;gap:8px"><span style="color:var(--ink-soft)">${open?'▾':'▸'}</span><span style="font-weight:600">${esc(f.nome||f.codice)}</span><span style="font-size:.68rem;color:var(--ink-soft)">${esc(f.codice)}</span><span style="margin-left:auto;font-size:.68rem;color:${vecchia?'#c0392b':'var(--ink-soft)'}">${ver}${vecchia?' · aggiorna':''}</span></div>
       <div style="display:flex;align-items:center;gap:8px;margin:7px 0 2px"><div style="flex:1;height:8px;background:#eef1ef;border-radius:4px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${col}"></div></div><span style="font-size:.72rem;font-weight:600;color:${coltxt}">${pct}%</span></div>
       <div style="font-size:.68rem;color:var(--ink-soft)">usa ${usate}/6 aree · ${nm} genitor${nm===1?'e':'i'} · ultimo uso ${ultimo}</div>
-      ${open?`<div style="border-top:0.5px solid var(--line);margin-top:8px;padding-top:6px">${membri}</div>`:""}
+      ${open?`<div style="border-top:0.5px solid var(--line);margin-top:8px;padding-top:6px">${membri}${azioniFam(f,nm)}</div>`:""}
     </div>`;}).join("");
 }
 async function resetMembro(email){admResetMsg[email]="…";drawFamiglie();
@@ -1407,6 +1402,32 @@ async function resetMembro(email){admResetMsg[email]="…";drawFamiglie();
     const err=(error&&error.message)||(data&&data.error);admResetMsg[email]=err?("errore: "+err):data.password;
   }catch(e){admResetMsg[email]="errore: "+String(e&&e.message||e);}
   drawFamiglie();}
+function azioniFam(f,nm){const id=f.id,addOpen=!!admAddOpen[id];
+  return `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">`
+    +(nm<2?`<button class="btn btn-sm" style="font-size:.7rem" onclick="toggleAddGen('${id}')">➕ Aggiungi genitore</button>`:``)
+    +`<button class="btn btn-sm" style="font-size:.7rem;color:#c0392b;border-color:#e0b4ab" onclick="cancellaFamigliaChiedi('${id}','${esc(String(f.nome||f.codice)).replace(/'/g,"")}')">🗑 Cancella famiglia</button></div>`
+    +(addOpen?`<div style="margin-top:8px;display:flex;gap:6px"><input id="admAdd_${id}" type="email" placeholder="email nuovo genitore" style="flex:1"><button class="btn btn-sm btn-primary" style="flex:none" onclick="confirmAddGen('${id}')">Aggiungi</button></div>`:``)
+    +(admAddMsg[id]?`<div style="background:#eaf7ef;border-radius:8px;padding:7px 9px;margin-top:6px;font-size:.72rem;color:#1f7a4d">${admAddMsg[id]}</div>`:``);
+}
+function toggleAddGen(id){admAddOpen[id]=!admAddOpen[id];drawFamiglie();}
+async function confirmAddGen(id){const inp=document.getElementById("admAdd_"+id),email=inp?inp.value.trim():"";
+  if(!email){admAddMsg[id]='<span style="color:#c0392b">Inserisci l\'email.</span>';drawFamiglie();return;}
+  admAddMsg[id]="Aggiungo…";drawFamiglie();
+  try{const{data,error}=await sb.functions.invoke("admin-aggiungi-genitore",{body:{famigliaId:id,email}});
+    const err=(error&&error.message)||(data&&data.error);
+    if(err){admAddMsg[id]='<span style="color:#c0392b">'+esc(err)+'</span>';drawFamiglie();return;}
+    admAddMsg[id]='Aggiunto: '+esc(data.email)+' → password <b style="font-family:monospace">'+esc(data.password)+'</b>';
+    admAddOpen[id]=false;renderAdminFamiglie();
+  }catch(e){admAddMsg[id]='<span style="color:#c0392b">Errore: '+esc(String(e&&e.message||e))+'</span>';drawFamiglie();}
+}
+function cancellaFamigliaChiedi(id,nome){chiediConferma("Cancellare «"+nome+"»? Gli account dei genitori verranno eliminati e non potranno più entrare. È irreversibile.",()=>cancellaFamiglia(id));}
+async function cancellaFamiglia(id){
+  try{const{data,error}=await sb.functions.invoke("admin-cancella-famiglia",{body:{famigliaId:id}});
+    const err=(error&&error.message)||(data&&data.error);
+    if(err){alert("Errore: "+err);return;}
+    delete admFamOpen[id];delete admAddMsg[id];renderAdminFamiglie();
+  }catch(e){alert("Errore: "+String(e&&e.message||e));}
+}
 async function adminCreaFamiglia(){
   const nome=document.getElementById("admNome").value.trim(),email=document.getElementById("admEmail").value.trim(),email2=document.getElementById("admEmail2").value.trim(),out=document.getElementById("admCreaOut");
   if(!email){out.innerHTML='<span style="color:#c0392b">Inserisci almeno l\'email del primo genitore.</span>';return;}
