@@ -845,6 +845,12 @@ input,select,textarea{font-size:16px !important}
 
   <!-- ALTRO -->
   <section id="sec-altro" class="screen">
+    <div class="sectitle">Guida</div>
+    <div class="card">
+      <div class="card-head"><h2><span class="ic">ℹ️</span> Come si usa</h2></div>
+      <p style="color:var(--ink-soft);font-size:.85rem;margin:0 0 10px">Una guida rapida alle funzioni. Tocca un argomento.</p>
+      <div id="guidaLista"></div>
+    </div>
     <div class="sectitle">Report</div>
     <div class="card">
       <div class="card-head"><h2><span class="ic">📊</span> Il mese in sintesi</h2></div>
@@ -1207,12 +1213,17 @@ input,select,textarea{font-size:16px !important}
     <button onclick="animaPercorso()" style="position:absolute;bottom:12px;right:14px;padding:8px 14px;border-radius:20px;border:none;background:rgba(255,255,255,.16);color:#fff;font-size:13px;cursor:pointer">↻ Rivedi</button>
   </div>
 </div>
+<div class="overlay" id="ovGuida"><div class="modal">
+  <h3 id="guidaTitle">Guida</h3>
+  <div id="guidaBody" style="max-height:60vh;overflow:auto"></div>
+  <div class="modal-actions"><button class="btn btn-primary" onclick="chiudi('ovGuida')">Ho capito</button></div>
+</div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 72;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 73;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1571,7 +1582,7 @@ function render(){
   document.getElementById("hContabile").textContent=euro(saldoContabileMese(meseSel));
   renderGauge(ent,sp,ris);
   renderSaldoMese();renderSalvadanaio();renderSaldoIniziale();renderFamiglia();renderAffrontate();renderDaAffrontare();renderNote();renderAppuntamenti();renderBachecaObiettivi();renderBollettePanel();
-  renderGrafico();renderPersone();renderRate();renderGantt();renderListe();renderObiettivi();renderTrend();renderCategorie();renderReport();renderLotteria();popolaQsCat();renderComponenti();
+  renderGrafico();renderPersone();renderRate();renderGantt();renderListe();renderObiettivi();renderTrend();renderCategorie();renderReport();renderLotteria();popolaQsCat();renderComponenti();renderGuida();
   if(calOpen)renderCalendario();
   save();
 }
@@ -3095,7 +3106,48 @@ function disegnaPercorso(ctx,W,H,prog){
   const lb=tips.slice().sort((a,b)=>b.tv-a.tv);ctx.textAlign="right";ctx.textBaseline="top";
   lb.forEach((tp,i)=>{ctx.fillStyle=tp.s.col;ctx.font="500 13px system-ui";ctx.fillText((i+1)+"° "+(tp.s.p.nome)+"  "+tp.tv+" 🪙",W-10,16+i*20);});
 }
-["ovVoce","ovRata","ovGoal","ovCat","ovVers","ovConfirm","ovAssegna","ovGestione","ovDataMon","ovPercorso"].forEach(ovId=>document.getElementById(ovId).addEventListener("click",e=>{if(e.target.id===ovId)chiudi(ovId);}));
+const GUIDA=[
+ {id:"primo",ic:"🚀",t:"Primo avvio",s:"parti in pochi minuti",p:[
+   "Vai su Entrate e aggiungi lo stipendio e le altre entrate ricorrenti, con il giorno di accredito.",
+   "Aggiungi le spese fisse (mutuo, bollette, abbonamenti) come Spesa programmata ricorrente, con il loro giorno.",
+   "Ogni giorno registra le spese fatte con Spesa diretta.",
+   "In Bacheca controlli il saldo reale (i soldi che hai ora) e, a fine mese, il contabile.",
+   "In Eroi crei la gara dei bambini con compiti e premi.",
+   "Se siete in due, l'altro genitore entra nella stessa famiglia e i dati si sincronizzano."]},
+ {id:"bacheca",ic:"💰",t:"La Bacheca e i due saldi",s:"reale vs contabile",p:[
+   "Il numero grande Ci resta questo mese è il saldo reale: i soldi che hai davvero adesso.",
+   "A destra A fine mese è il contabile: quello che ti resterà dopo gli impegni ancora da pagare.",
+   "Tocca l'icona ⓘ per il dettaglio: entrate attese, spese programmate, rate.",
+   "Sotto trovi promemoria, appuntamenti, spese sostenute e spese da sostenere."]},
+ {id:"spese",ic:"🧾",t:"Spese: diretta o programmata",s:"già fatta o da fare",p:[
+   "Spesa diretta = l'hai già fatta. La registri, scegli quando (Oggi/Ieri) e per chi. Entra subito nel reale.",
+   "Spesa programmata = la farai (un regalo, una bolletta). Metti la data futura: pesa sul contabile finché non arriva.",
+   "Quando la paghi, o tocchi ✓, passa tra le spese sostenute e nel reale.",
+   "In Per chi puoi scegliere più persone: la spesa condivisa si divide tra loro."]},
+ {id:"ritmo",ic:"⏱️",t:"Entrate e ritmo di spesa",s:"quanto al giorno",p:[
+   "In Entrate aggiungi lo stipendio (ricorrente, con giorno) o entrate una-tantum (con data).",
+   "In Altro, il Ritmo di spesa mostra il Budget al giorno e a che ritmo stai andando.",
+   "La Media su giorno ad oggi ti dice se sei sopra o sotto la soglia, con la proiezione di fine mese."]},
+ {id:"rate",ic:"📅",t:"Rate, prestiti e obiettivi",s:"impegni e salvadanaio",p:[
+   "In Rate e prestiti inserisci l'importo mensile, il numero di rate e il giorno: l'app li conta negli impegni.",
+   "In Obiettivi crei un traguardo (es. una vacanza) e metti da parte ogni mese.",
+   "Segui quanto hai accantonato e quanto manca."]},
+ {id:"eroi",ic:"🏆",t:"Eroi: la gara dei bambini",s:"monete e premi",p:[
+   "In Compiti e premi crei i compiti (con le monete) e i premi-traguardo.",
+   "Assegna le monete toccando il compito svolto; puoi scegliere il giorno (Oggi/Ieri).",
+   "Tocca un bambino sul podio per vedere il percorso della gara, giorno per giorno."]},
+ {id:"famiglia",ic:"👨‍👩‍👧",t:"Famiglia e sincronizzazione",s:"due telefoni, stessi dati",p:[
+   "I due genitori entrano nella stessa famiglia con gli accessi ricevuti.",
+   "Vedete e modificate gli stessi dati: ogni modifica si sincronizza in tempo reale.",
+   "In alto, accanto alla versione, compare Sincronizzato quando è tutto allineato."]}
+];
+function renderGuida(){const el=document.getElementById("guidaLista");if(!el)return;
+  el.innerHTML=GUIDA.map(g=>`<div class="row" onclick="apriGuida('${g.id}')" style="cursor:pointer"><span class="sp-ic" style="background:#eef3f1">${g.ic}</span><div style="flex:1;min-width:0"><div class="name">${esc(g.t)}</div><div class="cat">${esc(g.s)}</div></div><span style="color:var(--ink-soft)">▸</span></div>`).join("");}
+function apriGuida(gid){const g=GUIDA.find(x=>x.id===gid);if(!g)return;
+  document.getElementById("guidaTitle").textContent=g.ic+"  "+g.t;
+  document.getElementById("guidaBody").innerHTML=g.p.map((s,i)=>`<div style="display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line)"><span style="flex:none;width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;font-size:.75rem;display:flex;align-items:center;justify-content:center">${i+1}</span><span style="font-size:.9rem;line-height:1.5">${esc(s)}</span></div>`).join("");
+  apri("ovGuida");}
+["ovVoce","ovRata","ovGoal","ovCat","ovVers","ovConfirm","ovAssegna","ovGestione","ovDataMon","ovPercorso","ovGuida"].forEach(ovId=>document.getElementById(ovId).addEventListener("click",e=>{if(e.target.id===ovId)chiudi(ovId);}));
 function cambiaMese(d){meseSel=spostaMese(meseSel,d);render();}
 function resetTutto(){chiediConferma("Vuoi cancellare TUTTI i dati (anche quelli di esempio) e partire da zero? Resteranno le categorie e i componenti della famiglia.",()=>{meseSel=meseCorrente();state=statoVuoto();render();});}
 function apriAzzera(){document.getElementById("azzMeseLbl").textContent=meseLabel(meseSel);apri("ovAzzera");}
