@@ -847,9 +847,14 @@ input,select,textarea{font-size:16px !important}
   <section id="sec-altro" class="screen">
     <div class="sectitle">Guida</div>
     <div class="card">
-      <div class="card-head"><h2><span class="ic">ℹ️</span> Come si usa</h2></div>
-      <p style="color:var(--ink-soft);font-size:.85rem;margin:0 0 10px">Una guida rapida alle funzioni. Tocca un argomento.</p>
-      <div id="guidaLista"></div>
+      <div class="card-head" onclick="toggleGuida()" style="cursor:pointer;justify-content:space-between">
+        <h2><span class="ic">ℹ️</span> Come si usa</h2>
+        <span id="guidaFreccia" style="color:var(--ink-soft);font-size:1.1rem">▾</span>
+      </div>
+      <div id="guidaWrap" style="display:none">
+        <p style="color:var(--ink-soft);font-size:.85rem;margin:8px 0 10px">Una guida rapida alle funzioni. Tocca un argomento.</p>
+        <div id="guidaLista"></div>
+      </div>
     </div>
     <div class="sectitle">Report</div>
     <div class="card">
@@ -1218,12 +1223,18 @@ input,select,textarea{font-size:16px !important}
   <div id="guidaBody" style="max-height:60vh;overflow:auto"></div>
   <div class="modal-actions"><button class="btn btn-primary" onclick="chiudi('ovGuida')">Ho capito</button></div>
 </div></div>
+<div class="overlay" id="ovBenvenuto"><div class="modal">
+  <h3>Benvenuto in Bilancio di Casa 👋</h3>
+  <p style="color:var(--ink-soft);font-size:.95rem;margin:-6px 0 8px">Vuoi vedere come funziona? Bastano un paio di minuti.</p>
+  <div id="benvInstall" style="display:none;background:#eef3f1;border-radius:10px;padding:9px 12px;font-size:.85rem;margin-bottom:8px">📲 Puoi anche aggiungere l'icona alla schermata Home: te lo spiega la guida.</div>
+  <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovBenvenuto')">Più tardi</button><button class="btn btn-primary" onclick="chiudi('ovBenvenuto');apriGuida('primo')">Apri la guida</button></div>
+</div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 73;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 75;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1337,7 +1348,7 @@ async function entraApp(){
   document.getElementById("lock").style.display="none";
   let fam=null,errore=false;try{const{data,error}=await sb.rpc("mia_famiglia");if(error)errore=true;else fam=data;}catch(e){errore=true;}
   if(errore){setSync("off");mostraLogin();return;}
-  if(fam){famigliaId=fam;try{await caricaFamiglia();}catch(e){setSync("off");}aggiornaPwBanner();render();setTimeout(promemoriaBollette,600);}
+  if(fam){famigliaId=fam;try{await caricaFamiglia();}catch(e){setSync("off");}aggiornaPwBanner();render();setTimeout(promemoriaBollette,600);setTimeout(maybeBenvenuto,900);}
   else{mostraSceltaFamiglia();}
 }
 async function creaFamiglia(){
@@ -3139,15 +3150,42 @@ const GUIDA=[
  {id:"famiglia",ic:"👨‍👩‍👧",t:"Famiglia e sincronizzazione",s:"due telefoni, stessi dati",p:[
    "I due genitori entrano nella stessa famiglia con gli accessi ricevuti.",
    "Vedete e modificate gli stessi dati: ogni modifica si sincronizza in tempo reale.",
-   "In alto, accanto alla versione, compare Sincronizzato quando è tutto allineato."]}
+   "In alto, accanto alla versione, compare Sincronizzato quando è tutto allineato."]},
+ {id:"installa",ic:"📲",t:"Installa l'icona sul telefono",s:"iPhone o Android",install:true,p:[]}
 ];
 function renderGuida(){const el=document.getElementById("guidaLista");if(!el)return;
   el.innerHTML=GUIDA.map(g=>`<div class="row" onclick="apriGuida('${g.id}')" style="cursor:pointer"><span class="sp-ic" style="background:#eef3f1">${g.ic}</span><div style="flex:1;min-width:0"><div class="name">${esc(g.t)}</div><div class="cat">${esc(g.s)}</div></div><span style="color:var(--ink-soft)">▸</span></div>`).join("");}
+function toggleGuida(){const w=document.getElementById("guidaWrap"),f=document.getElementById("guidaFreccia");const open=w.style.display==="none";w.style.display=open?"block":"none";f.textContent=open?"▴":"▾";}
 function apriGuida(gid){const g=GUIDA.find(x=>x.id===gid);if(!g)return;
   document.getElementById("guidaTitle").textContent=g.ic+"  "+g.t;
-  document.getElementById("guidaBody").innerHTML=g.p.map((s,i)=>`<div style="display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line)"><span style="flex:none;width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;font-size:.75rem;display:flex;align-items:center;justify-content:center">${i+1}</span><span style="font-size:.9rem;line-height:1.5">${esc(s)}</span></div>`).join("");
+  if(g.install){installDev=rilevaDispositivo();renderInstall();}
+  else document.getElementById("guidaBody").innerHTML=g.p.map((s,i)=>`<div style="display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line)"><span style="flex:none;width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;font-size:.75rem;display:flex;align-items:center;justify-content:center">${i+1}</span><span style="font-size:.9rem;line-height:1.5">${esc(s)}</span></div>`).join("");
   apri("ovGuida");}
-["ovVoce","ovRata","ovGoal","ovCat","ovVers","ovConfirm","ovAssegna","ovGestione","ovDataMon","ovPercorso","ovGuida"].forEach(ovId=>document.getElementById(ovId).addEventListener("click",e=>{if(e.target.id===ovId)chiudi(ovId);}));
+let installDev="ios";
+function rilevaDispositivo(){const ua=navigator.userAgent||"";if(/android/i.test(ua))return"android";if(/iphone|ipad|ipod/i.test(ua))return"ios";if(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1)return"ios";return"ios";}
+function setInstallDev(d){installDev=d;renderInstall();}
+function renderInstall(){
+  const ios=installDev==="ios";
+  const passi=ios?["Apri l'app in Safari (su iPhone funziona solo da Safari, non da Chrome).","Tocca il tasto Condividi in basso: il quadrato con la freccia verso l'alto.","Scorri le opzioni e tocca «Aggiungi a Home».","Tocca «Aggiungi» in alto a destra: l'icona compare sulla schermata."]
+                 :["Apri l'app in Chrome.","Tocca il menù ⋮ in alto a destra.","Tocca «Aggiungi a schermata Home» (oppure «Installa app»).","Conferma con «Installa»: l'icona compare sulla schermata."];
+  document.getElementById("guidaBody").innerHTML=`<div style="display:flex;gap:8px;margin-bottom:12px">
+     <button class="btn btn-sm ${ios?'btn-primary':''}" style="flex:1" onclick="setInstallDev('ios')">iPhone</button>
+     <button class="btn btn-sm ${!ios?'btn-primary':''}" style="flex:1" onclick="setInstallDev('android')">Android</button>
+   </div>`+passi.map((s,i)=>`<div style="display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line)"><span style="flex:none;width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;font-size:.75rem;display:flex;align-items:center;justify-content:center">${i+1}</span><span style="font-size:.9rem;line-height:1.5">${esc(s)}</span></div>`).join("");
+}
+let benvenutoDone=false;
+function maybeBenvenuto(){
+  if(benvenutoDone)return;benvenutoDone=true;
+  try{if(localStorage.getItem("bc-welcomed"))return;}catch(e){}
+  try{localStorage.setItem("bc-welcomed","1");}catch(e){}
+  const vuoto=(!state.entrate||!state.entrate.length)&&(!state.spese||!state.spese.length);
+  if(!vuoto)return;
+  if(document.querySelector(".overlay.on"))return;
+  const inst=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||window.navigator.standalone;
+  document.getElementById("benvInstall").style.display=inst?"none":"block";
+  apri("ovBenvenuto");
+}
+["ovVoce","ovRata","ovGoal","ovCat","ovVers","ovConfirm","ovAssegna","ovGestione","ovDataMon","ovPercorso","ovGuida","ovBenvenuto"].forEach(ovId=>document.getElementById(ovId).addEventListener("click",e=>{if(e.target.id===ovId)chiudi(ovId);}));
 function cambiaMese(d){meseSel=spostaMese(meseSel,d);render();}
 function resetTutto(){chiediConferma("Vuoi cancellare TUTTI i dati (anche quelli di esempio) e partire da zero? Resteranno le categorie e i componenti della famiglia.",()=>{meseSel=meseCorrente();state=statoVuoto();render();});}
 function apriAzzera(){document.getElementById("azzMeseLbl").textContent=meseLabel(meseSel);apri("ovAzzera");}
