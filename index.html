@@ -1039,6 +1039,7 @@ input,select,textarea{font-size:16px !important}
     <div class="toggle-row" onclick="toggleCompEroe()"><div><div class="t-txt">Partecipa alla Lotteria 🏆</div><div class="t-sub">Monete, giochi e classifiche</div></div><div class="switch" id="cpSwitch"></div></div>
   </div>
   <div class="modal-actions">
+    <button class="btn btn-danger" id="cpDelete" style="display:none;margin-right:auto" onclick="eliminaComponente()">Elimina</button>
     <button class="btn btn-cancel" onclick="chiudi('ovComp')">Annulla</button>
     <button class="btn btn-primary" onclick="salvaComponente()">Salva</button>
   </div>
@@ -1252,7 +1253,7 @@ input,select,textarea{font-size:16px !important}
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 80;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 81;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1317,7 +1318,7 @@ function suggComp(n){const el=document.getElementById("cpNome");el.value=n;el.fo
 
 function migrate(){
   if(!state.categorie||!state.categorie.length) state.categorie=DEFAULT_CATS.map(c=>({...c}));
-  if(!state.persone||!state.persone.length) state.persone=DEFAULT_PERSONE.map(p=>({...p}));
+  if(!state.persone) state.persone=[];
   state.persone.forEach(p=>{if(!p.genere&&GENERE_NOTO[p.id])p.genere=GENERE_NOTO[p.id];});
   if(!state.rate) state.rate=[];
   if(!state.movimentiSalvadanaio) state.movimentiSalvadanaio=[];
@@ -2964,6 +2965,19 @@ function popolaCompAvatar(){const el=document.getElementById("cpAvatars");if(!el
   el.innerHTML=`<span class="avc ${!compAvatarSel?'on':''}" onclick="setCompAvatar('')" title="Nessuno (usa emoji)">🚫</span>`+
     AVATARS.map(f=>{const u=AVATAR_BASE+f;return `<span class="avc ${compAvatarSel===u?'on':''}" style="background-image:url('${u}')" onclick="setCompAvatar('${u}')"></span>`;}).join("");}
 function setCompAvatar(u){compAvatarSel=u;popolaCompAvatar();}
+function eliminaComponente(){
+  if(!editComp)return;const pid=editComp.id,nome=editComp.nome;
+  chiediConferma("Eliminare «"+nome+"»? Verrà tolto dai componenti, dalla lotteria e dalle voci a lui intestate.",()=>{
+    state.persone=(state.persone||[]).filter(p=>p.id!==pid);
+    if(state.lotteria){
+      if(state.lotteria.eroi)state.lotteria.eroi=state.lotteria.eroi.filter(x=>x!==pid);
+      if(state.lotteria.movimenti)state.lotteria.movimenti=state.lotteria.movimenti.filter(m=>m.persona!==pid);
+    }
+    (state.spese||[]).forEach(s=>{if(s.persone)s.persone=s.persone.filter(x=>x!==pid);if(s.persona===pid)delete s.persona;});
+    (state.appuntamenti||[]).forEach(a=>{if(a.persone)a.persone=a.persone.filter(x=>x!==pid);if(a.persona===pid)delete a.persona;});
+    editComp=null;chiudi("ovComp");render();save();
+  });
+}
 function renderComponenti(){
   const el=document.getElementById("listaComponenti");if(!el)return;
   if(!state.persone.length){el.innerHTML='<div class="empty">Nessun componente. Aggiungi chi fa parte della famiglia (Papà, Mamma, Genitore o i loro nomi) con il pulsante ＋ qui sopra.</div>';return;}
@@ -2979,11 +2993,13 @@ function setCompColor(c){compColorSel=c;popolaCompSwatch();}
 function setCompGenere(g){compGenere=g;document.getElementById("cpGenM").classList.toggle("on",g==="M");document.getElementById("cpGenF").classList.toggle("on",g==="F");}
 function toggleCompEroe(){compEroe=!compEroe;document.getElementById("cpSwitch").classList.toggle("on",compEroe);}
 function apriComponente(){editComp=null;document.getElementById("compTitle").textContent="Nuovo componente";
+  document.getElementById("cpDelete").style.display="none";
   document.getElementById("cpNome").value="";compEmojiSel="🧒";compColorSel=PALETTE[0];compEroe=false;compAvatarSel="";
   popolaCompEmoji();popolaCompSwatch();popolaCompAvatar();setCompGenere("M");document.getElementById("cpSwitch").classList.remove("on");
   apri("ovComp");setTimeout(()=>document.getElementById("cpNome").focus(),100);}
 function modificaComponente(pid){editComp=persona(pid);if(!editComp)return;
   document.getElementById("compTitle").textContent="Modifica componente";
+  document.getElementById("cpDelete").style.display="inline-flex";
   document.getElementById("cpNome").value=editComp.nome;
   compEmojiSel=editComp.emoji||"🧒";compColorSel=editComp.colore||PALETTE[0];compAvatarSel=editComp.avatar||"";
   compEroe=!!(state.lotteria&&state.lotteria.eroi&&state.lotteria.eroi.includes(pid));
