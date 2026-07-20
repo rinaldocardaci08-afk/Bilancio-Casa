@@ -911,7 +911,8 @@ input,select,textarea{font-size:16px !important}
         <div style="border-top:1px solid var(--line);margin:16px 0"></div>
         <div style="font-weight:600;font-size:.9rem;margin-bottom:2px">Avatar (libreria condivisa)</div>
         <p style="font-size:.78rem;color:var(--ink-soft);margin:0 0 8px">Carica avatar che tutte le famiglie potranno scegliere. Vengono ritagliati quadrati.</p>
-        <input type="file" id="avFile" accept="image/*" onchange="avatarPick(this.files[0])" style="width:100%;margin-bottom:8px">
+        <input type="file" id="avFile" accept="image/*" onchange="avatarPick(this.files[0])" style="display:none">
+        <button class="btn" style="width:100%;margin-bottom:8px" onclick="document.getElementById('avFile').click()">📷 Scegli un'immagine</button>
         <div id="avVerdict" style="font-size:.82rem;margin-bottom:8px"></div>
         <button class="btn btn-primary" id="avCaricaBtn" style="width:100%;display:none" onclick="avatarCarica()">Carica avatar</button>
         <div id="avLibreria" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px"></div>
@@ -1255,12 +1256,19 @@ input,select,textarea{font-size:16px !important}
   <div id="benvInstall" style="display:none;background:#eef3f1;border-radius:10px;padding:9px 12px;font-size:.85rem;margin-bottom:8px">📲 Puoi anche aggiungere l'icona alla schermata Home: te lo spiega la guida.</div>
   <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovBenvenuto')">Più tardi</button><button class="btn btn-primary" onclick="chiudi('ovBenvenuto');apriGuida('primo')">Apri la guida</button></div>
 </div></div>
+<div class="overlay" id="ovAbaco"><div class="modal">
+  <h3 id="abTitle" style="text-align:center">🧮 Pallottoliere</h3>
+  <div id="abHint" style="text-align:center;color:var(--ink-soft);font-size:.9rem;margin:-4px 0 12px"></div>
+  <div id="abRk"></div>
+  <div style="text-align:center;font-size:1rem;margin-top:10px;color:var(--ink-soft)">accese: <b id="abCount" style="font-size:1.6rem;color:var(--primary)">0</b></div>
+  <div class="modal-actions"><button class="btn btn-primary" onclick="chiudi('ovAbaco')">Ho fatto</button></div>
+</div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 82;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 84;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1380,12 +1388,19 @@ let LIBRERIA_AVATAR=[], avPendingB64=null, avPendingType="image/jpeg";
 async function caricaLibreriaAvatar(){
   try{const{data,error}=await sb.storage.from("Avatar").list("",{limit:300,sortBy:{column:"created_at",order:"desc"}});
     if(error||!data)return;
-    LIBRERIA_AVATAR=data.filter(f=>f.name&&/\.(jpe?g|png|webp)$/i.test(f.name)).map(f=>AVATAR_BASE+f.name);
+    LIBRERIA_AVATAR=data.filter(f=>f.name&&/\.(jpe?g|png|webp)$/i.test(f.name)).map(f=>({url:AVATAR_BASE+f.name,nome:f.name}));
   }catch(e){}
 }
 function renderLibreriaAvatar(){const el=document.getElementById("avLibreria");if(!el)return;
-  el.innerHTML=LIBRERIA_AVATAR.length?LIBRERIA_AVATAR.map(u=>`<span style="width:44px;height:44px;border-radius:50%;background-image:url('${u}');background-size:cover;background-position:center;display:inline-block;border:1px solid var(--line)"></span>`).join(""):'<span style="font-size:.78rem;color:var(--ink-soft)">Nessun avatar ancora.</span>';
+  el.innerHTML=LIBRERIA_AVATAR.length?LIBRERIA_AVATAR.map(a=>`<span style="position:relative;display:inline-block"><span style="width:46px;height:46px;border-radius:50%;background-image:url('${a.url}');background-size:cover;background-position:center;display:inline-block;border:1px solid var(--line)"></span><button onclick="eliminaAvatar('${esc(a.nome)}')" title="Elimina" style="position:absolute;top:-5px;right:-5px;width:20px;height:20px;border-radius:50%;border:none;background:#c0392b;color:#fff;font-size:11px;line-height:1;cursor:pointer">✕</button></span>`).join(""):'<span style="font-size:.78rem;color:var(--ink-soft)">Nessun avatar ancora.</span>';
 }
+function eliminaAvatar(nome){chiediConferma("Eliminare questo avatar dalla libreria? Le famiglie che lo usavano vedranno l'immagine sparire.",async()=>{
+  try{const{data,error}=await sb.functions.invoke("admin-elimina-avatar",{body:{nome}});
+    const err=(error&&error.message)||(data&&data.error);
+    if(err){alert("Errore: "+err);return;}
+    await caricaLibreriaAvatar();renderLibreriaAvatar();
+  }catch(e){alert("Errore: "+String(e&&e.message||e));}
+});}
 function avatarPick(file){
   const v=document.getElementById("avVerdict"),btn=document.getElementById("avCaricaBtn");avPendingB64=null;btn.style.display="none";
   if(!file){v.textContent="";return;}
@@ -2854,6 +2869,7 @@ function renderQuiz(){
       <div class="hud"><div class="b"><div class="v">${s.giuste}</div><div class="k">Giuste</div></div><div class="b"><div class="v">0:${String(s.tempo).padStart(2,'0')}</div><div class="k">Tempo</div></div></div>
       ${s.finita?celebraVittoria(giocoEroe,`${s.sfida?'Sfida · ':''}${s.giuste} ${s.giuste===1?'risposta giusta':'risposte giuste'}${s.nuovoRecord?' · nuovo record! 🌟':''}`,sfidaBtn):
         `<div class="quiz-q"><div class="op">${d.a} ${d.op} ${d.b} = ?</div></div>
+         ${(!s.sfida&&(d.op==='+'||d.op==='-')&&d.a<=20&&d.b<=20&&d.ris>=0&&d.ris<=20)?`<div style="text-align:center;margin:2px 0 10px"><button onclick="apriAbaco()" style="background:#eef7f1;color:#16808f;border:1px solid #cfe6df;border-radius:22px;padding:9px 18px;font-size:.92rem;font-weight:600;cursor:pointer">🧮 Aiutami col pallottoliere</button></div>`:''}
          <div class="quiz-opts">${opts}</div>
          ${s.streak>=2?`<div class="streak">🔥 ${s.streak} di fila!</div>`:''}`}
     </div>`;
@@ -3006,7 +3022,7 @@ const AVATAR_BASE="https://nzieluslmxmyeobemzsl.supabase.co/storage/v1/object/pu
 const AVATARS=["papa-2.jpeg","mamma-2.jpeg","figlia-2.jpeg","figlio-2.jpeg","figlio-3.jpeg","figlio-4.jpeg"];
 function avatarUrl(f){return f?(/^https?:/.test(f)?f:(AVATAR_BASE+f)):"";}
 function popolaCompAvatar(){const el=document.getElementById("cpAvatars");if(!el)return;
-  const lista=(LIBRERIA_AVATAR&&LIBRERIA_AVATAR.length)?LIBRERIA_AVATAR:AVATARS.map(f=>AVATAR_BASE+f);
+  const lista=(LIBRERIA_AVATAR&&LIBRERIA_AVATAR.length)?LIBRERIA_AVATAR.map(a=>a.url):AVATARS.map(f=>AVATAR_BASE+f);
   el.innerHTML=`<span class="avc ${!compAvatarSel?'on':''}" onclick="setCompAvatar('')" title="Nessuno (usa emoji)">🚫</span>`+
     lista.map(u=>`<span class="avc ${compAvatarSel===u?'on':''}" style="background-image:url('${u}')" onclick="setCompAvatar('${u}')"></span>`).join("");}
 function setCompAvatar(u){compAvatarSel=u;popolaCompAvatar();}
@@ -3362,7 +3378,20 @@ function maybeBenvenuto(){
   document.getElementById("benvInstall").style.display=inst?"none":"block";
   apri("ovBenvenuto");
 }
-["ovVoce","ovRata","ovGoal","ovCat","ovVers","ovConfirm","ovAssegna","ovGestione","ovDataMon","ovPercorso","ovGuida","ovBenvenuto"].forEach(ovId=>document.getElementById(ovId).addEventListener("click",e=>{if(e.target.id===ovId)chiudi(ovId);}));
+let abN=0;
+function apriAbaco(){const d=quizState&&quizState.dom;if(!d)return;
+  abN=d.a;
+  document.getElementById("abTitle").textContent="🧮  "+d.a+" "+d.op+" "+d.b;
+  document.getElementById("abHint").textContent=(d.op==='+')?("Ci sono "+d.a+" perline accese: accendine altre "+d.b+" e conta."):("Ci sono "+d.a+" perline accese: spegnine "+d.b+" e conta quelle che restano.");
+  abDrawRk();apri("ovAbaco");}
+function abDrawRk(){let h="";
+  for(let r=0;r<2;r++){h+='<div style="display:flex;justify-content:center;gap:4px;background:var(--line);border-radius:10px;padding:7px;margin-bottom:8px">';
+    for(let c=0;c<10;c++){const g=r*10+c,on=g<abN,base=(c<5)?"#e0533f":"#3f7fd0";
+      h+='<div onclick="abTap('+g+')" style="width:24px;height:24px;border-radius:50%;background:'+base+';opacity:'+(on?1:0.22)+';cursor:pointer;box-shadow:inset 0 -2px 3px rgba(0,0,0,.18);flex:none"></div>';}
+    h+='</div>';}
+  document.getElementById("abRk").innerHTML=h;document.getElementById("abCount").textContent=abN;}
+function abTap(g){abN=(g+1>abN)?g+1:g;if(abN<0)abN=0;if(abN>20)abN=20;abDrawRk();}
+["ovVoce","ovRata","ovGoal","ovCat","ovVers","ovConfirm","ovAssegna","ovGestione","ovDataMon","ovPercorso","ovGuida","ovBenvenuto","ovAbaco"].forEach(ovId=>document.getElementById(ovId).addEventListener("click",e=>{if(e.target.id===ovId)chiudi(ovId);}));
 function cambiaMese(d){meseSel=spostaMese(meseSel,d);render();}
 function resetTutto(){chiediConferma("Vuoi cancellare TUTTI i dati (anche quelli di esempio) e partire da zero? Resteranno le categorie e i componenti della famiglia.",()=>{meseSel=meseCorrente();state=statoVuoto();render();});}
 function apriAzzera(){document.getElementById("azzMeseLbl").textContent=meseLabel(meseSel);apri("ovAzzera");}
