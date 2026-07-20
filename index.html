@@ -908,6 +908,13 @@ input,select,textarea{font-size:16px !important}
         <div style="border-top:1px solid var(--line);margin:16px 0"></div>
         <div style="display:flex;align-items:center;margin-bottom:8px"><span style="font-weight:600;font-size:.9rem">Famiglie gestite</span><button class="btn btn-sm" style="margin-left:auto" onclick="renderAdminFamiglie()">Aggiorna</button></div>
         <div id="admFamiglie" style="font-size:.85rem"></div>
+        <div style="border-top:1px solid var(--line);margin:16px 0"></div>
+        <div style="font-weight:600;font-size:.9rem;margin-bottom:2px">Avatar (libreria condivisa)</div>
+        <p style="font-size:.78rem;color:var(--ink-soft);margin:0 0 8px">Carica avatar che tutte le famiglie potranno scegliere. Vengono ritagliati quadrati.</p>
+        <input type="file" id="avFile" accept="image/*" onchange="avatarPick(this.files[0])" style="width:100%;margin-bottom:8px">
+        <div id="avVerdict" style="font-size:.82rem;margin-bottom:8px"></div>
+        <button class="btn btn-primary" id="avCaricaBtn" style="width:100%;display:none" onclick="avatarCarica()">Carica avatar</button>
+        <div id="avLibreria" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px"></div>
       </div>
     </div>
     <div class="card">
@@ -1253,7 +1260,7 @@ input,select,textarea{font-size:16px !important}
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 81;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 82;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1368,7 +1375,44 @@ async function verificaAdmin(){
   try{const{data,error}=await sb.rpc("sono_admin");isAdmin=!error&&data===true;}catch(e){isAdmin=false;}
   const c=document.getElementById("cardAdmin");if(c)c.style.display=isAdmin?"block":"none";
 }
-function toggleAdmin(){const w=document.getElementById("admWrap"),f=document.getElementById("admFreccia");const open=w.style.display==="none";w.style.display=open?"block":"none";f.textContent=open?"▴":"▾";if(open)renderAdminFamiglie();}
+function toggleAdmin(){const w=document.getElementById("admWrap"),f=document.getElementById("admFreccia");const open=w.style.display==="none";w.style.display=open?"block":"none";f.textContent=open?"▴":"▾";if(open){renderAdminFamiglie();caricaLibreriaAvatar().then(renderLibreriaAvatar);}}
+let LIBRERIA_AVATAR=[], avPendingB64=null, avPendingType="image/jpeg";
+async function caricaLibreriaAvatar(){
+  try{const{data,error}=await sb.storage.from("Avatar").list("",{limit:300,sortBy:{column:"created_at",order:"desc"}});
+    if(error||!data)return;
+    LIBRERIA_AVATAR=data.filter(f=>f.name&&/\.(jpe?g|png|webp)$/i.test(f.name)).map(f=>AVATAR_BASE+f.name);
+  }catch(e){}
+}
+function renderLibreriaAvatar(){const el=document.getElementById("avLibreria");if(!el)return;
+  el.innerHTML=LIBRERIA_AVATAR.length?LIBRERIA_AVATAR.map(u=>`<span style="width:44px;height:44px;border-radius:50%;background-image:url('${u}');background-size:cover;background-position:center;display:inline-block;border:1px solid var(--line)"></span>`).join(""):'<span style="font-size:.78rem;color:var(--ink-soft)">Nessun avatar ancora.</span>';
+}
+function avatarPick(file){
+  const v=document.getElementById("avVerdict"),btn=document.getElementById("avCaricaBtn");avPendingB64=null;btn.style.display="none";
+  if(!file){v.textContent="";return;}
+  if(!/^image\/(jpeg|png|webp)$/.test(file.type)){v.innerHTML='<span style="color:#c0392b">✗ Formato non valido: usa JPG, PNG o WEBP.</span>';return;}
+  const img=new Image();
+  img.onload=function(){
+    const side=Math.min(img.width,img.height),sx=(img.width-side)/2,sy=(img.height-side)/2,S=256;
+    const cv=document.createElement("canvas");cv.width=S;cv.height=S;cv.getContext("2d").drawImage(img,sx,sy,side,side,0,0,S,S);
+    const url=cv.toDataURL("image/jpeg",0.85);avPendingB64=url.split(",")[1];avPendingType="image/jpeg";
+    const kb=Math.round(avPendingB64.length*0.75/1024);
+    v.innerHTML='<span style="color:#1f7a4d">✓ Idonea · ritagliata 256×256 · ~'+kb+' KB</span> <img src="'+url+'" style="width:44px;height:44px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-left:8px">';
+    btn.style.display="block";
+  };
+  img.onerror=function(){v.innerHTML='<span style="color:#c0392b">✗ Immagine non leggibile.</span>';};
+  img.src=URL.createObjectURL(file);
+}
+async function avatarCarica(){
+  const v=document.getElementById("avVerdict"),btn=document.getElementById("avCaricaBtn");if(!avPendingB64)return;
+  btn.disabled=true;v.textContent="Carico…";
+  try{const{data,error}=await sb.functions.invoke("admin-carica-avatar",{body:{dataBase64:avPendingB64,contentType:avPendingType}});
+    const err=(error&&error.message)||(data&&data.error);
+    if(err){v.innerHTML='<span style="color:#c0392b">'+esc(err)+'</span>';btn.disabled=false;return;}
+    v.innerHTML='<span style="color:#1f7a4d">✓ Caricato! Ora è tra le scelte avatar.</span>';
+    document.getElementById("avFile").value="";avPendingB64=null;btn.style.display="none";btn.disabled=false;
+    await caricaLibreriaAvatar();renderLibreriaAvatar();
+  }catch(e){v.innerHTML='<span style="color:#c0392b">Errore: '+esc(String(e&&e.message||e))+'</span>';btn.disabled=false;}
+}
 let admFamData=[], admFamOpen={}, admResetMsg={}, admAddOpen={}, admAddMsg={};
 async function renderAdminFamiglie(){const el=document.getElementById("admFamiglie");if(!el)return;el.textContent="Carico…";
   try{const{data,error}=await sb.rpc("admin_lista_famiglie");
@@ -1460,7 +1504,7 @@ async function entraApp(){
   document.getElementById("lock").style.display="none";
   let fam=null,errore=false;try{const{data,error}=await sb.rpc("mia_famiglia");if(error)errore=true;else fam=data;}catch(e){errore=true;}
   if(errore){setSync("off");mostraLogin();return;}
-  if(fam){famigliaId=fam;try{await caricaFamiglia();}catch(e){setSync("off");}try{sb.from("famiglie").update({app_version:APP_VERSION}).eq("id",famigliaId);}catch(e){}aggiornaPwBanner();render();verificaAdmin();setTimeout(promemoriaBollette,600);setTimeout(maybeBenvenuto,900);}
+  if(fam){famigliaId=fam;try{await caricaFamiglia();}catch(e){setSync("off");}try{sb.from("famiglie").update({app_version:APP_VERSION}).eq("id",famigliaId);}catch(e){}caricaLibreriaAvatar();aggiornaPwBanner();render();verificaAdmin();setTimeout(promemoriaBollette,600);setTimeout(maybeBenvenuto,900);}
   else{mostraSceltaFamiglia();}
 }
 async function creaFamiglia(){
@@ -2962,8 +3006,9 @@ const AVATAR_BASE="https://nzieluslmxmyeobemzsl.supabase.co/storage/v1/object/pu
 const AVATARS=["papa-2.jpeg","mamma-2.jpeg","figlia-2.jpeg","figlio-2.jpeg","figlio-3.jpeg","figlio-4.jpeg"];
 function avatarUrl(f){return f?(/^https?:/.test(f)?f:(AVATAR_BASE+f)):"";}
 function popolaCompAvatar(){const el=document.getElementById("cpAvatars");if(!el)return;
+  const lista=(LIBRERIA_AVATAR&&LIBRERIA_AVATAR.length)?LIBRERIA_AVATAR:AVATARS.map(f=>AVATAR_BASE+f);
   el.innerHTML=`<span class="avc ${!compAvatarSel?'on':''}" onclick="setCompAvatar('')" title="Nessuno (usa emoji)">🚫</span>`+
-    AVATARS.map(f=>{const u=AVATAR_BASE+f;return `<span class="avc ${compAvatarSel===u?'on':''}" style="background-image:url('${u}')" onclick="setCompAvatar('${u}')"></span>`;}).join("");}
+    lista.map(u=>`<span class="avc ${compAvatarSel===u?'on':''}" style="background-image:url('${u}')" onclick="setCompAvatar('${u}')"></span>`).join("");}
 function setCompAvatar(u){compAvatarSel=u;popolaCompAvatar();}
 function eliminaComponente(){
   if(!editComp)return;const pid=editComp.id,nome=editComp.nome;
