@@ -1268,7 +1268,7 @@ input,select,textarea{font-size:16px !important}
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 84;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 85;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1381,7 +1381,8 @@ function mostraSceltaFamiglia(){setAuthMode("famiglia");document.getElementById(
 let isAdmin=false;
 async function verificaAdmin(){
   try{const{data,error}=await sb.rpc("sono_admin");isAdmin=!error&&data===true;}catch(e){isAdmin=false;}
-  const c=document.getElementById("cardAdmin");if(c)c.style.display=isAdmin?"block":"none";
+  const c=document.getElementById("cardAdmin");if(c){c.style.display=isAdmin?"block":"none";
+    if(isAdmin){const sec=document.getElementById("sec-altro");if(sec&&sec.firstElementChild!==c)sec.insertBefore(c,sec.firstElementChild);}}
 }
 function toggleAdmin(){const w=document.getElementById("admWrap"),f=document.getElementById("admFreccia");const open=w.style.display==="none";w.style.display=open?"block":"none";f.textContent=open?"▴":"▾";if(open){renderAdminFamiglie();caricaLibreriaAvatar().then(renderLibreriaAvatar);}}
 let LIBRERIA_AVATAR=[], avPendingB64=null, avPendingType="image/jpeg";
