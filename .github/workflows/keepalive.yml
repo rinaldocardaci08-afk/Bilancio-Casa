@@ -1,0 +1,28 @@
+name: Keep Supabase awake
+
+# Tocca il database Supabase due volte al giorno, così il progetto free
+# non viene messo in pausa per inattività. Nessun costo, gira su GitHub.
+
+on:
+  schedule:
+    - cron: '23 5 * * *'    # ~07:23 ora italiana (estate)
+    - cron: '23 17 * * *'   # ~19:23 ora italiana (estate)
+  workflow_dispatch:          # permette il lancio manuale dal tab Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping database Supabase
+        run: |
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://nzieluslmxmyeobemzsl.supabase.co/rest/v1/famiglie?select=id&limit=1" \
+            -H "apikey: sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj" \
+            -H "Authorization: Bearer sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj")
+          echo "Risposta Supabase: HTTP $CODE"
+          if [ "$CODE" = "200" ] || [ "$CODE" = "206" ]; then
+            echo "OK: progetto attivo, ping riuscito."
+          else
+            echo "Attenzione: risposta inattesa ($CODE) — controlla il progetto."
+            exit 1
+          fi
