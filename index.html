@@ -559,6 +559,7 @@
 .avc{width:52px;height:52px;border-radius:50%;background-size:cover;background-position:center;background-color:#f0eee7;cursor:pointer;border:3px solid transparent;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
 .avc.on{border-color:#16808F}
 input,select,textarea{font-size:16px !important}
+.pw-eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:1.2rem;cursor:pointer;padding:4px;line-height:1;opacity:.7}
 </style>
 </head>
 <body>
@@ -570,13 +571,13 @@ input,select,textarea{font-size:16px !important}
     <div id="authLoginBox">
       <p>Accedi con la tua email</p>
       <input type="email" id="authEmail" placeholder="Email" autocomplete="username">
-      <input type="password" id="authPw" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')authLogin()">
+      <div style="position:relative"><input type="password" id="authPw" placeholder="Password" autocomplete="current-password" style="padding-right:44px" onkeydown="if(event.key==='Enter')authLogin()"><button type="button" class="pw-eye" onclick="togglePw('authPw',this)">👁</button></div>
       <button class="btn btn-primary" onclick="authLogin()">Entra</button>
       <div style="margin-top:12px;font-size:.85rem"><a href="#" onclick="authResetChiedi();return false;">Password dimenticata?</a></div>
     </div>
     <div id="authSetpwBox" style="display:none">
       <p>Imposta la tua password per il primo accesso</p>
-      <input type="password" id="authNewPw" placeholder="Nuova password (min 6)" autocomplete="new-password" onkeydown="if(event.key==='Enter')authSetPw()">
+      <div style="position:relative"><input type="password" id="authNewPw" placeholder="Nuova password (min 6)" autocomplete="new-password" style="padding-right:44px" onkeydown="if(event.key==='Enter')authSetPw()"><button type="button" class="pw-eye" onclick="togglePw('authNewPw',this)">👁</button></div>
       <button class="btn btn-primary" onclick="authSetPw()">Imposta password ed entra</button>
     </div>
     <div id="authFamigliaBox" style="display:none">
@@ -736,8 +737,8 @@ input,select,textarea{font-size:16px !important}
 
   <div class="overlay" id="ovCambiaPw"><div class="modal">
     <h3>🔑 Cambia password</h3>
-    <div class="field"><label>Nuova password (min 6)</label><input type="password" id="cpNew" autocomplete="new-password" placeholder="Nuova password"></div>
-    <div class="field"><label>Ripeti la nuova password</label><input type="password" id="cpNew2" autocomplete="new-password" placeholder="Ripeti" onkeydown="if(event.key==='Enter')cambiaPassword()"></div>
+    <div class="field"><label>Nuova password (min 6)</label><div style="position:relative"><input type="password" id="cpNew" autocomplete="new-password" placeholder="Nuova password" style="padding-right:44px"><button type="button" class="pw-eye" onclick="togglePw('cpNew',this)">👁</button></div></div>
+    <div class="field"><label>Ripeti la nuova password</label><div style="position:relative"><input type="password" id="cpNew2" autocomplete="new-password" placeholder="Ripeti" style="padding-right:44px" onkeydown="if(event.key==='Enter')cambiaPassword()"><button type="button" class="pw-eye" onclick="togglePw('cpNew2',this)">👁</button></div></div>
     <div class="pwerr" id="cpErr"></div>
     <div class="modal-actions"><button class="btn btn-cancel" onclick="chiudi('ovCambiaPw')">Annulla</button><button class="btn btn-primary" onclick="cambiaPassword()">Salva password</button></div>
   </div></div>
@@ -1268,7 +1269,7 @@ input,select,textarea{font-size:16px !important}
 const SUPABASE_URL  = "https://nzieluslmxmyeobemzsl.supabase.co";
 const SUPABASE_ANON = "sb_publishable_b6Httb7bEYH7TQk0Rjw7ZA_Fyh0IWlj";
 const TBL           = "bilanci";
-const APP_VERSION   = 85;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
+const APP_VERSION   = 86;   // numero versione app: aumentalo a ogni aggiornamento per far auto-aggiornare i telefoni
 
 const KEY="bilancio-casa-v3";
 const PALETTE=["#1F6F5C","#E0A03A","#D9644A","#5B8DEF","#8E6FB5","#3DA9A1","#E07A9E","#9AA8A2","#C2603D","#6BA368","#4A7BD9","#B5567A"];
@@ -1549,6 +1550,7 @@ async function initCloud(){
     else{mostraLogin();}
   }catch(e){setSync("off");mostraLogin();}
 }
+function togglePw(id,btn){const el=document.getElementById(id);if(!el)return;if(el.type==='password'){el.type='text';btn.textContent='🙈';}else{el.type='password';btn.textContent='👁';}}
 async function authLogin(){
   const email=(document.getElementById("authEmail").value||"").trim(),pw=document.getElementById("authPw").value||"";
   const err=document.getElementById("authErr"),msg=document.getElementById("authMsg");err.textContent="";
